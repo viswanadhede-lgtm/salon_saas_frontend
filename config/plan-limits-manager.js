@@ -1,49 +1,20 @@
 /**
  * config/plan-limits-manager.js
  * ─────────────────────────────────────────────────────────────────────────────
- * DYNAMIC PLAN LIMITS & USAGE COUNTER ENFORCEMENT
+ * DYNAMIC PLAN LIMITS & USAGE MANAGER (Zero-Trust Backend Thin Client)
  * ─────────────────────────────────────────────────────────────────────────────
  *
- * ARCHITECTURAL DESIGN:
- *   1. Ceilings (maxLimit):
- *      Dynamically queried from `public.plan_limits` table:
- *      - Matches `plan_id` (UUID) or `plan_name` (Text) and `limit_key`.
- *      - Fallback constants are only a safety net if DB is disconnected.
- *
- *   2. Usage (currentCount):
- *      Dynamically queried from `public.usage_counters` table:
- *      - Matches `company_id` (UUID) and `limit_key` (Text).
- *      - Reads `current_count` directly from `usage_counters`.
- *      - Self-heals: if the `usage_counters` row hasn't been created yet,
- *        it counts live records from the source table (branches, users, staff)
- *        and saves it to `usage_counters`.
- *
- *   3. Real-Time Synchronization:
- *      `refreshUsageCounter(limitKey)` is called immediately after an insert or
- *      delete in branches, users, and staff to keep `usage_counters` 100% accurate.
+ * ARCHITECTURAL ROLE:
+ *   - Quota Enforcement: Governed authoritatively in PostgreSQL via `shared.check_quota()`.
+ *   - Quota limits are stored in `public.plan_limits` and usage in `public.usage_counters`.
+ *   - The database procedures `create_branch_atomic`, `create_user_atomic`, and
+ *     `create_staff_atomic` perform mandatory server-side quota verification before INSERT.
+ *   - This file provides client-side pre-flight checks (`checkResourceLimit`) and
+ *     renders the upgrade modal (`showPlanLimitModal`) when limits are reached.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import { supabase } from '../lib/supabase.js';
-
-// Safe in-memory fallbacks ONLY if DB connection is offline or tables are unseeded
-const FALLBACK_PLAN_LIMITS = {
-    Growth: {
-        max_branches: 1,
-        max_users: 2,
-        max_staff: 10
-    },
-    Advance: {
-        max_branches: 3,
-        max_users: 5,
-        max_staff: 20
-    },
-    Pro: {
-        max_branches: 10,
-        max_users: 10,
-        max_staff: 50
-    }
-};
 
 const RESOURCE_META = {
     max_branches: {
@@ -67,33 +38,8 @@ const RESOURCE_META = {
 };
 
 /**
- * Resolves current company_id, plan_id, and plan_name from localStorage / appContext.
- */
-function resolveCompanyAndPlan() {
-    let companyId = null;
-    let planId = null;
-    let planName = null;
-
-    try {
-        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-        companyId = ctx.company?.id || ctx.company?.company_id || null;
-        planId = ctx.company?.plan_id || null;
-        planName = ctx.company?.plan_name || null;
-    } catch (_) {}
-
-    if (!companyId) companyId = localStorage.getItem('company_id');
-    if (!planId) planId = localStorage.getItem('plan_id');
-    if (!planName) planName = localStorage.getItem('plan_name');
-
-    planName = planName || 'Growth';
-    planName = planName.charAt(0).toUpperCase() + planName.slice(1).toLowerCase();
-
-    return { companyId, planId, planName };
-}
-
-/**
  * Checks if the company is within its plan allowance for a given resource.
- * Dynamically queries `public.plan_limits` for maximum and `public.usage_counters` for current usage.
+ * Reads authoritative ceiling and current count directly from backend RPC `get_session_context`.
  *
  * @param {'max_branches' | 'max_users' | 'max_staff'} limitKey
  * @returns {Promise<{ allowed: boolean, currentCount: number, maxLimit: number, planName: string, meta: Object }>}
@@ -107,210 +53,58 @@ export async function checkResourceLimit(limitKey) {
     };
 
     try {
-        let { companyId, planId, planName } = resolveCompanyAndPlan();
+        const { data: sessionCtx, error: ctxErr } = await supabase.rpc('get_session_context');
+        if (!ctxErr && sessionCtx) {
+            const maxVal = sessionCtx.plan_limits?.[limitKey];
+            const curVal = sessionCtx.usage?.[limitKey];
+            const planName = sessionCtx.company?.plan_name || 'Standard Plan';
 
-        // ── Fast-path: Check authoritative session context from backend RPC ───────
-        try {
-            const { data: sessionCtx, error: ctxErr } = await supabase.rpc('get_session_context');
-            if (!ctxErr && sessionCtx?.plan_limits && sessionCtx?.usage) {
-                const maxVal = sessionCtx.plan_limits[limitKey];
-                const curVal = sessionCtx.usage[limitKey];
-                if (maxVal !== undefined && maxVal !== null) {
-                    const maxLimit = parseInt(maxVal, 10);
-                    const currentCount = parseInt(curVal || 0, 10);
-                    return {
-                        allowed: currentCount < maxLimit,
-                        currentCount,
-                        maxLimit,
-                        planName: sessionCtx.company?.plan_name || planName,
-                        meta
-                    };
-                }
-            }
-        } catch (_) { /* Fallback to raw table lookups */ }
+            if (maxVal !== undefined && maxVal !== null) {
+                const maxLimit = parseInt(maxVal, 10);
+                const currentCount = parseInt(curVal || 0, 10);
 
-        if (!companyId) {
-            console.warn('[PlanLimits] No company_id found, allowing action by default.');
-            return { allowed: true, currentCount: 0, maxLimit: 9999, planName, meta };
-        }
-
-        // Try looking up company subscription if planId is missing
-        if (!planId) {
-            try {
-                const { data: sub } = await supabase
-                    .from('company_subscriptions')
-                    .select('plan_id, plan_name')
-                    .eq('company_id', companyId)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
-
-                if (sub) {
-                    if (sub.plan_id) planId = sub.plan_id;
-                    if (sub.plan_name) {
-                        planName = sub.plan_name.charAt(0).toUpperCase() + sub.plan_name.slice(1).toLowerCase();
-                    }
-                }
-            } catch (_) {}
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // 1. DYNAMICALLY LOAD MAX CEILING FROM `public.plan_limits` TABLE
-        // ─────────────────────────────────────────────────────────────────────
-        let maxLimit = null;
-
-        if (planId) {
-            const { data: limitRow } = await supabase
-                .from('plan_limits')
-                .select('limit_value')
-                .eq('plan_id', planId)
-                .eq('limit_key', limitKey)
-                .maybeSingle();
-
-            if (limitRow && limitRow.limit_value !== null && limitRow.limit_value !== undefined) {
-                maxLimit = parseInt(limitRow.limit_value, 10);
+                return {
+                    allowed: currentCount < maxLimit,
+                    currentCount,
+                    maxLimit,
+                    planName,
+                    meta
+                };
             }
         }
-
-        // If not found by plan_id, query by plan_name
-        if ((maxLimit === null || isNaN(maxLimit)) && planName) {
-            const { data: limitRowByName } = await supabase
-                .from('plan_limits')
-                .select('limit_value')
-                .ilike('plan_name', planName)
-                .eq('limit_key', limitKey)
-                .maybeSingle();
-
-            if (limitRowByName && limitRowByName.limit_value !== null && limitRowByName.limit_value !== undefined) {
-                maxLimit = parseInt(limitRowByName.limit_value, 10);
-            }
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // 2. DYNAMICALLY LOAD CURRENT USAGE FROM `public.usage_counters` TABLE
-        // ─────────────────────────────────────────────────────────────────────
-        let currentCount = null;
-        let usageCounterRow = null;
-
-        const { data: usageData, error: usageErr } = await supabase
-            .from('usage_counters')
-            .select('id, current_count, max_limit')
-            .eq('company_id', companyId)
-            .eq('limit_key', limitKey)
-            .maybeSingle();
-
-        if (!usageErr && usageData) {
-            usageCounterRow = usageData;
-            if (usageData.current_count !== null && usageData.current_count !== undefined) {
-                currentCount = parseInt(usageData.current_count, 10);
-            }
-            if (maxLimit === null && usageData.max_limit !== null && usageData.max_limit !== undefined) {
-                maxLimit = parseInt(usageData.max_limit, 10);
-            }
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // 3. SELF-HEALING FALLBACK:
-        // If usage_counters row is missing or uninitialized, calculate live count
-        // and initialize the row so future queries read directly from usage_counters
-        // ─────────────────────────────────────────────────────────────────────
-        if (currentCount === null && meta.table) {
-            const { count, error } = await supabase
-                .from(meta.table)
-                .select('id', { count: 'exact', head: true })
-                .eq('company_id', companyId)
-                .neq('status', 'deleted');
-
-            currentCount = (!error && count !== null) ? count : 0;
-
-            // Seed/sync into usage_counters so next reads are instant
-            syncUsageCounterDb(companyId, planId, limitKey, currentCount, maxLimit).catch(e => {
-                console.warn('[PlanLimits] Sync usage_counters notice:', e.message);
-            });
-        }
-
-        // Fallback default ceiling if plan_limits row wasn't seeded in DB
-        if (maxLimit === null || isNaN(maxLimit)) {
-            const planFallback = FALLBACK_PLAN_LIMITS[planName] || FALLBACK_PLAN_LIMITS['Growth'];
-            maxLimit = planFallback[limitKey] ?? 9999;
-        }
-
-        // Keep usage_counters.max_limit synchronized with plan_limits in background via atomic RPC
-        if (usageCounterRow && usageCounterRow.max_limit !== maxLimit) {
-            supabase.rpc('sync_usage_counter_atomic', {
-                p_company_id: companyId,
-                p_limit_key:  limitKey,
-                p_max_limit:  maxLimit
-            }).then();
-        }
-
-        const allowed = currentCount < maxLimit;
-
-        return {
-            allowed,
-            currentCount,
-            maxLimit,
-            planName,
-            meta
-        };
     } catch (err) {
-        console.error('[PlanLimits] Error checking resource limit:', err);
-        // Fail open so an unexpected error never locks a paying customer out
-        return { allowed: true, currentCount: 0, maxLimit: 9999, planName: 'Current', meta };
+        console.warn('[PlanLimits] Error querying session context:', err);
     }
+
+    // Optimistic fallback: allow UI action to proceed; backend RPC enforces quota strictly
+    return {
+        allowed: true,
+        currentCount: 0,
+        maxLimit: 9999,
+        planName: 'Standard Plan',
+        meta
+    };
 }
 
 /**
- * Syncs / upserts a counter row in `public.usage_counters`.
+ * Lightweight helper to sync or refresh usage counters.
  */
 export async function syncUsageCounterDb(companyId, planId, limitKey, currentCount, maxLimit = null) {
-    if (!companyId) return;
-
-    try {
-        const branchId = localStorage.getItem('active_branch_id') || null;
-        await supabase.rpc('sync_usage_counter_atomic', {
-            p_company_id:    companyId,
-            p_limit_key:     limitKey,
-            p_current_count: currentCount,
-            p_max_limit:     maxLimit,
-            p_plan_id:       planId || null,
-            p_branch_id:     branchId || null
-        });
-    } catch (e) {
-        console.warn('[PlanLimits] syncUsageCounterDb notice:', e);
-    }
+    // Database triggers and atomic RPCs automatically manage usage counters
+    return { success: true };
 }
 
 /**
- * Re-counts active items in source table and updates `usage_counters.current_count`.
- * Call this immediately after creating or deleting a branch, user, or staff member.
- *
- * @param {'max_branches' | 'max_users' | 'max_staff'} limitKey
+ * Invalidates local session cache to force fresh lookup on next action.
  */
 export async function refreshUsageCounter(limitKey) {
-    const meta = RESOURCE_META[limitKey];
-    if (!meta || !meta.table) return;
-
     try {
-        const { companyId, planId } = resolveCompanyAndPlan();
-        if (!companyId) return;
-
-        const { count, error } = await supabase
-            .from(meta.table)
-            .select('id', { count: 'exact', head: true })
-            .eq('company_id', companyId)
-            .neq('status', 'deleted');
-
-        if (!error && count !== null) {
-            await syncUsageCounterDb(companyId, planId, limitKey, count);
-        }
-    } catch (e) {
-        console.warn('[PlanLimits] refreshUsageCounter notice:', e);
-    }
+        sessionStorage.removeItem('salon_subscription_access_cache');
+    } catch (_) {}
 }
 
 /**
- * Displays a modal when a plan capacity limit is reached.
+ * Displays modal when resource limit is reached, prompting user to upgrade plan.
  *
  * @param {Object} limitDetails - Result returned from checkResourceLimit()
  */
@@ -321,8 +115,8 @@ export function showPlanLimitModal(limitDetails) {
     const existing = document.getElementById('plan-limit-upgrade-modal');
     if (existing) existing.remove();
 
-    const isGrowth = planName.toLowerCase().includes('growth');
-    const isAdvance = planName.toLowerCase().includes('advance');
+    const isGrowth = (planName || '').toLowerCase().includes('growth');
+    const isAdvance = (planName || '').toLowerCase().includes('advance');
     const nextPlan = isGrowth ? 'Advance' : (isAdvance ? 'Pro' : 'Enterprise');
     const targetUrl = nextPlan === 'Enterprise' ? 'support.html' : 'plans.html?flow=upgrade';
     const ctaText = nextPlan === 'Enterprise' ? 'Contact Support →' : `Upgrade to ${nextPlan} →`;

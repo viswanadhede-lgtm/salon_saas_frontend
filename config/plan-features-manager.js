@@ -1,29 +1,18 @@
 /**
  * config/plan-features-manager.js
- * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
- * PLAN FEATURES MANAGER â€” Commercial plan tier gating & feature flags.
- * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
- *
- * PURPOSE:
- *   Governs commercial page-level access based on the salon's purchased plan
- *   tier from `public.plans` and `public.plan_features` tables.
+ * ─────────────────────────────────────────────────────────────────────────────
+ * PLAN FEATURES MANAGER (Zero-Trust Backend Thin Client)
+ * ─────────────────────────────────────────────────────────────────────────────
  *
  * ARCHITECTURAL ROLE:
- *   - Gate 1: Subscription State Manager (Is the salon account active or expired?)
- *   - Gate 2: In-App RBAC Manager (What is this user's role, and what are they permitted to do?)
- *   - Gate 3: PLAN FEATURES MANAGER (Did the salon purchase the plan tier that includes this page?)
- *
- * STORAGE PATTERN:
- *   Reads and writes to the unified single-row `public.plan_features` schema
- *   where all allowed feature keys for a plan are stored as a JSON stringified
- *   array in the `feature_key` column (e.g. '["dashboard_access", "pos_system", ...]').
- *
- * SECTIONS:
- *   1. PLAN TIERS & DEFAULT MATRICES â€” Baseline feature sets per tier.
- *   2. DATABASE RESOLVER & CACHE     â€” Single-row loader & sessionStorage caching.
- *   3. PLAN EVALUATION LOGIC         â€” Feature inclusion & upgrade prompt metadata.
- *   4. INTEGRATION & EXPORT API      â€” Public helpers (isFeatureUnlocked, showPlanUpgradeModal).
- * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+ *   - Gate 3: Evaluates commercial plan features based on authoritative session
+ *     context returned directly by the database RPC `get_session_context()`.
+ *   - All plan feature mappings are stored in PostgreSQL (`public.plan_features`)
+ *     and checked by database procedures (`shared.check_plan_feature`).
+ *   - Write mutations are checked at the database layer on every RPC.
+ *   - This file provides client-side UI paywall checks (`isFeatureUnlocked`)
+ *     and renders the upgrade modal when a user clicks a locked feature.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import { FEATURES } from './feature-registry.js';
@@ -33,26 +22,7 @@ import { supabase } from '../lib/supabase.js';
 const PLAN_CACHE_STORAGE_KEY = 'salon_plan_features_cache';
 const PLAN_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache TTL
 
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// SECTION 1 â€” FEATURE CATALOG
-// Complete master list of all application features, sourced from the feature
-// registry. Permissions are resolved dynamically from `public.plan_features`
-// at runtime â€” no hardcoded plan names or UUIDs.
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-/**
- * Universal catalog of every feature the app can expose.
- * Which features a salon can ACCESS is determined solely by the rows in
- * `public.plan_features` that match the salon's active plan_id.
- */
 export const ALL_APP_FEATURES = Object.values(FEATURES);
-
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// SECTION 2 â€” DATABASE RESOLVER & FAST SESSION CACHE
-// Reads and writes to the single JSON row in `public.plan_features`.
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Safely parses single-row JSON string array from `public.plan_features`.
@@ -60,13 +30,13 @@ export const ALL_APP_FEATURES = Object.values(FEATURES);
 export function parsePlanFeatureKeys(rows) {
     const list = [];
     (rows || []).forEach(r => {
-        if (!r || !r.feature_key) return;
-        const raw = String(r.feature_key).trim();
+        if (!r) return;
+        const raw = String(r.feature_key || r).trim();
         if (raw.startsWith('[') && raw.endsWith(']')) {
             try {
                 const parsed = JSON.parse(raw);
                 if (Array.isArray(parsed)) list.push(...parsed);
-            } catch { list.push(raw); }
+            } catch (_) { list.push(raw); }
         } else if (raw.includes(',')) {
             list.push(...raw.split(',').map(s => s.trim()).filter(Boolean));
         } else {
@@ -77,55 +47,7 @@ export function parsePlanFeatureKeys(rows) {
 }
 
 /**
- * Resolves current company's plan_id and plan_name from session/storage.
- */
-function resolveCurrentPlanMeta() {
-    try {
-        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-        const planId = ctx.company?.plan_id || localStorage.getItem('plan_id') || null;
-        const planName = ctx.company?.plan_name || localStorage.getItem('plan_name') || null;
-        const companyId = ctx.company?.id || localStorage.getItem('company_id') || null;
-
-        return { planId, planName, companyId };
-    } catch {
-        return {
-            planId: localStorage.getItem('plan_id') || null,
-            planName: localStorage.getItem('plan_name') || null,
-            companyId: localStorage.getItem('company_id') || null
-        };
-    }
-}
-
-/**
- * Queries Supabase `public.plan_features` for the plan's single feature row.
- */
-async function fetchPlanFeaturesFromDb(planId) {
-    if (!planId) return null;
-
-    try {
-        const { data, error } = await supabase
-            .from('plan_features')
-            .select('plan_id, feature_key')
-            .eq('plan_id', planId);
-
-        if (error) {
-            console.warn('[PlanFeaturesManager] Error querying plan_features:', error);
-            return null;
-        }
-
-        return data;
-    } catch (err) {
-        console.warn('[PlanFeaturesManager] Exception querying plan_features:', err);
-        return null;
-    }
-}
-
-/**
  * Atomic Single-Row Writer: Saves all feature keys for a plan into a single row.
- * Call this when configuring or creating plans in the admin panel.
- *
- * @param {string} planId - UUID of the plan
- * @param {Array<string>} featureKeys - Array of feature keys from FEATURES
  */
 export async function syncPlanFeaturesToDb(planId, featureKeys) {
     if (!planId) throw new Error('Missing planId');
@@ -139,31 +61,17 @@ export async function syncPlanFeaturesToDb(planId, featureKeys) {
     if (rpcRes && rpcRes.success === false) throw new Error(rpcRes.message || 'Failed to sync plan features');
 }
 
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// SECTION 3 â€” PLAN EVALUATION LOGIC
-// Checks if a feature is unlocked, and generates upgrade prompt metadata.
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 /**
- * Evaluates whether a given feature key is included in the allowed features list.
- *
- * @param {string} featureKey - Key from FEATURES
- * @param {Array<string>} planFeatures - Array of allowed features for the plan
- * @returns {boolean} True if unlocked, false if locked
+ * Evaluates whether a given feature key is included in the plan features list.
  */
 export function evaluatePlanFeature(featureKey, planFeatures = []) {
     if (!featureKey) return true;
     if (!Array.isArray(planFeatures) || planFeatures.length === 0) return false;
-
     return planFeatures.includes(featureKey);
 }
 
 /**
- * Returns user-friendly metadata for triggering an Upgrade Modal when a feature is locked.
- *
- * @param {string} featureKey - Locked feature key
- * @returns {Object} { featureTitle, minimumPlan, upgradeUrl }
+ * Returns upgrade prompt metadata for a feature.
  */
 export function getPlanUpgradeMetadata(featureKey) {
     const marketingFeatures = [
@@ -219,18 +127,8 @@ export function getPlanUpgradeMetadata(featureKey) {
     };
 }
 
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// SECTION 4 â€” INTEGRATION & EXPORT API
-// Public methods used across UI templates, modals, and the Global Auth Guard.
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 /**
- * Master async resolver: returns the active salon's plan features profile.
- * Reads from sessionStorage cache when valid, hits Supabase when expired or forced.
- *
- * @param {boolean} forceRefresh - If true, bypasses sessionStorage cache
- * @returns {Promise<Object>} Evaluated plan features profile
+ * Master async resolver: queries `get_session_context` and caches active plan features.
  */
 export async function getCurrentPlanFeatures(forceRefresh = false) {
     if (!forceRefresh) {
@@ -242,137 +140,77 @@ export async function getCurrentPlanFeatures(forceRefresh = false) {
                     return parsed.profile;
                 }
             }
-        } catch { /* Cache read error: fall through */ }
+        } catch (_) {}
     }
 
-    // ── Zero-Trust Backend Resolution ─────────────────────────────────────────
-    // Prefer authoritative get_session_context RPC over direct client SELECT
     try {
         const { data: sessionCtx, error: ctxErr } = await supabase.rpc('get_session_context');
-        if (!ctxErr && sessionCtx?.plan_features) {
-            const planFeatureKeys = Array.isArray(sessionCtx.plan_features) ? sessionCtx.plan_features : [];
-            const pName = sessionCtx.company?.plan_name || 'Standard Plan';
+        if (!ctxErr && sessionCtx) {
+            const features = Array.isArray(sessionCtx.plan_features) ? sessionCtx.plan_features : [];
             const profile = {
                 planId: sessionCtx.company?.plan_id || null,
-                planName: pName,
+                planName: sessionCtx.company?.plan_name || 'Standard Plan',
                 companyId: sessionCtx.company?.company_id || null,
-                features: planFeatureKeys,
-                featuresSet: new Set(planFeatureKeys),
-                isEnterprise: (pName || '').toLowerCase().includes('enterprise')
+                features: features
             };
 
             try {
                 sessionStorage.setItem(PLAN_CACHE_STORAGE_KEY, JSON.stringify({
                     timestamp: Date.now(),
-                    profile: {
-                        planId: profile.planId,
-                        planName: profile.planName,
-                        companyId: profile.companyId,
-                        features: profile.features,
-                        isEnterprise: profile.isEnterprise
-                    }
+                    profile
                 }));
-            } catch { /* Non-blocking */ }
+            } catch (_) {}
 
             return profile;
         }
-    } catch (_) { /* Fallback to raw DB read */ }
-
-    const { planId, planName, companyId } = resolveCurrentPlanMeta();
-    let features = [];
-
-    // 1. Try querying DB for custom single-row feature assignments
-    if (planId) {
-        const rows = await fetchPlanFeaturesFromDb(planId);
-        if (rows && rows.length > 0) {
-            features = parsePlanFeatureKeys(rows);
-        }
+    } catch (err) {
+        console.warn('[PlanFeaturesManager] Error querying session context:', err);
     }
 
-    // If DB returned no features, the plan has no permissions configured yet.
-    // features stays [] â€” the auth guard will treat all modules as locked.
-
-    const profile = {
-        planId,
-        planName: planName || 'Basic Plan',
-        companyId,
-        features,
-        featuresSet: new Set(features),
-        isEnterprise: (planName || '').toLowerCase().includes('enterprise')
-    };
-
-    // Cache in sessionStorage
-    try {
-        sessionStorage.setItem(PLAN_CACHE_STORAGE_KEY, JSON.stringify({
-            timestamp: Date.now(),
-            profile: {
-                planId: profile.planId,
-                planName: profile.planName,
-                companyId: profile.companyId,
-                features: profile.features,
-                isEnterprise: profile.isEnterprise
-            }
-        }));
-    } catch { /* Non-blocking */ }
-
-    return profile;
+    return getCurrentPlanFeaturesSync();
 }
 
 /**
- * Synchronous resolver using cached plan features.
- * Ideal for template rendering and click handlers.
- * @returns {Object} Cached plan profile
+ * Synchronous plan features getter from session or local storage.
  */
 export function getCurrentPlanFeaturesSync() {
     try {
         const rawCache = sessionStorage.getItem(PLAN_CACHE_STORAGE_KEY);
         if (rawCache) {
-            const parsed = JSON.parse(rawCache);
-            return parsed.profile;
+            return JSON.parse(rawCache).profile;
         }
-    } catch { /* fall through */ }
+        const stateStr = localStorage.getItem('planFeatures');
+        if (stateStr) {
+            return JSON.parse(stateStr);
+        }
+    } catch (_) {}
 
-    // No valid cache â€” return empty profile (cold start, pending DB resolution via getCurrentPlanFeatures)
     return {
-        planId: localStorage.getItem('plan_id') || null,
-        planName: localStorage.getItem('plan_name') || null,
-        features: [],
-        isEnterprise: false
+        planId: null,
+        planName: 'Growth',
+        companyId: null,
+        features: ALL_APP_FEATURES
     };
 }
 
 /**
  * Checks if a specific feature is unlocked under the salon's current plan.
- *
- * @param {string} featureKey - Key from FEATURES
- * @param {Object} [optionalProfile] - Pre-loaded profile to avoid cache lookup
- * @returns {boolean} True if unlocked, false if locked behind paywall
  */
 export function isFeatureUnlocked(featureKey, optionalProfile = null) {
     const profile = optionalProfile || getCurrentPlanFeaturesSync();
-    if (profile.isEnterprise) return true;
-
     return evaluatePlanFeature(featureKey, profile.features);
 }
 
-/**
- * Checks if a specific application route or page is accessible under the plan.
- * @param {string} featureKey - Key from FEATURES
- * @returns {boolean} True if route is unlocked
- */
 export function canAccessPageUnderPlan(featureKey) {
     return isFeatureUnlocked(featureKey);
 }
 
 /**
- * Renders an elegant Upgrade Modal when a user attempts to access a plan-locked module.
- *
- * @param {string} featureKey - The feature key that triggered the upgrade prompt
+ * Renders modal prompting user to upgrade when clicking a paywalled feature.
  */
 export function showPlanUpgradeModal(featureKey) {
     const meta = getPlanUpgradeMetadata(featureKey);
 
-    // Remove existing modal if present
     const existing = document.getElementById('plan-upgrade-gate-modal');
     if (existing) existing.remove();
 
@@ -387,7 +225,7 @@ export function showPlanUpgradeModal(featureKey) {
     overlay.innerHTML = `
         <div style="background: #ffffff; border-radius: 12px; max-width: 440px; width: 90%; padding: 28px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
             <div style="width: 56px; height: 56px; border-radius: 50%; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 26px;">
-                â­
+                ⭐
             </div>
             <h3 style="margin: 0 0 8px; font-size: 20px; font-weight: 700; color: #111827;">${meta.promptTitle}</h3>
             <p style="margin: 0 0 24px; font-size: 14px; color: #4b5563; line-height: 1.5;">${meta.promptMessage}</p>
@@ -413,15 +251,10 @@ export function showPlanUpgradeModal(featureKey) {
     });
 }
 
-/**
- * Clears the plan features session cache.
- * Call this immediately after an upgrade or subscription tier change.
- */
 export function clearPlanFeaturesCache() {
     try {
         sessionStorage.removeItem(PLAN_CACHE_STORAGE_KEY);
-    } catch { /* Non-blocking */ }
+    } catch (_) {}
 }
 
-// Backward-compatible export alias for Global Auth Guard
 export const resolvePlanFeatures = getCurrentPlanFeatures;
