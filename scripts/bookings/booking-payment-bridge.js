@@ -452,26 +452,20 @@ export async function processBookingPaymentCallback(payload, row, options = {}) 
             customerName: row.customer_name || window.globalPaymentConfig?.customerName || 'Customer',
             bookingRef: bookingRef,
             onMarkComplete: async () => {
-                // Update booking status → completed in both tables
-                const updatedAt = new Date().toISOString();
+                // Update booking status → completed via authoritative stored procedure
+                const companyId = row.company_id || localStorage.getItem('company_id');
+                const branchId = row.branch_id || localStorage.getItem('branch_id');
 
-                const { error: statusErr } = await supabase
-                    .from('bookings')
-                    .update({ status: 'completed', updated_at: updatedAt })
-                    .eq('booking_id', bookingId);
+                const { data: resData, error: statusErr } = await supabase.rpc('update_booking_status_atomic', {
+                    p_booking_id: bookingId,
+                    p_company_id: companyId,
+                    p_branch_id: branchId || null,
+                    p_new_status: 'completed'
+                });
 
-                if (statusErr) {
-                    // Fallback: try with generic 'id' column
-                    await supabase
-                        .from('bookings')
-                        .update({ status: 'completed', updated_at: updatedAt })
-                        .eq('id', bookingId);
+                if (statusErr || resData?.success === false) {
+                    console.warn('[BookingPaymentBridge] Status update warning:', statusErr?.message || resData?.error);
                 }
-
-                await supabase
-                    .from('bookings_for_business_transaction')
-                    .update({ status: 'completed', updated_at: updatedAt })
-                    .eq('booking_id', bookingId);
 
                 // Show completion toast
                 const msg = `Booking ${bookingRef} marked as completed`;

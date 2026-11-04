@@ -138,47 +138,18 @@ document.getElementById('btnSaveNewCustomer')?.addEventListener('click', async (
     btnSaveCustomer.disabled = true;
 
     try {
-        // Validation check for existing phone number across the branch
-        const { data: existingQuery } = await supabase
-            .from('customers')
-            .select('customer_id')
-            .eq('company_id', companyId)
-            .eq('branch_id', branchId)
-            .eq('customer_phone', digitsOnly)
-            .eq('status', 'active');
-            
-        if (existingQuery && existingQuery.length > 0) {
-            showGlobalToast('A customer with this phone number already exists.', true);
-            throw new Error('Duplicate phone');
-        }
-
-        const payload = { 
-            company_id: companyId, 
-            branch_id: branchId,
-            customer_name: name, 
-            customer_phone: digitsOnly, 
-            customer_email: email, 
-            tags: tag,
-            notes: notes,
-            status: 'active'
-        };
-        if (dob) payload.dob = dob;
-
-        const { error } = await supabase.from('customers').insert(payload);
+        const { data: newCustomer, error } = await supabase.rpc('create_customer_atomic', {
+            p_company_id:     companyId,
+            p_branch_id:      branchId,
+            p_customer_name:  name,
+            p_customer_phone: digitsOnly,
+            p_customer_email: email || null,
+            p_dob:            dob || null,
+            p_tags:           tag || null,
+            p_notes:          notes || null
+        });
 
         if (error) throw error;
-
-        // Fetch the newly created customer by phone to pass back to callback
-        const { data: newCustomerArr } = await supabase
-            .from('customers')
-            .select('*')
-            .eq('company_id', companyId)
-            .eq('branch_id', branchId)
-            .eq('customer_phone', digitsOnly)
-            .eq('status', 'active')
-            .order('created_at', { ascending: false })
-            .limit(1);
-        const newCustomer = newCustomerArr && newCustomerArr.length > 0 ? newCustomerArr[0] : null;
 
         closeGlobalAddCustomerModal();
         showGlobalToast('Customer created successfully!');

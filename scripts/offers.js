@@ -347,14 +347,11 @@ async function executeDeleteOffer(id) {
     if (deletingOverlay) deletingOverlay.classList.add('active');
 
     try {
-        const offer = currentOffers.find(o => (o.id === id || o.offer_id === id));
-        const targetCol = offer?.id ? 'id' : 'offer_id';
-        const targetVal = offer?.id || offer?.offer_id || id;
-
-        const { error } = await supabase
-            .from('offers')
-            .update({ status: 'deleted', updated_at: new Date().toISOString() })
-            .eq(targetCol, targetVal);
+        const { error } = await supabase.rpc('delete_offer_atomic', {
+            p_company_id: getCompanyId(),
+            p_branch_id:  getBranchId(),
+            p_offer_id:   id
+        });
 
         if (error) throw error;
 
@@ -427,20 +424,37 @@ async function handleSaveOffer() {
 
     try {
         if (isEditing) {
-            const offer = currentOffers.find(o => (o.id === currentEditId || o.offer_id === currentEditId));
-            const targetCol = offer?.id ? 'id' : 'offer_id';
-            const targetVal = offer?.id || offer?.offer_id || currentEditId;
-
-            const { error } = await supabase
-                .from('offers')
-                .update(payload)
-                .eq(targetCol, targetVal);
+            const { error } = await supabase.rpc('update_offer_atomic', {
+                p_company_id:      getCompanyId(),
+                p_branch_id:       getBranchId(),
+                p_offer_id:        currentEditId,
+                p_offer_name:      offer_name,
+                p_discount_type:   discount_type,
+                p_discount_value:  parseFloat(discount_value),
+                p_min_bill_amount: document.getElementById('offerMinBillAmount')?.value ? parseFloat(document.getElementById('offerMinBillAmount').value) : null,
+                p_valid_from:      document.getElementById('offerStartDate')?.value || null,
+                p_valid_to:        document.getElementById('offerEndDate')?.value   || null,
+                p_status:          'active',
+                p_all_services:    all_services,
+                p_all_products:    all_products,
+                p_all_memberships: all_memberships
+            });
 
             if (error) throw error;
         } else {
-            const { error } = await supabase
-                .from('offers')
-                .insert([{ ...payload, created_at: new Date().toISOString() }]);
+            const { error } = await supabase.rpc('create_offer_atomic', {
+                p_company_id:      getCompanyId(),
+                p_branch_id:       getBranchId(),
+                p_offer_name:      offer_name,
+                p_discount_type:   discount_type,
+                p_discount_value:  parseFloat(discount_value),
+                p_min_bill_amount: document.getElementById('offerMinBillAmount')?.value ? parseFloat(document.getElementById('offerMinBillAmount').value) : null,
+                p_valid_from:      document.getElementById('offerStartDate')?.value || null,
+                p_valid_to:        document.getElementById('offerEndDate')?.value   || null,
+                p_all_services:    all_services,
+                p_all_products:    all_products,
+                p_all_memberships: all_memberships
+            });
 
             if (error) throw error;
         }

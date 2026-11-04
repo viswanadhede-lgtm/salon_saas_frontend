@@ -414,41 +414,30 @@ async function saveRole() {
         let roleId = editingRoleId;
 
         if (isEdit) {
-            // ── UPDATE the role row ──
-            const { error: roleErr } = await supabase
-                .from('roles')
-                .eq('role_id', roleId)
-                .eq('company_id', companyId)
-                .update({
-                    role_name:   name,
-                    description: desc,
-                    updated_at:  now,
-                    status:      'active'
-                });
-
+            // ── UPDATE role via stored procedure ──
+            const { data: updateData, error: roleErr } = await supabase.rpc('update_role_atomic', {
+                p_company_id:  companyId,
+                p_role_id:     roleId,
+                p_role_name:   name,
+                p_description: desc
+            });
             if (roleErr) throw roleErr;
+            if (updateData?.success === false) throw new Error(updateData.error || 'Failed to update role');
         } else {
-            // ── INSERT new role row ──
-            const { data: newRole, error: roleErr } = await supabase
-                .from('roles')
-                .select()
-                .insert({
-                    company_id:  companyId,
-                    branch_id:   branchId,
-                    role_name:   name,
-                    description: desc,
-                    is_default:  false,
-                    status:      'active',
-                    created_at:  now,
-                    updated_at:  now
-                });
-
+            // ── CREATE new role via stored procedure ──
+            const { data: createData, error: roleErr } = await supabase.rpc('create_role_atomic', {
+                p_company_id:  companyId,
+                p_branch_id:   branchId,
+                p_role_name:   name,
+                p_description: desc
+            });
             if (roleErr) throw roleErr;
-            roleId = newRole[0]?.role_id;
+            if (createData?.success === false) throw new Error(createData.error || 'Failed to create role');
+            roleId = createData?.role_id;
         }
 
-        // ── Sync role_permissions: delete + reinsert ──
-        await syncRolePermissions(roleId, companyId, branchId, name, permission_key, now);
+        // ── Sync role_permissions via stored procedure ──
+        await syncRolePermissions(roleId, companyId, branchId, name, permission_key);
 
         showToast(`Role "${name}" ${isEdit ? 'updated' : 'created'} successfully!`);
         closeRoleModal();
@@ -480,15 +469,8 @@ async function saveInlinePerms() {
     btnSavePerms.disabled    = true;
 
     try {
-        // Also bump the role's updated_at timestamp
-        await supabase
-            .from('roles')
-            .eq('role_id', activeRoleId)
-            .eq('company_id', companyId)
-            .update({ updated_at: now });
-
-        // ── Sync role_permissions: delete + reinsert ──
-        await syncRolePermissions(activeRoleId, companyId, branchId, role.role_name, permission_key, now);
+        // ── Sync role_permissions via stored procedure (also bumps role updated_at) ──
+        await syncRolePermissions(activeRoleId, companyId, branchId, role.role_name, permission_key);
 
         btnSavePerms.style.display = 'none';
         showToast(`Permissions for "${role.name}" saved!`);
@@ -505,64 +487,19 @@ async function saveInlinePerms() {
 }
 
 /**
- * Single-row atomic writer: stores all permissions for a role in a single row
- * as a JSON-encoded array inside `permission_key`.
+ * Sync role permissions via stored procedure (atomic upsert in a single DB call).
+ * Replaces the previous multi-step client-side delete+insert pattern.
  */
-async function syncRolePermissions(roleId, companyId, branchId, roleName, permissionKeys, now) {
-    const jsonPermissions = JSON.stringify(permissionKeys || []);
-
-    // 1. Check if a row already exists for this role
-    const { data: existingRows, error: checkErr } = await supabase
-        .from('role_permissions')
-        .select('id')
-        .eq('role_id', roleId)
-        .eq('company_id', companyId);
-
-    if (checkErr) {
-        console.warn('syncRolePermissions check error:', checkErr);
-    }
-
-    if (existingRows && existingRows.length > 0) {
-        // 2a. Update the primary single row
-        const primaryRowId = existingRows[0].id;
-        const { error: updateErr } = await supabase
-            .from('role_permissions')
-            .eq('id', primaryRowId)
-            .update({
-                branch_id:      branchId,
-                role_name:      roleName,
-                permission_key: jsonPermissions,
-                status:         'active',
-                updated_at:     now
-            });
-
-        if (updateErr) throw updateErr;
-
-        // Clean up any historical multi-rows if they existed previously
-        if (existingRows.length > 1) {
-            const extraIds = existingRows.slice(1).map(r => r.id);
-            await supabase
-                .from('role_permissions')
-                .in('id', extraIds)
-                .delete();
-        }
-    } else {
-        // 2b. Insert exactly one single row for this role
-        const { error: insertErr } = await supabase
-            .from('role_permissions')
-            .insert({
-                company_id:     companyId,
-                branch_id:      branchId,
-                role_id:        roleId,
-                role_name:      roleName,
-                permission_key: jsonPermissions,
-                status:         'active',
-                created_at:     now,
-                updated_at:     now
-            });
-
-        if (insertErr) throw insertErr;
-    }
+async function syncRolePermissions(roleId, companyId, branchId, roleName, permissionKeys) {
+    const { data: rpcData, error } = await supabase.rpc('save_role_permissions_atomic', {
+        p_company_id:      companyId,
+        p_branch_id:       branchId,
+        p_role_id:         roleId,
+        p_role_name:       roleName,
+        p_permission_keys: permissionKeys
+    });
+    if (error) throw error;
+    if (rpcData?.success === false) throw new Error(rpcData.error || 'Failed to save permissions');
 }
 
 // ─── Delete Role via Supabase ──────────────────────────────────────────────────
@@ -589,23 +526,14 @@ async function confirmDelete() {
 
     try {
         const companyId = getCompanyId();
-        const now       = new Date().toISOString();
 
-        // Soft-delete the role row
-        const { error: delRoleErr } = await supabase
-            .from('roles')
-            .eq('role_id', roleId)
-            .eq('company_id', companyId)
-            .update({ status: 'deleted', updated_at: now });
-
+        // ── Delete role (soft-delete + cascade permissions) via stored procedure ──
+        const { data: delData, error: delRoleErr } = await supabase.rpc('delete_role_atomic', {
+            p_company_id: companyId,
+            p_role_id:    roleId
+        });
         if (delRoleErr) throw delRoleErr;
-
-        // Also remove all its permission rows
-        await supabase
-            .from('role_permissions')
-            .eq('role_id', roleId)
-            .eq('company_id', companyId)
-            .delete();
+        if (delData?.success === false) throw new Error(delData.error || 'Failed to delete role');
 
         closeDeleteConfirm();
         showToast('Role deleted successfully.');

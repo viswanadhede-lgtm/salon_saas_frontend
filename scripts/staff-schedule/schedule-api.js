@@ -233,62 +233,40 @@ export async function fetchTodayBookings(staffIds) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// DATABASE MUTATIONS: DELETE & SAVE
+// AUTHORITATIVE ATOMIC DATABASE MUTATIONS: DELETE & SAVE
 // ─────────────────────────────────────────────────────────────
 
 export async function deleteScheduleByMonth(staffId, targetMonth, companyId, branchId) {
-    const [yyyy, mm] = targetMonth.split('-').map(Number);
-    const lastDay = new Date(yyyy, mm, 0).getDate();
-    const monthEnd = `${targetMonth}-${String(lastDay).padStart(2, '0')}`;
+    const { data, error } = await supabase.rpc('delete_staff_schedule_atomic', {
+        p_company_id: companyId,
+        p_branch_id: branchId,
+        p_staff_id: staffId,
+        p_target_month: targetMonth
+    });
 
-    // Past-date guard: only delete dates from today onwards (preserve past work history)
-    const todayStr = toISODate(new Date());
-    const deleteFrom = todayStr > `${targetMonth}-01` ? todayStr : `${targetMonth}-01`;
-
-    // If the entire month is in the past, nothing to delete
-    if (deleteFrom > monthEnd) return;
-
-    const { error } = await supabase
-        .from('staff_schedule')
-        .delete()
-        .eq('staff_id', staffId)
-        .eq('company_id', companyId)
-        .eq('branch_id', branchId)
-        .gte('schedule_date', deleteFrom)
-        .lte('schedule_date', monthEnd);
-    
     if (error) throw error;
+    if (data && data.success === false) {
+        throw new Error(data.error || 'Failed to delete schedule');
+    }
+    return data;
 }
 
 export async function saveScheduleRecords(insertPayload, staffId, year, month, companyId, branchId) {
-    // Purge existing data for this staff_id and month from today onwards, then overwrite
-    const lastDay = new Date(year, month + 1, 0).getDate();
-    const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
-    const monthStart = `${monthStr}-01`;
-    const monthEnd = `${monthStr}-${String(lastDay).padStart(2, '0')}`;
+    // Note: month from caller is 0-indexed (0 = Jan, 10 = Nov); our RPC expects 1-indexed (1 to 12)
+    const rpcMonth = Number(month) + 1;
 
-    // Past-date guard: preserve strictly past dates (< today)
-    const todayStr = toISODate(new Date());
-    const deleteFrom = todayStr > monthStart ? todayStr : monthStart;
+    const { data, error } = await supabase.rpc('save_staff_schedule_atomic', {
+        p_company_id: companyId,
+        p_branch_id: branchId,
+        p_staff_id: staffId,
+        p_year: Number(year),
+        p_month: rpcMonth,
+        p_schedule_entries: insertPayload || []
+    });
 
-    if (deleteFrom <= monthEnd) {
-        const { error: delError } = await supabase
-            .from('staff_schedule')
-            .delete()
-            .eq('staff_id', staffId)
-            .eq('company_id', companyId)
-            .eq('branch_id', branchId)
-            .gte('schedule_date', deleteFrom)
-            .lte('schedule_date', monthEnd);
-
-        if (delError) {
-            throw new Error('Failed to overwrite existing schedule');
-        }
+    if (error) throw error;
+    if (data && data.success === false) {
+        throw new Error(data.error || 'Failed to save schedule');
     }
-
-    // Insert new schedules
-    if (insertPayload.length > 0) {
-        const { error: insError } = await supabase.from('staff_schedule').insert(insertPayload);
-        if (insError) throw insError;
-    }
+    return data;
 }

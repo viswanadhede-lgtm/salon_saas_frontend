@@ -144,9 +144,18 @@ window.saveTaxSettings = async function () {
             updated_at:                   new Date().toISOString()
         };
 
-        const { error: upsertErr } = await supabase
-            .from('company_tax_settings')
-            .upsert(payload, { onConflict: 'company_id' });
+        const { data: rpcRes, error: upsertErr } = await supabase.rpc('save_company_tax_settings_atomic', {
+            p_company_id:                   companyId,
+            p_business_registration_number: payload.business_registration_number,
+            p_gstin:                        payload.gstin,
+            p_pan:                          payload.pan,
+            p_gst_registration_state:       payload.gst_registration_state,
+            p_default_tax_rate:             payload.default_tax_rate,
+            p_tax_label:                    payload.tax_label,
+            p_prices_include_tax:           payload.prices_include_tax,
+            p_show_tax_breakdown:           payload.show_tax_breakdown
+        });
+        if (rpcRes && rpcRes.success === false) throw new Error(rpcRes.message || 'Failed to save tax settings');
 
         if (upsertErr) throw new Error(upsertErr.message || 'Failed to save tax settings');
 

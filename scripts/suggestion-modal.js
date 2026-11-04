@@ -246,82 +246,64 @@ async function _sgSubmit() {
         return;
     }
 
-    /* 5. Insert suggestion row */
-    let suggestion = null;
-    try {
-        const payload = {
-            company_id,
-            branch_id,
-            user_id:          authUserId,
-            category:         category.value,
-            title:            title.value.trim(),
-            description:      description.value.trim(),
-            business_benefit: whyUseful.value.trim() || null
-        };
-
-        const { data: rows, error: insertErr } = await supabase
-            .from('suggestions')
-            .insert(payload)
-            .select();
-
-        if (insertErr) throw insertErr;
-        suggestion = Array.isArray(rows) ? rows[0] : rows;
-        if (!suggestion?.id) throw new Error('Suggestion insert returned no id.');
-    } catch (e) {
-        console.error('[Suggestions] DB insert failed:', e);
-        _sgRestoreBtn(btn);
-        _sgShowBanner(`Failed to save your suggestion: ${e.message || 'Database error'}. Please try again.`);
-        return;
-    }
-
-    /* 6. Upload images (if any) */
+    /* 5. Upload images first (if any) */
     const uploadedPaths = [];
+    const attachmentRows = [];
     if (_sgSelectedFiles.length > 0) {
         for (const file of _sgSelectedFiles) {
             const timestamp    = Math.floor(Date.now() / 1000);
             const randomSuffix = Math.random().toString(36).substring(2, 8);
             const safeName     = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_').toLowerCase();
-            const storagePath  = `${authUserId}/${suggestion.id}/${timestamp}-${randomSuffix}-${safeName}`;
+            const storagePath  = `${authUserId}/suggestions/${timestamp}-${randomSuffix}-${safeName}`;
 
             try {
-                const { data: upData, error: upErr } = await supabase.storage
+                const { error: upErr } = await supabase.storage
                     .from(SG_CONFIG.bucketName)
                     .upload(storagePath, file, { upsert: false });
                 if (upErr) throw new Error(upErr.message || JSON.stringify(upErr));
                 uploadedPaths.push(storagePath);
+                attachmentRows.push({
+                    storage_path: storagePath,
+                    file_name:    file.name,
+                    content_type: file.type || 'application/octet-stream',
+                    size_bytes:   file.size
+                });
             } catch (e) {
                 console.error('[Suggestions] Upload failed for', file.name, e);
-                // Rollback: delete already-uploaded files + delete suggestion row
                 await _sgDeleteUploadedFiles(uploadedPaths);
-                await supabase.from('suggestions').eq('id', suggestion.id).delete();
                 _sgRestoreBtn(btn);
                 _sgShowBanner(`Image upload failed for "${file.name}": ${e.message}. Your suggestion was not saved. Please try again.`);
                 return;
             }
         }
+    }
 
-        /* 7. Insert attachment records */
-        const attachmentRows = _sgSelectedFiles.map((file, idx) => ({
-            suggestion_id: suggestion.id,
-            storage_path:  uploadedPaths[idx],
-            file_name:     file.name,
-            content_type:  file.type,
-            size_bytes:    file.size
-        }));
+    /* 6. Insert suggestion & attachments atomically via authoritative stored procedure */
+    let suggestion = null;
+    try {
+        const { data: resData, error: insertErr } = await supabase.rpc('submit_suggestion_atomic', {
+            p_company_id:       company_id,
+            p_branch_id:        branch_id,
+            p_user_id:          authUserId,
+            p_category:         category.value,
+            p_title:            title.value.trim(),
+            p_description:      description.value.trim(),
+            p_business_benefit: whyUseful.value.trim() || null,
+            p_attachments:      attachmentRows
+        });
 
-        try {
-            const { error: attErr } = await supabase
-                .from('suggestion_attachments')
-                .insert(attachmentRows);
-            if (attErr) throw attErr;
-        } catch (e) {
-            console.error('[Suggestions] Attachment record insert failed:', e);
-            await _sgDeleteUploadedFiles(uploadedPaths);
-            await supabase.from('suggestions').eq('id', suggestion.id).delete();
-            _sgRestoreBtn(btn);
-            _sgShowBanner(`Could not save image records: ${e.message}. Your suggestion was not saved. Please try again.`);
-            return;
+        if (insertErr || resData?.success === false) {
+            throw new Error(insertErr?.message || resData?.error || 'Database error');
         }
+        suggestion = resData;
+    } catch (e) {
+        console.error('[Suggestions] RPC submission failed:', e);
+        if (uploadedPaths.length > 0) {
+            await _sgDeleteUploadedFiles(uploadedPaths);
+        }
+        _sgRestoreBtn(btn);
+        _sgShowBanner(`Failed to save your suggestion: ${e.message || 'Database error'}. Please try again.`);
+        return;
     }
 
     /* 8. All done — show success state */

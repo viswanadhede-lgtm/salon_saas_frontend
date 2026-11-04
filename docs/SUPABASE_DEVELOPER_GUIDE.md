@@ -198,7 +198,18 @@ All database routines are organized with explicit `search_path = platform, share
 | `update_package_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Updates package details and synchronizes `package_services` mapping atomically in one transaction. |
 | `delete_package_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Soft-deletes package (`status = 'deleted'`, `is_active = false`); **blocks if upcoming active bookings reference package**. |
 
-### 4.6 General Business RPCs
+### 4.6 Module 5: Staff & Scheduling Operations RPCs (100% Migrated & Hardened)
+
+| Routine Name | Schema | Security Type | Return Type | Fixed search_path? | Purpose / Business Scope |
+|---|---|---|---|---|---|
+| `create_staff_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Creates staff member; validates required fields, **enforces SaaS plan `max_staff` quota**, and performs branch phone deduplication (10-digit normalized suffix). |
+| `update_staff_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Updates staff details with tenant validation and branch phone uniqueness assertion. |
+| `delete_staff_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Soft-deletes staff (`status = 'deleted'`); **blocks deletion if upcoming active bookings exist**; cleans future scheduled shifts. |
+| `save_staff_schedule_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Atomically replaces monthly schedule in one transaction; preserves past dates; **blocks off-duty/shift changes that conflict with active bookings**. |
+| `delete_staff_schedule_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Deletes monthly schedule from today onwards; **blocks deletion if active bookings exist during the period**. |
+| `save_business_hours_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Atomically upserts 7-day branch operating schedule; asserts `opening_time < closing_time` for open days. |
+
+### 4.7 General Business RPCs
 
 | Routine Name | Schema | Security Type | Return Type | Fixed search_path? | Purpose / Business Scope |
 |---|---|---|---|---|---|
@@ -211,7 +222,7 @@ All database routines are organized with explicit `search_path = platform, share
 | `save_contact_settings` | `shared` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Updates branch contact details. |
 | `mark_all_notifications_read` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Updates notification read flags for user. |
 
-### 4.7 Analytical & Reporting Routines
+### 4.8 Analytical & Reporting Routines
 
 | Routine Name | Security Type | Return Type | Fixed search_path? | Scope |
 |---|---|---|---|---|
@@ -257,15 +268,17 @@ All database routines are organized with explicit `search_path = platform, share
 
 ## 6. Security Architecture & Threat Analysis
 
-### 6.1 Critical Vulnerability: RLS Status
-* **55 of 58 application tables currently have Row Level Security DISABLED (`rowsecurity = False`).**
-* **Implication**: Any client with an authenticated JWT (or in some configurations, an anonymous client) could directly query, insert, update, or delete records from `bookings`, `payments`, `customers`, `companies`, or `sales` across any tenant by invoking Supabase PostgREST endpoints directly (`/rest/v1/bookings`).
-* **Existing RLS Policies are Inadequate**:
-  * `discount_usages`: Policy allows `{authenticated}` role `ALL` actions without filtering on `company_id`.
-  * `notifications`: Policy allows `{anon}` role `INSERT`, allowing unauthenticated spamming of the notification system.
+### 6.1 Row Level Security (RLS) Status: 100% HARDENED & ENFORCED
+* **Status**: **RESOLVED & GLOBALLY LOCKED DOWN across 100% of tables (all 58 base tables).**
+* **Enforcement Highlights**:
+  * **All 58 base tables** across `app` (26), `platform` (15), and `shared` (17) have `rowsecurity = true`.
+  * **All 59 compatibility views** in `public` have `security_invoker = true`, ensuring all frontend PostgREST queries evaluate RLS under the caller's identity.
+  * **0 direct write mutations permitted**: No `INSERT`, `UPDATE`, or `DELETE` policies exist for `anon` or `authenticated` roles. All state mutations MUST be routed through authoritative PostgreSQL `SECURITY DEFINER` stored procedures.
+  * **Tenant isolation**: All SELECT policies enforce multi-tenant boundary checks via `shared.verify_tenant_access(company_id, NULL)`.
+  * Commercial catalog tables (`plans`, `plan_features`, `plan_limits`, `plan_sub_features`, `add_ons`) have global read-only policies (`USING (true)`).
 
 ### 6.2 SECURITY DEFINER Search Path Lockdown (RESOLVED)
-* **Status: RESOLVED & HARDENED across 100% of routines (all 45 functions).**
+* **Status: RESOLVED & HARDENED across 100% of routines (all 82 atomic procedures / 205 routines).**
 * Every `SECURITY DEFINER` routine has been explicitly locked with `SET search_path = platform, shared, app, public, pg_temp;`. This eliminates search path hijacking vectors and enforces strict execution isolation across schemas.
 
 ### 6.3 Target Security Standards
@@ -315,6 +328,21 @@ All active Edge Functions deployed on Supabase:
 | `20261103000007_harden_pos_module` | 2026-11-03 | Module 2 (POS): Hardened `app.create_pos_sale_atomic` (catalog price lookup, deterministic row-locking, negative stock prevention, server coupon validation, discount usage tracking, customer LTV spend update) and `app.process_pos_refund_atomic` (tenant verification, returnable quantity guard, stock re-increment, price-weighted proportional discount reversal, customer spend decrement) with PostgREST public wrappers and financial ledger trigger hardening. | `app.create_pos_sale_atomic`, `public.create_pos_sale_atomic`, `app.process_pos_refund_atomic`, `public.process_pos_refund_atomic`, `public.trg_pos_sale_business_transaction` | **Deployed & Verified** |
 | `20261103000008_harden_memberships_module` | 2026-11-03 | Module 3 (Memberships): Hardened `app.assign_membership_atomic` (catalog price authority, 6-step coupon validation, coupon usage count increment, customer phone deduplication, duplicate active membership guard, customer LTV update), `app.cancel_membership_atomic` (tenant verification, active-status precondition, atomic cancellation ledger entry), `app.process_membership_refund_atomic` (max refundable limit, spend reversal, discount reversal), plan CRUD RPCs (`create_membership_plan`, `update_membership_plan`, `delete_membership_plan` with active subscriber guard), and batch expiration sync (`sync_expired_memberships`). | `app.assign_membership_atomic`, `app.cancel_membership_atomic`, `app.process_membership_refund_atomic`, `app.create_membership_plan`, `app.update_membership_plan`, `app.delete_membership_plan`, `app.sync_expired_memberships` (with public wrappers) | **Deployed & Verified** |
 | `20261103000009_harden_services_module` | 2026-11-03 | Module 4 (Services & Packages): Hardened `create_service_category_atomic`, `update_service_category_atomic` (atomic cascade to `services.category_name`), `delete_service_category_atomic` (active service dependency guard), `create_service_atomic`, `update_service_atomic` (cascade to `package_services`), `delete_service_atomic` (active package and future booking guards), `create_package_atomic` (`final_price <= original_price` and service tenant validation), `update_package_atomic` (atomic `package_services` resync), and `delete_package_atomic` (future booking guard). | `app` & `public` categories, services, and packages stored procedures (9 functions) | **Deployed & Verified** |
+| `20261103000010_harden_staff_module` | 2026-11-04 | Module 5 (Staff & Scheduling): Hardened `create_staff_atomic` (SaaS `max_staff` plan quota check, normalized phone deduplication), `update_staff_atomic`, `delete_staff_atomic` (upcoming booking blocker), `save_staff_schedule_atomic` (atomic single-transaction overwrite, past-date preservation, active booking conflict check), `delete_staff_schedule_atomic` (active booking blocker), and `save_business_hours_atomic` (`opening_time < closing_time` assertion). | `app` & `public` staff, staff schedule, and operating hours stored procedures (6 functions) | **Deployed & Verified** |
+| `20261103000011_harden_customers_module` | 2026-11-04 | Module 6 (Customers & CRM): Hardened `create_customer_atomic` (tenant verification, phone normalization $\ge 7$ digits, normalized 10-digit suffix deduplication in company, sets `total_spent = 0.00`, returns created JSON in single roundtrip), `update_customer_atomic` (phone deduplication against other company customers, strictly protects `total_spent` and `last_visit` against client tampering), `delete_customer_atomic` (soft-delete with dependency blockers for active/upcoming bookings and active memberships), and `submit_customer_review_atomic` (rating 1-5 validation, user and tenant verification). | `app` & `public` customer and review stored procedures (4 functions / 8 routines) | **Deployed & Verified** |
+| `20261103000012_harden_marketing_module` | 2026-11-04 | Module 7 (Marketing: Coupons & Offers): Hardened `create_coupon_atomic` (tenant verification, code uppercase normalization, unique code within tenant branch check, discount percentage 1-100% and fixed bounds, date range assertions), `update_coupon_atomic`, `delete_coupon_atomic` (soft-delete preserving `discount_usages` audit history), `create_offer_atomic` (unique offer title, discount bounds, date assertions), `update_offer_atomic`, `delete_offer_atomic`, and `validate_discount_code` (server-side authoritative validation checking min spend, date bounds, applicability flags, total and per-customer limits). | `app` & `public` coupon and offer stored procedures (7 functions / 14 routines) | **Deployed & Verified** |
+| `20261103000013_harden_products_module` | 2026-11-04 | Module 8 (Products & Retail Inventory): Hardened `create_product_category_atomic` (unique name in tenant), `update_product_category_atomic` (name collision guard, atomic cascade to `products.category_name`), `delete_product_category_atomic` (active product blocker), `create_product_atomic` (category resolution, non-negative price/stock), `update_product_atomic` (non-negative price/stock guards), `delete_product_atomic` (soft-delete status = 'deleted'), and `adjust_product_stock_atomic` (row-level lock `FOR UPDATE`, negative stock prevention, stock movement logging). | `app` & `public` product, category, and inventory stored procedures (7 functions / 14 routines) | **Deployed & Verified** |
+| `20261103000014_harden_expenses_module` | 2026-11-04 | Module 9 (Expenses & Financials): Hardened `create_expense_atomic` (tenant verification, required date, non-empty category, strictly positive amount $>0$), `update_expense_atomic` (active expense existence check, positive amount), `delete_expense_atomic` (soft-delete status = 'deleted' preserving financial analytics), and `record_business_transaction_atomic` (reference type check, payment method check, status check, negative amount guard, polymorphic tenant reference verification). | `app` & `public` expense and transaction stored procedures (4 functions / 8 routines) | **Deployed & Verified** |
+| `20261103000015a_harden_iam_users` | 2026-11-04 | Module 10 Part A (IAM – User procedures): Hardened `create_user_atomic` (accepts pre-created Supabase Auth UID, email uniqueness in company, Owner role assignment guard, role existence check), `update_user_atomic` (Owner user protection, Owner role assignment guard, role existence check), `toggle_user_status_atomic` (Owner user protection, valid status values), `delete_user_atomic` (soft-delete with Owner user protection), `update_user_last_login_atomic` (lightweight session-tracking by user_id or email, no tenant guard required at login time), and `update_user_profile_name_phone_atomic` (self-service name/phone update). | `app` & `public` user stored procedures (6 functions / 12 routines) | **Deployed & Verified** |
+| `20261103000015b_harden_iam_roles` | 2026-11-04 | Module 10 Part B (IAM – Role/Permission/Preference procedures): Hardened `create_role_atomic` (Owner name guard, case-insensitive uniqueness per company), `update_role_atomic` (Owner role protection, name uniqueness excluding self), `delete_role_atomic` (Owner role protection, active-users blocker, cascade-delete `role_permissions`), `save_role_permissions_atomic` (atomic single-row upsert matching the client's single-row design; Owner role protection), and `upsert_user_preferences_atomic` (create-or-update with partial-field COALESCE pattern). | `app` & `public` role, permission, and preference stored procedures (5 functions / 10 routines) | **Deployed & Verified** |
+| `20261103000016a_harden_branches` | 2026-11-04 | Module 11 Part A (Company & Branches): Hardened `create_branch_atomic` (tenant validation, non-empty branch name, unique branch name per company, optional manager validation), `update_branch_atomic` (tenant check, active branch check, name collision check), `toggle_branch_status_atomic` (flips active $\leftrightarrow$ inactive, guards against deactivating the company's only active branch), and `delete_branch_atomic` (soft-delete with blockers for solo branch, active upcoming bookings, and assigned active staff). | `app` & `public` branch stored procedures (4 functions / 8 routines) | **Deployed & Verified** |
+| `20261103000016b_harden_settings` | 2026-11-04 | Module 11 Part B (Tenant Settings & Configurations): Hardened `save_billing_information_atomic` (upserts legal billing details), `save_invoice_settings_atomic` (atomic upsert for common/booking/pos/membership receipt customization on composite `(company_id, branch_id)`), `save_notification_settings_atomic` (atomic upsert for system/customer/marketing alert toggles), `save_business_payment_settings_atomic` (atomic upsert with at-least-one-method-enabled assertion), and `save_company_tax_settings_atomic` (atomic upsert for GSTIN/PAN and tax rates with non-negative rate assertion). | `app` & `public` settings stored procedures (5 functions / 11 routines) | **Deployed & Verified** |
+| `20261103000017_harden_billing_module` | 2026-11-04 | Module 12 (SaaS Billing & Subscriptions): Hardened `cancel_subscription_addon_atomic` (cycle-end cancellation with active verification), `reactivate_subscription_addon_atomic` (unexpired cancelling add-on reactivation), `sync_plan_features_atomic` (atomic single-row plan feature resync), `sync_usage_counter_atomic` (atomic quota counter upsert with COALESCE metrics preservation), and `backfill_oauth_phone_atomic` (authoritative synchronization of phone into users & profiles upon subscription activation). | `app` & `public` subscription, quota, and billing stored procedures (5 functions / 10 routines) | **Deployed & Verified** |
+| `20261103000018_final_audit_hardening` | 2026-11-04 | Pre-Phase 13 Comprehensive Hardening: Full codebase audit across 229 files eliminated remaining 22 direct mutations. Deployed `shared.update_user_profile_full_atomic`, `app.mark_notification_read_atomic`, `app.create_notification_atomic`, `shared.submit_issue_atomic`, `shared.add_issue_attachment_atomic`, `shared.add_issue_message_atomic`, `shared.update_issue_status_atomic`, `shared.submit_suggestion_atomic`, `shared.delete_suggestion_atomic`, and patched booking modals & bridge to use `update_booking_status_atomic`. Global mutation audit reports 0 direct writes across all 58 tables. | 9 stored procedures / 18 routines across `shared`, `app`, and `public` | **Deployed & Verified** |
+| `20261103000019a_rls_lockdown_app_schema` | 2026-11-04 | Phase 13 (Part A): Enabled Row Level Security across all 26 base tables in `app` schema. Applied tenant-isolated `SELECT` policies using `shared.verify_tenant_access(company_id, NULL)`. Dropped legacy loose policies on `discount_usages` and `notifications`. Permitted 0 direct client mutations (`INSERT`, `UPDATE`, `DELETE` blocked). | 26 tables, 26 RLS policies | **Deployed & Verified** |
+| `20261103000019b_rls_lockdown_platform_schema` | 2026-11-04 | Phase 13 (Part B): Enabled Row Level Security across all 15 base tables in `platform` schema. Applied public read policies for commercial catalogs (`plans`, `plan_features`, `plan_limits`, `plan_sub_features`, `add_ons`, `platform_support_settings`) and tenant-isolated `SELECT` policies for subscriptions & financial logs (`subscriptions`, `subscription_add_ons`, `subscription_invoices`, `subscription_plan_changes`, `usage_counters`, `payments`, `payment_refunds`). Permitted 0 direct client mutations. | 15 tables, 14 RLS policies | **Deployed & Verified** |
+| `20261103000019c_rls_lockdown_shared_schema` | 2026-11-04 | Phase 13 (Part C): Enabled Row Level Security across all 17 base tables in `shared` schema. Applied tenant-isolated & self-scoped `SELECT` policies for `branches`, `companies`, `users`, `profiles`, `roles`, `role_permissions`, `user_preferences`, settings, reviews, issues, and suggestions. Permitted 0 direct client mutations. | 17 tables, 17 RLS policies | **Deployed & Verified** |
+| `20261103000019d_rls_security_invoker_views` | 2026-11-04 | Phase 13 (Part D): Configured `security_invoker = true` across all 59 public compatibility views in `public` schema. Forces all frontend PostgREST queries hitting public views to execute under the caller's credentials and strictly enforce the underlying base table RLS policies. | 59 public views | **Deployed & Verified** |
 
 ---
 
@@ -347,4 +375,64 @@ All active Edge Functions deployed on Supabase:
   - [x] Stage 3: Backend Implementation (`create_service_category_atomic`, `update_service_category_atomic`, `delete_service_category_atomic`, `create_service_atomic`, `update_service_atomic`, `delete_service_atomic`, `create_package_atomic`, `update_package_atomic`, `delete_package_atomic`)
   - [x] Stage 4: Testing & Validation (14 automated integration tests passed)
   - [x] Stage 5: Frontend Integration & Zero-Mutation Audit (`scripts/services/services-api.js`, `service-categories.js`, audit complete in `docs/modules/services/SERVICES_MODULE_AUDIT.md`)
+- [x] **Module 5: STAFF & SCHEDULING (Workforce, Shifts, Branch Hours) (100% Complete & Verified)**:
+  - [x] Stage 1: Investigation & Logic Inventory (`docs/modules/staff/STAFF_STAGE1_INVESTIGATION.md`)
+  - [x] Stage 2: Architecture & Specification (`docs/modules/staff/STAFF_ARCHITECTURE_SPEC.md`)
+  - [x] Stage 3: Backend Implementation (`create_staff_atomic`, `update_staff_atomic`, `delete_staff_atomic`, `save_staff_schedule_atomic`, `delete_staff_schedule_atomic`, `save_business_hours_atomic`)
+  - [x] Stage 4: Testing & Validation (12 automated integration tests passed)
+  - [x] Stage 5: Frontend Integration & Zero-Mutation Audit (`staff.js`, `scripts/staff-schedule/schedule-api.js`, `scripts/settings-hours.js`, audit complete in `docs/modules/staff/STAFF_MODULE_AUDIT.md`)
+- [x] **Module 6: CUSTOMERS & CRM (Customer Profiles, Deduplication, Spend Aggregations, Reviews) (100% Complete & Verified)**:
+  - [x] Stage 1: Investigation & Logic Inventory (`docs/modules/customers/CUSTOMERS_STAGE1_INVESTIGATION.md`)
+  - [x] Stage 2: Architecture & Specification (`docs/modules/customers/CUSTOMERS_ARCHITECTURE_SPEC.md`)
+  - [x] Stage 3: Backend Implementation (`create_customer_atomic`, `update_customer_atomic`, `delete_customer_atomic`, `submit_customer_review_atomic`)
+  - [x] Stage 4: Testing & Validation (13 automated integration tests passed)
+  - [x] Stage 5: Frontend Integration & Zero-Mutation Audit (`scripts/global-customer-modal.js`, `scripts/global-booking-modal.js`, `customers.js`, `scripts/review-modal.js`, audit complete in `docs/modules/customers/CUSTOMERS_MODULE_AUDIT.md`)
+- [x] **Module 7: MARKETING (Coupons, Campaign Offers, Redemption Quotas) (100% Complete & Verified)**:
+  - [x] Stage 1: Investigation & Logic Inventory (`docs/modules/marketing/MARKETING_STAGE1_INVESTIGATION.md`)
+  - [x] Stage 2: Architecture & Specification (`docs/modules/marketing/MARKETING_ARCHITECTURE_SPEC.md`)
+  - [x] Stage 3: Backend Implementation (`create_coupon_atomic`, `update_coupon_atomic`, `delete_coupon_atomic`, `create_offer_atomic`, `update_offer_atomic`, `delete_offer_atomic`, `validate_discount_code`)
+  - [x] Stage 4: Testing & Validation (15 automated integration tests passed)
+  - [x] Stage 5: Frontend Integration & Zero-Mutation Audit (`scripts/coupons.js`, `scripts/offers.js`, `scripts/global-payment-modal/gpm-payment.js`, audit complete in `docs/modules/marketing/MARKETING_MODULE_AUDIT.md`)
+- [x] **Module 8: PRODUCTS & RETAIL INVENTORY (Stock Tracking, Low Stock Alerts, Adjustments) (100% Complete & Verified)**:
+  - [x] Stage 1: Investigation & Logic Inventory (`docs/modules/products/PRODUCTS_STAGE1_INVESTIGATION.md`)
+  - [x] Stage 2: Architecture & Specification (`docs/modules/products/PRODUCTS_ARCHITECTURE_SPEC.md`)
+  - [x] Stage 3: Backend Implementation (`create_product_category_atomic`, `update_product_category_atomic`, `delete_product_category_atomic`, `create_product_atomic`, `update_product_atomic`, `delete_product_atomic`, `adjust_product_stock_atomic`)
+  - [x] Stage 4: Testing & Validation (16 automated integration tests passed)
+  - [x] Stage 5: Frontend Integration & Zero-Mutation Audit (`scripts/products/products-api.js`, `scripts/sales-history/sales-api.js`, audit complete in `docs/modules/products/PRODUCTS_MODULE_AUDIT.md`)
+- [x] **Module 9: EXPENSES & FINANCIALS (Expense Logging, Category Verification, Ledger Reconciliation) (100% Complete & Verified)**:
+  - [x] Stage 1: Investigation & Logic Inventory (`docs/modules/expenses/EXPENSES_STAGE1_INVESTIGATION.md`)
+  - [x] Stage 2: Architecture & Specification (`docs/modules/expenses/EXPENSES_ARCHITECTURE_SPEC.md`)
+  - [x] Stage 3: Backend Implementation (`create_expense_atomic`, `update_expense_atomic`, `delete_expense_atomic`, `record_business_transaction_atomic`)
+  - [x] Stage 4: Testing & Validation (16 automated integration tests passed)
+  - [x] Stage 5: Frontend Integration & Zero-Mutation Audit (`scripts/expenses.js`, `scripts/sales-history/sales-api.js`, `scripts/payment-booking.js`, audit complete in `docs/modules/expenses/EXPENSES_MODULE_AUDIT.md`)
+- [x] **Module 10: IAM, USERS, ROLES & PERMISSIONS (User Invites, Role Assignments, Permission Checks) (100% Complete & Verified)**:
+  - [x] Stage 1: Investigation & Logic Inventory (`docs/modules/iam/IAM_STAGE1_INVESTIGATION.md`) — 21 mutations across 8 files catalogued
+  - [x] Stage 2: Architecture & Specification (`docs/modules/iam/IAM_ARCHITECTURE_SPEC.md`) — 11 stored procedures designed
+  - [x] Stage 3: Backend Implementation (`create_user_atomic`, `update_user_atomic`, `toggle_user_status_atomic`, `delete_user_atomic`, `update_user_last_login_atomic`, `update_user_profile_name_phone_atomic`, `create_role_atomic`, `update_role_atomic`, `delete_role_atomic`, `save_role_permissions_atomic`, `upsert_user_preferences_atomic`)
+  - [x] Stage 4: Testing & Validation (23/23 automated integration tests passed)
+  - [x] Stage 5: Frontend Integration & Zero-Mutation Audit (`users.js`, `roles-permissions.js`, `auth-callback.html`, `script.js`, `scripts/app-layout/profile.js`, `scripts/app-layout/settings.js`, `scripts/global-auth-guard.js`, `scripts/notification-manager.js` — 0 violations, audit complete in `docs/modules/iam/IAM_MODULE_AUDIT.md`)
+- [x] **Module 11: COMPANY, BRANCHES & SETTINGS (Workspace Onboarding, Branch Configuration, Invoicing Settings) (100% Complete & Verified)**:
+  - [x] Stage 1: Investigation & Logic Inventory (`docs/modules/company_settings/COMPANY_SETTINGS_STAGE1_INVESTIGATION.md`) — 10 direct client mutations across 6 files catalogued
+  - [x] Stage 2: Architecture & Specification (`docs/modules/company_settings/COMPANY_SETTINGS_ARCHITECTURE_SPEC.md`) — 9 stored procedures designed
+  - [x] Stage 3: Backend Implementation (`create_branch_atomic`, `update_branch_atomic`, `toggle_branch_status_atomic`, `delete_branch_atomic`, `save_billing_information_atomic`, `save_invoice_settings_atomic`, `save_notification_settings_atomic`, `save_business_payment_settings_atomic`, `save_company_tax_settings_atomic`)
+  - [x] Stage 4: Testing & Validation (18/18 automated integration tests passed)
+  - [x] Stage 5: Frontend Integration & Zero-Mutation Audit (`branches.js`, `scripts/billing/billing-modal-billing.js`, `scripts/invoice-state.js`, `scripts/settings-notifications.js`, `scripts/settings-payments.js`, `scripts/settings-tax.js` — 0 violations, audit complete in `docs/modules/company_settings/COMPANY_SETTINGS_MODULE_AUDIT.md`)
+- [x] **Module 12: SAAS BILLING & SUBSCRIPTIONS (Plan Changes, Addon Management, Razorpay Synchronization) (100% Complete & Verified)**:
+  - [x] Stage 1: Investigation & Logic Inventory (`docs/modules/billing/BILLING_STAGE1_INVESTIGATION.md`) — 11 direct client mutations across 5 files catalogued
+  - [x] Stage 2: Architecture & Specification (`docs/modules/billing/BILLING_ARCHITECTURE_SPEC.md`) — 5 stored procedures designed
+  - [x] Stage 3: Backend Implementation (`cancel_subscription_addon_atomic`, `reactivate_subscription_addon_atomic`, `sync_plan_features_atomic`, `sync_usage_counter_atomic`, `backfill_oauth_phone_atomic`)
+  - [x] Stage 4: Testing & Validation (13/13 automated integration tests passed)
+  - [x] Stage 5: Frontend Integration & Zero-Mutation Audit (`config/plan-features-manager.js`, `config/plan-limits-manager.js`, `scripts/billing/billing-modal-addons.js`, `scripts/billing/manage-addons-page.js`, `payment-result.js` — 0 violations, audit complete in `docs/modules/billing/BILLING_MODULE_AUDIT.md`)
+- [x] **Pre-Phase 13 Full Codebase Audit & Final Zero-Trust Hardening**:
+  - [x] Scanned all 229 files across repository for all 58 tables: 22 remaining direct mutations identified and completely eliminated.
+  - [x] Deployed Migration `20261103000018_final_audit_hardening` (9 atomic procedures / 18 routines).
+  - [x] Patched `booking-manage-modal.js`, `booking-payment-bridge.js`, `profile.js`, `notifications.js`, `notification-manager.js`, `issue-service.js`, `suggestion-modal.js`, `sales-api.js`.
+  - [x] Re-ran global scanner: **0 violations detected across all 229 files and 58 tables**.
+  - [x] Validated 100% SECURITY DEFINER and search_path enforcement across all 82 atomic procedures.
+- [x] **Phase 13: GLOBAL ROW LEVEL SECURITY (RLS) DATABASE-WIDE LOCKDOWN (100% Complete & Verified)**:
+  - [x] **Part A (`20261103000019a`)**: Enabled RLS on all 26 base tables in `app` schema. Deployed tenant-isolated `SELECT` policies, dropped legacy loose policies, 0 direct write mutations permitted.
+  - [x] **Part B (`20261103000019b`)**: Enabled RLS on all 15 base tables in `platform` schema. Deployed public catalog read policies and tenant-isolated subscription & financial policies.
+  - [x] **Part C (`20261103000019c`)**: Enabled RLS on all 17 base tables in `shared` schema. Deployed tenant-isolated and self-scoped identity policies for users, profiles, roles, and settings.
+  - [x] **Part D (`20261103000019d`)**: Enforced `security_invoker = true` across all 59 compatibility views in `public` schema.
+  - [x] **Automated Verification**: Verified `rowsecurity = true` across all 58 base tables, `security_invoker = true` across all 59 views, direct mutation blocks confirmed, and 100% green test execution across all module test suites.
 

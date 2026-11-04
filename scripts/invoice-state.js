@@ -511,10 +511,18 @@ export async function saveInvoiceSettingsToDB(invoiceType, config, targetBranchI
 
     console.log(`[invoice-state] Saving invoice settings (${invoiceType}) for company=${companyId}, branch=${branchId}`);
 
-    // Atomic single-row upsert via unique (company_id, branch_id)
-    const { data, error } = await supabase
-        .from('invoice_settings')
-        .upsert(payload, { onConflict: 'company_id,branch_id' });
+    // Atomic single-row upsert via stored procedure
+    const { data: rpcRes, error } = await supabase.rpc('save_invoice_settings_atomic', {
+        p_company_id:         companyId,
+        p_branch_id:          branchId,
+        p_common_invoice:     payload.common_invoice || null,
+        p_booking_invoice:    payload.booking_invoice || null,
+        p_pos_invoice:        payload.pos_invoice || null,
+        p_membership_invoice: payload.membership_invoice || null
+    });
+    if (rpcRes && rpcRes.success === false) {
+        throw new Error(rpcRes.message || 'Failed to save invoice settings');
+    }
 
     if (error) {
         console.error('[invoice-state] Supabase save error:', error);

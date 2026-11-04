@@ -549,19 +549,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const marketingPrefs = collectMarketingPrefsFromUI();
             const now = new Date().toISOString();
 
-            // 1 single atomic upsert using composite unique constraint (company_id, branch_id)
-            const payload = {
-                company_id: companyId,
-                branch_id: branchId,
-                system_notifications: systemPrefs,
-                customer_notifications: customerPrefs,
-                marketing_notifications: marketingPrefs,
-                updated_at: now
-            };
-
-            const { error: upsertErr } = await supabase
-                .from('notification_settings')
-                .upsert(payload, { onConflict: 'company_id,branch_id' });
+            // 1 single atomic upsert via stored procedure
+            const { data: rpcRes, error: upsertErr } = await supabase.rpc('save_notification_settings_atomic', {
+                p_company_id:              companyId,
+                p_branch_id:               branchId,
+                p_system_notifications:    systemPrefs,
+                p_customer_notifications:  customerPrefs,
+                p_marketing_notifications: marketingPrefs
+            });
+            if (rpcRes && rpcRes.success === false) {
+                throw new Error(rpcRes.message || 'Failed to save notification settings');
+            }
 
             if (upsertErr) {
                 throw new Error(upsertErr.message || 'Failed to save notification settings');

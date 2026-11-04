@@ -139,13 +139,12 @@
                     if (profile.branch_id)  localStorage.setItem('active_branch_id', profile.branch_id);
                     if (profile.role_id)    localStorage.setItem('role_id', profile.role_id);
 
-                    // Update last login timestamp by email
+                    // Update last login timestamp via stored procedure
                     try {
-                        const loginTimestamp = new Date().toISOString();
                         if (userEmail) {
-                            await supabase.from('users').update({ last_login_at: loginTimestamp }).eq('email', userEmail);
+                            await supabase.rpc('update_user_last_login_atomic', { p_email: userEmail });
                         } else if (user.id) {
-                            await supabase.from('users').update({ last_login_at: loginTimestamp }).eq('user_id', user.id);
+                            await supabase.rpc('update_user_last_login_atomic', { p_user_id: user.id });
                         }
                     } catch (updateErr) {
                         console.warn('[auth-callback] Failed to update last_login_at:', updateErr);

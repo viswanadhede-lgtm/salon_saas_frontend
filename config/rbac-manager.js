@@ -370,6 +370,35 @@ export async function getUserRoleAndPermissions(forceRefresh = false) {
         } catch { /* Cache read error: fall through */ }
     }
 
+    // ── Zero-Trust Backend Resolution ─────────────────────────────────────────
+    // Prefer authoritative get_session_context RPC over direct client SELECT
+    try {
+        const { data: sessionCtx, error: ctxErr } = await supabase.rpc('get_session_context');
+        if (!ctxErr && sessionCtx?.permissions) {
+            const permissionKeys = Array.isArray(sessionCtx.permissions) ? sessionCtx.permissions : [];
+            const hasUniversalAccess = permissionKeys.includes(UNIVERSAL_PERMISSION_KEY);
+            const roleName = sessionCtx.user?.role_name || '';
+            const isOwner = roleName.toLowerCase() === 'owner' || hasUniversalAccess;
+
+            const profile = {
+                roleId: sessionCtx.user?.role_id || null,
+                roleName: roleName || 'Staff',
+                isOwner,
+                permissions: permissionKeys,
+                hasUniversalAccess
+            };
+
+            try {
+                sessionStorage.setItem(RBAC_CACHE_STORAGE_KEY, JSON.stringify({
+                    timestamp: Date.now(),
+                    profile
+                }));
+            } catch { /* Non-blocking */ }
+
+            return profile;
+        }
+    } catch (_) { /* Fallback to raw DB read */ }
+
     const { companyId, roleId, roleName } = resolveUserContext();
     const isOwner = (roleName || '').toLowerCase() === 'owner';
 

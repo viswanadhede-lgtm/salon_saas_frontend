@@ -232,23 +232,24 @@ window.saveHours = async function () {
     try {
         const now = new Date().toISOString();
 
-        // Build all 7 day rows in one array for a single atomic upsert
-        // Unique constraint: business_hours_unique_day (company_id, branch_id, day_of_week)
+        // Build all 7 day rows and persist atomically via authoritative stored procedure
         const rows = DAYS.map(day => ({
-            company_id:   companyId,
-            branch_id:    branchId,
             day_of_week:  day,
             is_open:      document.getElementById('open_' + day)?.checked ?? true,
             opening_time: (document.getElementById('from_' + day)?.value || '09:00') + ':00',
-            closing_time: (document.getElementById('to_' + day)?.value  || '18:00') + ':00',
-            updated_at:   now
+            closing_time: (document.getElementById('to_' + day)?.value  || '18:00') + ':00'
         }));
 
-        const { error: upsertErr } = await supabase
-            .from('business_hours')
-            .upsert(rows, { onConflict: 'company_id,branch_id,day_of_week' });
+        const { data, error: upsertErr } = await supabase.rpc('save_business_hours_atomic', {
+            p_company_id: companyId,
+            p_branch_id: branchId,
+            p_hours: rows
+        });
 
         if (upsertErr) throw new Error(upsertErr.message || 'Failed to save business hours');
+        if (data && data.success === false) {
+            throw new Error(data.error || 'Failed to save business hours');
+        }
 
         showToast('Business hours saved successfully!', 'success');
         window.isDirty = false;

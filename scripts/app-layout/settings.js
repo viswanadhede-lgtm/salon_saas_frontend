@@ -71,44 +71,18 @@ export async function handleSettingsSave() {
 
         const { supabase } = await import('../../lib/supabase.js');
 
-        // Check if record exists
-        const { data: existing, error: checkErr } = await supabase
-            .from('user_preferences')
-            .select('id')
-            .eq('user_id', user_id)
-            .limit(1);
+        // Upsert user preferences via stored procedure
+        const { data: rpcData, error: rpcErr } = await supabase.rpc('upsert_user_preferences_atomic', {
+            p_user_id:       user_id,
+            p_company_id:    company_id,
+            p_branch_id:     branch_id,
+            p_language:      lang,
+            p_theme:         theme,
+            p_notifications: notify
+        });
 
-        if (checkErr) throw checkErr;
-
-        let result;
-        if (existing && existing.length > 0) {
-            result = await supabase
-                .from('user_preferences')
-                .update({
-                    company_id,
-                    branch_id,
-                    language: lang,
-                    theme: theme,
-                    notifications: notify,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('user_id', user_id);
-        } else {
-            result = await supabase
-                .from('user_preferences')
-                .insert([{
-                    user_id,
-                    company_id,
-                    branch_id,
-                    language: lang,
-                    theme: theme,
-                    notifications: notify,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                }]);
-        }
-
-        if (result.error) throw result.error;
+        if (rpcErr) throw rpcErr;
+        if (rpcData?.success === false) throw new Error(rpcData.error || 'Failed to save preferences');
 
         if (typeof window.toast === 'function') {
             window.toast("Settings saved successfully!");

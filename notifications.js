@@ -439,12 +439,13 @@ async function handleItemClick(item, rowEl) {
         const dot = rowEl.querySelector('.nc-unread-dot');
         if (dot) dot.remove();
 
-        // Background update in Supabase
+        // Background update in Supabase via authoritative stored procedure
         try {
             supabase
-                .from('notifications')
-                .update({ is_read: true, read_at: new Date().toISOString() })
-                .eq('id', item.id)
+                .rpc('mark_notification_read_atomic', {
+                    p_notification_id: item.id,
+                    p_company_id: getCompanyId() || null
+                })
                 .then(() => {
                     // Refresh category counts & header bell badge
                     refreshCategoryCounts();
@@ -477,7 +478,6 @@ async function handleMarkAllRead() {
     `;
 
     try {
-        // Try RPC first
         const branchId = getBranchId();
         const { error: rpcErr } = await supabase.rpc('mark_all_notifications_read', {
             p_company_id: companyId,
@@ -485,12 +485,7 @@ async function handleMarkAllRead() {
         });
 
         if (rpcErr) {
-            // Fallback direct update
-            await supabase
-                .from('notifications')
-                .update({ is_read: true, read_at: new Date().toISOString() })
-                .eq('company_id', companyId)
-                .eq('is_read', false);
+            console.warn('[NotificationCenter] Mark all read warning:', rpcErr);
         }
 
         // Also mark local history read

@@ -1,4 +1,4 @@
-﻿import { supabase } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase.js';
 
 /* ===================== RATE YOUR EXPERIENCE (REVIEW) MODAL ===================== */
 
@@ -162,18 +162,13 @@ window.submitReview = async function() {
     const commentsVal = comments ? comments.value.trim() : '';
 
     try {
-        const payload = {
-            user_id:    userId,
-            company_id: companyId,
-            branch_id:  branchId || null,
-            rating:     _selectedReviewRating,
-            comments:   commentsVal || null
-        };
-
-        const { data, error } = await supabase
-            .from('reviews')
-            .insert(payload)
-            .select();
+        const { data, error } = await supabase.rpc('submit_customer_review_atomic', {
+            p_company_id: companyId,
+            p_branch_id:  branchId || null,
+            p_user_id:    userId,
+            p_rating:     _selectedReviewRating,
+            p_comments:   commentsVal || null
+        });
 
         if (error) throw error;
 

@@ -508,34 +508,26 @@ async function saveDatabaseChanges(removedAddons, reactivatingAddons) {
     try {
         const companyId = pageState.companyId;
 
-        // 1. Mark unselected active add-ons as 'cancelling'
+        // 1. Mark unselected active add-ons as 'cancelling' via atomic RPC
         for (const addon of removedAddons) {
-            const { error: updErr } = await supabase
-                .from('subscription_add_ons')
-                .update({
-                    status: 'cancelling',
-                    updated_at: new Date().toISOString()
-                })
-                .eq('company_id', companyId)
-                .eq('addon_id', addon.id)
-                .eq('status', 'active');
+            const { data: rpcRes, error: updErr } = await supabase.rpc('cancel_subscription_addon_atomic', {
+                p_company_id: companyId,
+                p_addon_id:   addon.id
+            });
 
             if (updErr) throw new Error(updErr.message || 'Failed to cancel add-on.');
+            if (rpcRes && rpcRes.success === false) throw new Error(rpcRes.message || 'Failed to cancel add-on.');
         }
 
-        // 2. Reactivate unexpired cancelling add-ons
+        // 2. Reactivate unexpired cancelling add-ons via atomic RPC
         for (const addon of reactivatingAddons) {
-            const { error: reactErr } = await supabase
-                .from('subscription_add_ons')
-                .update({
-                    status: 'active',
-                    updated_at: new Date().toISOString()
-                })
-                .eq('company_id', companyId)
-                .eq('addon_id', addon.id)
-                .eq('status', 'cancelling');
+            const { data: rpcRes, error: reactErr } = await supabase.rpc('reactivate_subscription_addon_atomic', {
+                p_company_id: companyId,
+                p_addon_id:   addon.id
+            });
 
             if (reactErr) throw new Error(reactErr.message || 'Failed to reactivate add-on.');
+            if (rpcRes && rpcRes.success === false) throw new Error(rpcRes.message || 'Failed to reactivate add-on.');
         }
 
         if (removedAddons.length > 0 && reactivatingAddons.length === 0) {

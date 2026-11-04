@@ -109,6 +109,26 @@ export async function checkResourceLimit(limitKey) {
     try {
         let { companyId, planId, planName } = resolveCompanyAndPlan();
 
+        // ── Fast-path: Check authoritative session context from backend RPC ───────
+        try {
+            const { data: sessionCtx, error: ctxErr } = await supabase.rpc('get_session_context');
+            if (!ctxErr && sessionCtx?.plan_limits && sessionCtx?.usage) {
+                const maxVal = sessionCtx.plan_limits[limitKey];
+                const curVal = sessionCtx.usage[limitKey];
+                if (maxVal !== undefined && maxVal !== null) {
+                    const maxLimit = parseInt(maxVal, 10);
+                    const currentCount = parseInt(curVal || 0, 10);
+                    return {
+                        allowed: currentCount < maxLimit,
+                        currentCount,
+                        maxLimit,
+                        planName: sessionCtx.company?.plan_name || planName,
+                        meta
+                    };
+                }
+            }
+        } catch (_) { /* Fallback to raw table lookups */ }
+
         if (!companyId) {
             console.warn('[PlanLimits] No company_id found, allowing action by default.');
             return { allowed: true, currentCount: 0, maxLimit: 9999, planName, meta };
@@ -215,13 +235,13 @@ export async function checkResourceLimit(limitKey) {
             maxLimit = planFallback[limitKey] ?? 9999;
         }
 
-        // Keep usage_counters.max_limit synchronized with plan_limits in background
+        // Keep usage_counters.max_limit synchronized with plan_limits in background via atomic RPC
         if (usageCounterRow && usageCounterRow.max_limit !== maxLimit) {
-            supabase
-                .from('usage_counters')
-                .update({ max_limit: maxLimit, updated_at: new Date().toISOString() })
-                .eq('id', usageCounterRow.id)
-                .then();
+            supabase.rpc('sync_usage_counter_atomic', {
+                p_company_id: companyId,
+                p_limit_key:  limitKey,
+                p_max_limit:  maxLimit
+            }).then();
         }
 
         const allowed = currentCount < maxLimit;
@@ -247,37 +267,15 @@ export async function syncUsageCounterDb(companyId, planId, limitKey, currentCou
     if (!companyId) return;
 
     try {
-        const { data: existing } = await supabase
-            .from('usage_counters')
-            .select('id, max_limit')
-            .eq('company_id', companyId)
-            .eq('limit_key', limitKey)
-            .maybeSingle();
-
-        const resolvedMax = maxLimit !== null ? maxLimit : existing?.max_limit ?? null;
-
-        if (existing) {
-            await supabase
-                .from('usage_counters')
-                .update({
-                    current_count: currentCount,
-                    ...(resolvedMax !== null ? { max_limit: resolvedMax } : {}),
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', existing.id);
-        } else {
-            const branchId = localStorage.getItem('active_branch_id') || null;
-            await supabase
-                .from('usage_counters')
-                .insert({
-                    company_id: companyId,
-                    branch_id: branchId,
-                    plan_id: planId,
-                    limit_key: limitKey,
-                    current_count: currentCount,
-                    max_limit: resolvedMax
-                });
-        }
+        const branchId = localStorage.getItem('active_branch_id') || null;
+        await supabase.rpc('sync_usage_counter_atomic', {
+            p_company_id:    companyId,
+            p_limit_key:     limitKey,
+            p_current_count: currentCount,
+            p_max_limit:     maxLimit,
+            p_plan_id:       planId || null,
+            p_branch_id:     branchId || null
+        });
     } catch (e) {
         console.warn('[PlanLimits] syncUsageCounterDb notice:', e);
     }

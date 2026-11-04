@@ -67,62 +67,77 @@ export async function fetchProducts() {
 
 // product_categories INSERT
 export async function insertCategory(payload) {
-    return supabase.from('product_categories').insert(payload);
+    return supabase.rpc('create_product_category_atomic', {
+        p_company_id:    payload.company_id || getCompanyId(),
+        p_branch_id:     payload.branch_id || getBranchId(),
+        p_category_name: payload.category_name,
+        p_description:   payload.description || null
+    });
 }
 
-// product_categories UPDATE
-export async function updateCategory(catId, name) {
-    return supabase
-        .from('product_categories')
-        .update({ category_name: name, updated_at: new Date().toISOString() })
-        .eq('category_id', catId)
-        .eq('company_id', getCompanyId())
-        .eq('branch_id', getBranchId());
+// product_categories UPDATE (atomic cascade to products.category_name in PostgreSQL)
+export async function updateCategory(catId, name, description = null) {
+    return supabase.rpc('update_product_category_atomic', {
+        p_company_id:    getCompanyId(),
+        p_branch_id:     getBranchId(),
+        p_category_id:   catId,
+        p_category_name: name,
+        p_description:   description
+    });
 }
 
-// product_categories DELETE (Soft Deletion)
+// product_categories DELETE (Soft Deletion with active products dependency blocker)
 export async function deleteCategory(catId) {
-    return supabase
-        .from('product_categories')
-        .update({ status: 'deleted', updated_at: new Date().toISOString() })
-        .eq('category_id', catId)
-        .eq('company_id', getCompanyId())
-        .eq('branch_id', getBranchId());
+    return supabase.rpc('delete_product_category_atomic', {
+        p_company_id:  getCompanyId(),
+        p_branch_id:   getBranchId(),
+        p_category_id: catId
+    });
 }
 
 // products INSERT
 export async function insertProduct(payload) {
-    return supabase.from('products').insert(payload);
+    return supabase.rpc('create_product_atomic', {
+        p_company_id:        payload.company_id || getCompanyId(),
+        p_branch_id:         payload.branch_id || getBranchId(),
+        p_category_id:       payload.category_id,
+        p_product_name:      payload.product_name,
+        p_price:             payload.price,
+        p_stock_quantity:    payload.stock_quantity ?? 0,
+        p_status:            payload.status || 'active',
+        p_description:       payload.description || null,
+        p_product_image_url: payload.product_image_url || null
+    });
 }
 
 // products UPDATE
 export async function updateProduct(productId, payload) {
-    return supabase
-        .from('products')
-        .update(payload)
-        .eq('product_id', productId)
-        .eq('company_id', getCompanyId())
-        .eq('branch_id', getBranchId());
+    return supabase.rpc('update_product_atomic', {
+        p_company_id:        getCompanyId(),
+        p_branch_id:         getBranchId(),
+        p_product_id:        productId,
+        p_category_id:       payload.category_id,
+        p_product_name:      payload.product_name,
+        p_price:             payload.price,
+        p_stock_quantity:    payload.stock_quantity,
+        p_status:            payload.status || 'active',
+        p_description:       payload.description || null,
+        p_product_image_url: payload.product_image_url || null
+    });
 }
 
-// products DELETE (Soft Deletion)
+// products DELETE (Soft Deletion preserving historical sales)
 export async function deleteProduct(productId) {
-    return supabase
-        .from('products')
-        .update({ status: 'deleted', updated_at: new Date().toISOString() })
-        .eq('product_id', productId)
-        .eq('company_id', getCompanyId())
-        .eq('branch_id', getBranchId());
+    return supabase.rpc('delete_product_atomic', {
+        p_company_id:  getCompanyId(),
+        p_branch_id:   getBranchId(),
+        p_product_id: productId
+    });
 }
 
-// CHANGE 1: Cascade category rename to all products in that category
+// Automatically handled inside update_product_category_atomic in single transaction
 export async function cascadeRenameCategoryOnProducts(catId, newCategoryName) {
-    return supabase
-        .from('products')
-        .update({ category_name: newCategoryName, updated_at: new Date().toISOString() })
-        .eq('category_id', catId)
-        .eq('company_id', getCompanyId())
-        .eq('branch_id', getBranchId());
+    return { data: null, error: null };
 }
 
 // products READ for edit (product_image_url)

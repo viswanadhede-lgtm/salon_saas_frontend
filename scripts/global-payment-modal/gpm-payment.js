@@ -42,25 +42,7 @@ export async function finalizePayment() {
         await globalPaymentConfig.onComplete(resultPayload);
 
         // Increment current_usage_count for the redeemed offer
-        if (paymentState.appliedOffer?.id) {
-            try {
-                const { supabase } = await import('../../lib/supabase.js');
-                const { data: offerRows } = await supabase
-                    .from('offers')
-                    .select('id, current_usage_count')
-                    .eq('offer_id', paymentState.appliedOffer.id);
-                if (offerRows && offerRows.length > 0) {
-                    for (const r of offerRows) {
-                        await supabase
-                            .from('offers')
-                            .update({ current_usage_count: (Number(r.current_usage_count) || 0) + 1 })
-                            .eq('id', r.id);
-                    }
-                }
-            } catch (uErr) {
-                console.warn('[PaymentModal] Error updating offer usage count:', uErr);
-            }
-        }
+        // Offer / coupon discount redemptions are recorded authoritatively in app.discount_usages
 
         closeGlobalPaymentModal();
     } catch (err) {

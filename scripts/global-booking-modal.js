@@ -2165,19 +2165,18 @@ export function initGlobalBookingModal() {
             }
 
             try {
-                const { data: newCust, error: custErr } = await supabase.from('customers').insert({
-                    company_id:     getCompanyId(),
-                    branch_id:      getBranchId(),
-                    customer_name:  targetName || 'Unknown Customer',
-                    customer_phone: typedPhone,
-                    customer_email: customerEmail?.value.trim() || '',
-                    status:         'active'
-                }).select();
+                const { data: createdCust, error: custErr } = await supabase.rpc('create_customer_atomic', {
+                    p_company_id:     getCompanyId(),
+                    p_branch_id:      getBranchId(),
+                    p_customer_name:  targetName || 'Unknown Customer',
+                    p_customer_phone: typedPhone,
+                    p_customer_email: customerEmail?.value.trim() || null
+                });
 
                 if (custErr) throw custErr;
-                if (newCust && newCust.length > 0) {
-                    targetId = newCust[0].customer_id;
-                    if (window.liveCustomersDB) window.liveCustomersDB.push(newCust[0]);
+                if (createdCust && createdCust.customer_id) {
+                    targetId = createdCust.customer_id;
+                    if (window.liveCustomersDB) window.liveCustomersDB.push(createdCust);
                     if (window.notifyEvent) {
                         window.notifyEvent('customers', 'evt_customer_added', {
                             title: 'New Customer Added',

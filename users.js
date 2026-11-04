@@ -382,33 +382,34 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
         } else if (action === 'toggle') {
             const newStatus = user.status === 'active' ? 'inactive' : 'active';
             try {
-                const { error } = await supabase
-                    .from('users')
-                    .update({ status: newStatus, updated_at: new Date().toISOString() })
-                    .eq('user_id', id)
-                    .eq('company_id', getCompanyId());
+                const { data: rpcData, error } = await supabase.rpc('toggle_user_status_atomic', {
+                    p_company_id: getCompanyId(),
+                    p_user_id:    id,
+                    p_new_status: newStatus
+                });
                 if (error) throw error;
+                if (rpcData?.success === false) throw new Error(rpcData.error || 'Failed to update status');
                 await loadUsers();
                 showToast(`${user.name} is now ${newStatus}.`);
             } catch (err) {
                 console.error("Error toggling status:", err);
-                showToast("Failed to update status", true);
+                showToast(err.message || "Failed to update status", true);
             }
         } else if (action === 'delete') {
             showDeleteConfirmModal(user.name, async () => {
                 try {
-                    const { error } = await supabase
-                        .from('users')
-                        .update({ status: 'deleted', updated_at: new Date().toISOString() })
-                        .eq('user_id', id)
-                        .eq('company_id', getCompanyId());
+                    const { data: rpcData, error } = await supabase.rpc('delete_user_atomic', {
+                        p_company_id: getCompanyId(),
+                        p_user_id:    id
+                    });
                     if (error) throw error;
+                    if (rpcData?.success === false) throw new Error(rpcData.error || 'Failed to delete user');
                     await loadUsers();
                     showToast(`User "${user.name}" has been deleted.`);
                     refreshUsageCounter('max_users');
                 } catch (err) {
                     console.error('Error deleting user:', err);
-                    showToast('Failed to delete user', true);
+                    showToast(err.message || 'Failed to delete user', true);
                 }
             });
         }
@@ -589,14 +590,20 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
                     }
                 }
 
-                payload.updated_at = new Date().toISOString();
-                const { error } = await supabase
-                    .from('users')
-                    .update(payload)
-                    .eq('user_id', editingId)
-                    .eq('company_id', cid);
-
+                // Update user profile via stored procedure
+                const { data: updateData, error } = await supabase.rpc('update_user_atomic', {
+                    p_company_id: cid,
+                    p_user_id:    editingId,
+                    p_name:       payload.name,
+                    p_phone:      payload.phone,
+                    p_email:      payload.email,
+                    p_role_id:    payload.role_id,
+                    p_role_name:  payload.role_name,
+                    p_branch_id:  payload.branch_id,
+                    p_status:     payload.status
+                });
                 if (error) throw error;
+                if (updateData?.success === false) throw new Error(updateData.error || 'Failed to update user');
                 showToast('User updated successfully!');
             } else {
                 // 1. Create the user in actual Supabase Auth first so they can log in
@@ -615,12 +622,21 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
                     throw new Error("Failed to receive valid Auth ID from Supabase.");
                 }
 
-                // 2. Use the real Auth ID for our public users table
-                payload.user_id = authRes.data.user.id;
-                
-                // 3. Write row mapping
-                const { error } = await supabase.from('users').insert([payload]);
+                // 2. Use the real Auth ID and create user profile via stored procedure
+                const authUserId = authRes.data.user.id;
+                const { data: createData, error } = await supabase.rpc('create_user_atomic', {
+                    p_company_id: payload.company_id,
+                    p_branch_id:  payload.branch_id,
+                    p_user_id:    authUserId,
+                    p_name:       payload.name,
+                    p_email:      payload.email,
+                    p_phone:      payload.phone,
+                    p_role_id:    payload.role_id,
+                    p_role_name:  payload.role_name,
+                    p_status:     payload.status
+                });
                 if (error) throw error;
+                if (createData?.success === false) throw new Error(createData.error || 'Failed to create user profile');
                 showToast('User created successfully. They can now log in!');
                 refreshUsageCounter('max_users');
             }

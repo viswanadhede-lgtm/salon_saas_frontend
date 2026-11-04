@@ -111,15 +111,12 @@
 
         if (userId && client) {
             try {
-                await client
-                    .from('user_preferences')
-                    .upsert({
-                        user_id: userId,
-                        company_id: companyId || null,
-                        branch_id: branchId || null,
-                        notifications: !newMuted, // true if normal/active, false if snoozed
-                        updated_at: new Date().toISOString()
-                    }, { onConflict: 'user_id' });
+                await client.rpc('upsert_user_preferences_atomic', {
+                        p_user_id:       userId,
+                        p_company_id:    companyId || null,
+                        p_branch_id:     branchId || null,
+                        p_notifications: !newMuted
+                    });
             } catch (err) {
                 console.warn('[NotificationManager] Could not persist snooze to user_preferences:', err);
             }
@@ -826,13 +823,10 @@
                 try {
                     const { error: rpcErr } = await client.rpc('mark_all_notifications_read', {
                         p_company_id: companyId,
-                        p_branch_id: getBranchId()
+                        p_branch_id: getBranchId() || null
                     });
                     if (rpcErr) {
-                        await client.from('notifications')
-                            .update({ is_read: true, read_at: new Date().toISOString() })
-                            .eq('company_id', companyId)
-                            .eq('is_read', false);
+                        console.warn('[NotificationManager] Supabase mark read warning:', rpcErr);
                     }
                 } catch (err) {
                     console.warn('[NotificationManager] Supabase mark read warning:', err);
@@ -862,11 +856,12 @@
                     renderDropdown();
 
                     if (notifId && window.supabase) {
-                        window.supabase.from('notifications')
-                            .update({ is_read: true, read_at: new Date().toISOString() })
-                            .eq('id', notifId)
-                            .then(() => {})
-                            .catch(() => {});
+                        window.supabase.rpc('mark_notification_read_atomic', {
+                            p_notification_id: notifId,
+                            p_company_id: getCompanyId() || null
+                        })
+                        .then(() => {})
+                        .catch(() => {});
                     }
 
                     if (targetLink) {
@@ -1043,35 +1038,34 @@
             renderDropdown();
         }
 
-        // 5. Persist to Supabase notifications table in background
+        // 5. Persist to Supabase notifications table in background via authoritative RPC
         const companyId = getCompanyId();
         const client = window.supabase;
         if (companyId && client) {
-            client.from('notifications').insert({
-                company_id: companyId,
-                branch_id: getBranchId(),
-                user_id: resolvedUserId,
-                category: category,
-                event_key: eventKey,
-                title: title,
-                message: message,
-                link: link,
-                metadata: metadata,
-                is_read: false
+            client.rpc('create_notification_atomic', {
+                p_company_id: companyId,
+                p_branch_id:  getBranchId() || null,
+                p_user_id:    resolvedUserId || null,
+                p_category:   category || 'general',
+                p_event_key:  eventKey || null,
+                p_title:      title,
+                p_message:    message,
+                p_link:       link || null,
+                p_metadata:   metadata || {}
             }).then(({ data, error }) => {
                 if (error) {
-                    console.warn('[NotificationManager] Supabase insert error:', error.message || error);
+                    console.warn('[NotificationManager] RPC notification insert error:', error.message || error);
                 }
-                if (!error && data && data[0]?.id) {
-                    localItem.id = data[0].id;
+                if (!error && data && data.id) {
+                    localItem.id = data.id;
                     const hist = getHistory();
                     if (hist[0] && hist[0].title === title) {
-                        hist[0].id = data[0].id;
+                        hist[0].id = data.id;
                         saveHistory(hist);
                     }
                 }
             }).catch(err => {
-                console.warn('[NotificationManager] Supabase insert warning:', err);
+                console.warn('[NotificationManager] Supabase notification insert warning:', err);
             });
         }
     }

@@ -601,31 +601,21 @@ export async function handleProfileSave() {
 
         const { supabase } = await import('../../lib/supabase.js');
 
-        const profilePayload = {
-            first_name:               firstName,
-            last_name:                lastName,
-            phone:                    phone,
-            email:                    context.user?.email || '',   // keep email in sync
-            emergency_contact_name:   emergencyName,
-            emergency_contact_number: emergencyPhone,
-            updated_at:               new Date().toISOString()
-        };
-        if (newPhotoUrl) profilePayload.profile_photo = newPhotoUrl;
-
-        const { error: profileErr } = await supabase
-            .from('profiles')
-            .update(profilePayload)
-            .eq('user_id', user_id);
+        const fullName = `${firstName} ${lastName}`.trim();
+        const { data: profileResult, error: profileErr } = await supabase.rpc('update_user_profile_full_atomic', {
+            p_company_id:               context.user?.company_id || null,
+            p_user_id:                  user_id,
+            p_first_name:               firstName,
+            p_last_name:                lastName,
+            p_phone:                    phone,
+            p_email:                    context.user?.email || '',
+            p_emergency_contact_name:   emergencyName || null,
+            p_emergency_contact_number: emergencyPhone || null,
+            p_profile_photo:            newPhotoUrl || null
+        });
 
         if (profileErr) throw profileErr;
-
-        const fullName = `${firstName} ${lastName}`.trim();
-        const { error: userErr } = await supabase
-            .from('users')
-            .update({ name: fullName, phone })
-            .eq('user_id', user_id);
-
-        if (userErr) throw userErr;
+        if (profileResult?.success === false) throw new Error(profileResult.error || 'Failed to update user profile');
 
         if (context.user) {
             context.user.name            = fullName;

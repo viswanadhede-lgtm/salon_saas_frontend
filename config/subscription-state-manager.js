@@ -563,6 +563,47 @@ export async function getSubscriptionAccess(forceRefresh = false) {
         } catch { /* Cache read error: fall through to fresh fetch */ }
     }
 
+    // ── Zero-Trust Backend Resolution ─────────────────────────────────────────
+    // Prefer authoritative get_session_context RPC over direct client SELECT
+    try {
+        const { data: sessionCtx, error: ctxErr } = await supabase.rpc('get_session_context');
+        if (!ctxErr && sessionCtx?.subscription) {
+            const sub = sessionCtx.subscription;
+            const profile = {
+                accessLevel: sub.access_level || 'read-only',
+                status: (sub.status || 'none').toLowerCase(),
+                planName: sub.plan_name || 'Standard Plan',
+                planId: sessionCtx.company?.plan_id || null,
+                localSubscriptionId: null,
+                razorpaySubscriptionId: sub.razorpay_subscription_id || null,
+                billingCycle: sub.billing_cycle || 'monthly',
+                billingAmount: 0,
+                autoRenew: sub.auto_renew !== false,
+                isTrial: sub.is_trial === true,
+                cancelAtCycleEnd: sub.cancel_at_cycle_end === true,
+                startDate: null,
+                endDate: sub.current_period_end_at || sub.trial_end_at || null,
+                trialEndAt: sub.trial_end_at || null,
+                cancelledAt: null,
+                nextBillingAt: sub.next_billing_at || null,
+                daysRemaining: sub.days_remaining || 0,
+                isExpiringSoon: sub.is_expiring_soon === true,
+                isExpired: sub.access_level !== 'full',
+                canRenew: true,
+                reason: sub.status || 'authoritative_rpc'
+            };
+
+            try {
+                sessionStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify({
+                    timestamp: Date.now(),
+                    profile
+                }));
+            } catch { /* Cache write error: non-blocking */ }
+
+            return profile;
+        }
+    } catch (_) { /* Fallback to raw DB read */ }
+
     const companyId = resolveCompanyId();
     const userId = resolveUserId();
     const record = await fetchSubscriptionRecord(companyId, userId);

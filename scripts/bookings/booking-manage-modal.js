@@ -345,22 +345,22 @@ export async function saveManageBookingStatus() {
     }
 
     try {
-        const { error: dbError } = await supabase
-            .from('bookings')
-            .update({ status: newStatus, updated_at: new Date().toISOString() })
-            .eq('booking_id', bookingId);
+        const companyId = manageState.activeBooking?.company_id || localStorage.getItem('company_id');
+        const branchId = manageState.activeBooking?.branch_id || localStorage.getItem('branch_id');
 
-        if (dbError) {
-            console.error('[ManageBooking] Supabase status update error:', dbError);
-            window.toast && window.toast('Error: ' + dbError.message);
+        const { data: resData, error: dbError } = await supabase.rpc('update_booking_status_atomic', {
+            p_booking_id: bookingId,
+            p_company_id: companyId,
+            p_branch_id: branchId || null,
+            p_new_status: newStatus
+        });
+
+        if (dbError || resData?.success === false) {
+            const errMsg = dbError?.message || resData?.error || 'Failed to update booking status';
+            console.error('[ManageBooking] Supabase status update error:', errMsg);
+            window.toast && window.toast('Error: ' + errMsg);
             return;
         }
-
-        const { error: summaryErr } = await supabase
-            .from('bookings_for_business_transaction')
-            .update({ status: newStatus, updated_at: new Date().toISOString() })
-            .eq('booking_id', bookingId);
-        if (summaryErr) console.warn('[ManageBooking] summary update error:', summaryErr);
 
         window.toast && window.toast(`Booking status updated to ${newStatus}`);
 

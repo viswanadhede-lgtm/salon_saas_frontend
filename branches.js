@@ -299,15 +299,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const now = new Date().toISOString();
 
             try {
-                const { error } = await supabase
-                    .from('branches')
-                    .eq('branch_id', id)
-                    .update({ 
-                        status: newStatus,
-                        updated_at: now
-                    });
+                const { data: rpcRes, error } = await supabase.rpc('toggle_branch_status_atomic', {
+                    p_company_id: getCompanyId(),
+                    p_branch_id:  id,
+                    p_new_status: newStatus
+                });
 
                 if (error) throw error;
+                if (rpcRes && rpcRes.success === false) throw new Error(rpcRes.message || 'Failed to update branch status');
 
                 branch.status = newStatus;
                 branch.updated_at = now;
@@ -383,16 +382,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         closeDeleteModal();
         
         try {
-            const now = new Date().toISOString();
-            const { error } = await supabase
-                .from('branches')
-                .eq('branch_id', id)
-                .update({ 
-                    status: 'deleted',
-                    updated_at: now
-                });
+            const { data: rpcRes, error } = await supabase.rpc('delete_branch_atomic', {
+                p_company_id: getCompanyId(),
+                p_branch_id:  id
+            });
                 
             if (error) throw error;
+            if (rpcRes && rpcRes.success === false) throw new Error(rpcRes.message || 'Failed to delete branch');
             
             branchesData = branchesData.filter(b => b.branch_id !== id);
             renderTable();
@@ -534,27 +530,61 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
 
                 if (currentEditId) {
-                    // Update existing branch (preserve created_at)
-                    const { error } = await supabase
-                        .from('branches')
-                        .eq('branch_id', currentEditId)
-                        .update(commonPayload);
+                    // Update existing branch via atomic RPC
+                    const { data: rpcRes, error } = await supabase.rpc('update_branch_atomic', {
+                        p_company_id:      companyId,
+                        p_branch_id:       currentEditId,
+                        p_branch_name:     name,
+                        p_branch_phone:    phone,
+                        p_branch_email:    email || null,
+                        p_branch_code:     code || null,
+                        p_manager_user_id: managerId || null,
+                        p_address_line_1:  addressLine1,
+                        p_address_line_2:  addressLine2 || null,
+                        p_locality_area:   localityArea || null,
+                        p_landmark:        landmark || null,
+                        p_city:            city,
+                        p_district:        district || null,
+                        p_state:           state,
+                        p_pin_code:        pinCode,
+                        p_country:         country || 'India',
+                        p_branch_address:  branchAddress,
+                        p_google_maps_url: mapsUrl || null,
+                        p_latitude:        latNum,
+                        p_longitude:       lngNum,
+                        p_status:          isActive ? 'active' : 'inactive'
+                    });
 
                     if (error) throw error;
+                    if (rpcRes && rpcRes.success === false) throw new Error(rpcRes.message || 'Failed to update branch');
                     showToast('Branch updated successfully!', 'success');
                 } else {
-                    // Insert new branch (write created_at & updated_at)
-                    const insertPayload = {
-                        company_id: companyId,
-                        ...commonPayload,
-                        created_at: now
-                    };
-
-                    const { error } = await supabase
-                        .from('branches')
-                        .insert(insertPayload);
+                    // Insert new branch via atomic RPC
+                    const { data: rpcRes, error } = await supabase.rpc('create_branch_atomic', {
+                        p_company_id:      companyId,
+                        p_branch_name:     name,
+                        p_branch_phone:    phone,
+                        p_branch_email:    email || null,
+                        p_branch_code:     code || null,
+                        p_manager_user_id: managerId || null,
+                        p_address_line_1:  addressLine1,
+                        p_address_line_2:  addressLine2 || null,
+                        p_locality_area:   localityArea || null,
+                        p_landmark:        landmark || null,
+                        p_city:            city,
+                        p_district:        district || null,
+                        p_state:           state,
+                        p_pin_code:        pinCode,
+                        p_country:         country || 'India',
+                        p_branch_address:  branchAddress,
+                        p_google_maps_url: mapsUrl || null,
+                        p_latitude:        latNum,
+                        p_longitude:       lngNum,
+                        p_status:          isActive ? 'active' : 'inactive'
+                    });
 
                     if (error) throw error;
+                    if (rpcRes && rpcRes.success === false) throw new Error(rpcRes.message || 'Failed to create branch');
                     showToast('Branch added successfully!', 'success');
                     refreshUsageCounter('max_branches');
                 }

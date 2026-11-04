@@ -536,39 +536,35 @@ export function bindManageAddonsEvents() {
 
                 const { supabase } = await import('../../lib/supabase.js');
 
-                // 1. Direct Supabase update for unselected active add-ons: set status = 'cancelling'
+                // 1. Cancel unselected active add-ons via atomic RPC
                 for (const addonId of removedIds) {
-                    const { error: updErr } = await supabase
-                        .from('subscription_add_ons')
-                        .update({
-                            status: 'cancelling',
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq('company_id', companyId)
-                        .eq('addon_id', addonId)
-                        .eq('status', 'active');
+                    const { data: rpcRes, error: updErr } = await supabase.rpc('cancel_subscription_addon_atomic', {
+                        p_company_id: companyId,
+                        p_addon_id:   addonId
+                    });
 
                     if (updErr) {
-                        console.error('[Billing] Direct Supabase add-on cancellation error:', updErr);
+                        console.error('[Billing] Add-on cancellation error:', updErr);
                         throw new Error(updErr.message || 'Failed to cancel add-on.');
+                    }
+                    if (rpcRes && rpcRes.success === false) {
+                        throw new Error(rpcRes.message || 'Failed to cancel add-on.');
                     }
                 }
 
-                // 2. Direct Supabase update for reactivated add-ons (cancelling -> active)
+                // 2. Reactivate unexpired add-ons (cancelling -> active) via atomic RPC
                 for (const addonId of reactivatingIds) {
-                    const { error: reactErr } = await supabase
-                        .from('subscription_add_ons')
-                        .update({
-                            status: 'active',
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq('company_id', companyId)
-                        .eq('addon_id', addonId)
-                        .eq('status', 'cancelling');
+                    const { data: rpcRes, error: reactErr } = await supabase.rpc('reactivate_subscription_addon_atomic', {
+                        p_company_id: companyId,
+                        p_addon_id:   addonId
+                    });
 
                     if (reactErr) {
-                        console.error('[Billing] Direct Supabase add-on reactivation error:', reactErr);
+                        console.error('[Billing] Add-on reactivation error:', reactErr);
                         throw new Error(reactErr.message || 'Failed to reactivate add-on.');
+                    }
+                    if (rpcRes && rpcRes.success === false) {
+                        throw new Error(rpcRes.message || 'Failed to reactivate add-on.');
                     }
                 }
 

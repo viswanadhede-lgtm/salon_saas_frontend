@@ -353,11 +353,11 @@ async function executeDeleteCoupon(id) {
     if (deletingOverlay) deletingOverlay.classList.add('active');
 
     try {
-        const { error } = await supabase
-            .from('coupons')
-            .update({ status: 'deleted', updated_at: new Date().toISOString() })
-            .eq('coupon_id', id);
-
+        const { error } = await supabase.rpc('delete_coupon_atomic', {
+            p_company_id: getCompanyId(),
+            p_branch_id:  getBranchId(),
+            p_coupon_id:  id
+        });
         if (error) throw error;
 
         showToast('Coupon deleted successfully');
@@ -431,18 +431,37 @@ async function handleSaveCoupon() {
 
     try {
         if (isEditing) {
-            // UPDATE existing row by coupon_id (correct chain: .update().eq())
-            const { error } = await supabase
-                .from('coupons')
-                .update(payload)
-                .eq('coupon_id', currentEditId);
+            const { error } = await supabase.rpc('update_coupon_atomic', {
+                p_company_id:         getCompanyId(),
+                p_branch_id:          getBranchId(),
+                p_coupon_id:          currentEditId,
+                p_coupon_code:        coupon_code,
+                p_discount_type:      discount_type,
+                p_discount_value:     parseFloat(discount_value),
+                p_min_bill_amount:    document.getElementById('cpnMinBooking')?.value ? parseFloat(document.getElementById('cpnMinBooking').value) : null,
+                p_valid_from:         document.getElementById('cpnStartDate')?.value || null,
+                p_valid_to:           document.getElementById('cpnEndDate')?.value   || null,
+                p_status:             'active',
+                p_all_services:       all_services,
+                p_all_products:       all_products,
+                p_all_memberships:    all_memberships
+            });
 
             if (error) throw error;
         } else {
-            // INSERT new row â€” DB generates coupon_id via DEFAULT gen_random_uuid()
-            const { error } = await supabase
-                .from('coupons')
-                .insert({ ...payload, created_at: new Date().toISOString() });
+            const { error } = await supabase.rpc('create_coupon_atomic', {
+                p_company_id:         getCompanyId(),
+                p_branch_id:          getBranchId(),
+                p_coupon_code:        coupon_code,
+                p_discount_type:      discount_type,
+                p_discount_value:     parseFloat(discount_value),
+                p_min_bill_amount:    document.getElementById('cpnMinBooking')?.value ? parseFloat(document.getElementById('cpnMinBooking').value) : null,
+                p_valid_from:         document.getElementById('cpnStartDate')?.value || null,
+                p_valid_to:           document.getElementById('cpnEndDate')?.value   || null,
+                p_all_services:       all_services,
+                p_all_products:       all_products,
+                p_all_memberships:    all_memberships
+            });
 
             if (error) throw error;
         }

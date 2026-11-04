@@ -130,42 +130,13 @@ async function fetchPlanFeaturesFromDb(planId) {
 export async function syncPlanFeaturesToDb(planId, featureKeys) {
     if (!planId) throw new Error('Missing planId');
 
-    const jsonFeatures = JSON.stringify(featureKeys || []);
+    const { data: rpcRes, error } = await supabase.rpc('sync_plan_features_atomic', {
+        p_plan_id:      planId,
+        p_feature_keys: featureKeys || []
+    });
 
-    // 1. Check if a single row already exists
-    const { data: existingRows } = await supabase
-        .from('plan_features')
-        .select('id')
-        .eq('plan_id', planId);
-
-    if (existingRows && existingRows.length > 0) {
-        // 2a. Update the primary single row
-        const primaryId = existingRows[0].id;
-        const { error: updateErr } = await supabase
-            .from('plan_features')
-            .eq('id', primaryId)
-            .update({
-                feature_key: jsonFeatures
-            });
-
-        if (updateErr) throw updateErr;
-
-        // Clean up legacy multi-rows if any existed
-        if (existingRows.length > 1) {
-            const extraIds = existingRows.slice(1).map(r => r.id);
-            await supabase.from('plan_features').in('id', extraIds).delete();
-        }
-    } else {
-        // 2b. Insert single row
-        const { error: insertErr } = await supabase
-            .from('plan_features')
-            .insert({
-                plan_id: planId,
-                feature_key: jsonFeatures
-            });
-
-        if (insertErr) throw insertErr;
-    }
+    if (error) throw error;
+    if (rpcRes && rpcRes.success === false) throw new Error(rpcRes.message || 'Failed to sync plan features');
 }
 
 
@@ -273,6 +244,39 @@ export async function getCurrentPlanFeatures(forceRefresh = false) {
             }
         } catch { /* Cache read error: fall through */ }
     }
+
+    // ── Zero-Trust Backend Resolution ─────────────────────────────────────────
+    // Prefer authoritative get_session_context RPC over direct client SELECT
+    try {
+        const { data: sessionCtx, error: ctxErr } = await supabase.rpc('get_session_context');
+        if (!ctxErr && sessionCtx?.plan_features) {
+            const planFeatureKeys = Array.isArray(sessionCtx.plan_features) ? sessionCtx.plan_features : [];
+            const pName = sessionCtx.company?.plan_name || 'Standard Plan';
+            const profile = {
+                planId: sessionCtx.company?.plan_id || null,
+                planName: pName,
+                companyId: sessionCtx.company?.company_id || null,
+                features: planFeatureKeys,
+                featuresSet: new Set(planFeatureKeys),
+                isEnterprise: (pName || '').toLowerCase().includes('enterprise')
+            };
+
+            try {
+                sessionStorage.setItem(PLAN_CACHE_STORAGE_KEY, JSON.stringify({
+                    timestamp: Date.now(),
+                    profile: {
+                        planId: profile.planId,
+                        planName: profile.planName,
+                        companyId: profile.companyId,
+                        features: profile.features,
+                        isEnterprise: profile.isEnterprise
+                    }
+                }));
+            } catch { /* Non-blocking */ }
+
+            return profile;
+        }
+    } catch (_) { /* Fallback to raw DB read */ }
 
     const { planId, planName, companyId } = resolveCurrentPlanMeta();
     let features = [];

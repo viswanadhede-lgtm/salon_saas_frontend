@@ -613,17 +613,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (profile.role_id) localStorage.setItem('role_id', profile.role_id);
                 }
 
-                // Step 3: Match user by email and update last_login_at
+                // Step 3: Update last_login_at via stored procedure
                 try {
-                    const loginTimestamp = new Date().toISOString();
                     if (userEmail) {
-                        await supabase.from('users')
-                            .update({ last_login_at: loginTimestamp })
-                            .eq('email', userEmail);
+                        await supabase.rpc('update_user_last_login_atomic', { p_email: userEmail });
                     } else if (user_id) {
-                        await supabase.from('users')
-                            .update({ last_login_at: loginTimestamp })
-                            .eq('user_id', user_id);
+                        await supabase.rpc('update_user_last_login_atomic', { p_user_id: user_id });
                     }
                 } catch (updateErr) {
                     console.warn('[signin] Failed to update last_login_at:', updateErr);

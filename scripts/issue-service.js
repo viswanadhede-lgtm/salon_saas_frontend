@@ -26,21 +26,15 @@ export async function submitIssue({ category, subject, description, file }) {
         throw new Error('User or company context not found. Please ensure you are logged in.');
     }
 
-    // 1. Insert into public.issues
-    // Note: The database trigger create_initial_issue_message_after_insert creates the initial message automatically
-    const { data: issue, error: issueErr } = await supabase
-        .from('issues')
-        .insert({
-            user_id: userId,
-            company_id: companyId,
-            branch_id: branchId,
-            category: category,
-            subject: subject.trim(),
-            description: description.trim(),
-            status: 'open'
-        })
-        .select('id, reference_number, status, created_at')
-        .single();
+    // 1. Authoritative insert via submit_issue_atomic RPC
+    const { data: issue, error: issueErr } = await supabase.rpc('submit_issue_atomic', {
+        p_company_id:  companyId,
+        p_branch_id:   branchId || null,
+        p_user_id:     userId,
+        p_category:    category || 'general',
+        p_subject:     subject.trim(),
+        p_description: description.trim()
+    });
 
     if (issueErr || !issue) {
         console.error('[issue-service] Error creating issue:', issueErr);
@@ -78,16 +72,14 @@ export async function submitIssue({ category, subject, description, file }) {
                     console.error('[issue-service] Storage upload failed:', uploadErr);
                     attachmentError = uploadErr.message;
                 } else {
-                    const { error: attErr } = await supabase
-                        .from('issue_attachments')
-                        .insert({
-                            issue_id: issue.id,
-                            message_id: initialMsg.id,
-                            storage_path: storagePath,
-                            file_name: file.name,
-                            content_type: file.type || 'application/octet-stream',
-                            size_bytes: file.size
-                        });
+                    const { error: attErr } = await supabase.rpc('add_issue_attachment_atomic', {
+                        p_issue_id:     issue.id,
+                        p_message_id:   initialMsg.id,
+                        p_storage_path: storagePath,
+                        p_file_name:    file.name,
+                        p_content_type: file.type || 'application/octet-stream',
+                        p_size_bytes:   file.size
+                    });
 
                     if (attErr) {
                         console.error('[issue-service] Attachment record insert failed:', attErr);
@@ -199,17 +191,13 @@ export async function sendFollowUp({ issueId, message, file }) {
     const trimmedMsg = (message || '').trim() || (file ? `Attached file: ${file.name}` : '');
     if (!trimmedMsg) throw new Error('Message cannot be empty.');
 
-    const { data: newMsg, error: msgErr } = await supabase
-        .from('issue_messages')
-        .insert({
-            issue_id: issueId,
-            sender_type: 'customer',
-            sender_user_id: userId,
-            sender_name: userName,
-            message: trimmedMsg
-        })
-        .select('id, issue_id, sender_type, sender_user_id, sender_name, message, created_at')
-        .single();
+    const { data: newMsg, error: msgErr } = await supabase.rpc('add_issue_message_atomic', {
+        p_issue_id:    issueId,
+        p_user_id:     userId,
+        p_sender_name: userName || 'Customer',
+        p_message:     trimmedMsg,
+        p_sender_type: 'customer'
+    });
 
     if (msgErr || !newMsg) {
         throw new Error(msgErr?.message || 'Failed to send message.');
@@ -226,18 +214,14 @@ export async function sendFollowUp({ issueId, message, file }) {
                 .upload(storagePath, file);
 
             if (!uploadErr) {
-                const { data: attData } = await supabase
-                    .from('issue_attachments')
-                    .insert({
-                        issue_id: issueId,
-                        message_id: newMsg.id,
-                        storage_path: storagePath,
-                        file_name: file.name,
-                        content_type: file.type || 'application/octet-stream',
-                        size_bytes: file.size
-                    })
-                    .select()
-                    .single();
+                const { data: attData } = await supabase.rpc('add_issue_attachment_atomic', {
+                    p_issue_id:     issueId,
+                    p_message_id:   newMsg.id,
+                    p_storage_path: storagePath,
+                    p_file_name:    file.name,
+                    p_content_type: file.type || 'application/octet-stream',
+                    p_size_bytes:   file.size
+                });
 
                 if (attData) {
                     let fileUrl = '#';
@@ -271,12 +255,10 @@ export async function sendFollowUp({ issueId, message, file }) {
 export async function updateIssueStatus(issueId, status) {
     // Valid DB check values: 'open', 'in_progress', 'resolved', 'closed'
     const normalized = status.toLowerCase().replace(/\s+/g, '_');
-    const { data, error } = await supabase
-        .from('issues')
-        .update({ status: normalized })
-        .eq('id', issueId)
-        .select('id, status, updated_at')
-        .single();
+    const { data, error } = await supabase.rpc('update_issue_status_atomic', {
+        p_issue_id: issueId,
+        p_status:   normalized
+    });
 
     if (error) throw error;
     return data;

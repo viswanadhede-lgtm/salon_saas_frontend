@@ -697,44 +697,22 @@ if (btnSaveCustomer) {
             return;
         }
 
-        const { data: dupeData, error: dupeErr } = await supabase
-            .from('customers')
-            .select('customer_id')
-            .eq('company_id', companyId)
-            .eq('customer_phone', digitsOnly)
-            .neq('customer_id', editingCustomerId)
-            .neq('status', 'deleted');
-
-        if (dupeErr) {
-            console.error('Duplicate check error:', dupeErr);
-        } else if (dupeData && dupeData.length > 0) {
-            showToast('A customer with this phone number already exists.', true);
-            return;
-        }
-
-        const payload = {
-            customer_name:   name,
-            customer_phone:  digitsOnly,
-            customer_email:  email,
-            tags:            tag,
-            notes:           inputNotes ? inputNotes.value.trim() : '',
-            updated_at:      'now'
-        };
-        if (dob) {
-            payload.dob = dob;
-        }
-
         const originalText = btnSaveCustomer.textContent;
         btnSaveCustomer.textContent = 'Updating...';
         btnSaveCustomer.disabled    = true;
 
         try {
-            const { error: updateErr } = await supabase
-                .from('customers')
-                .update(payload)
-                .eq('customer_id', editingCustomerId)
-                .eq('company_id', companyId)
-                .eq('branch_id', branchId);
+            const { error: updateErr } = await supabase.rpc('update_customer_atomic', {
+                p_company_id:     companyId,
+                p_branch_id:      branchId,
+                p_customer_id:    editingCustomerId,
+                p_customer_name:  name,
+                p_customer_phone: digitsOnly,
+                p_customer_email: email || null,
+                p_dob:            dob || null,
+                p_tags:           tag || null,
+                p_notes:          inputNotes ? inputNotes.value.trim() : null
+            });
 
             if (updateErr) throw updateErr;
 
@@ -770,12 +748,11 @@ async function deleteCustomer(id) {
             return false;
         }
 
-        const { error } = await supabase
-            .from('customers')
-            .update({ status: 'deleted', updated_at: 'now' })
-            .eq('customer_id', id)
-            .eq('company_id', companyId)
-            .eq('branch_id', branchId);
+        const { error } = await supabase.rpc('delete_customer_atomic', {
+            p_company_id:  companyId,
+            p_branch_id:   branchId,
+            p_customer_id: id
+        });
 
         if (error) throw error;
 
@@ -791,7 +768,7 @@ async function deleteCustomer(id) {
         return true;
     } catch (err) {
         console.error('Error deleting customer:', err);
-        showToast('Failed to delete customer. Ensure they have no active bookings.', true);
+        showToast(err.message || 'Failed to delete customer.', true);
         return false;
     }
 }

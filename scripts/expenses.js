@@ -264,6 +264,9 @@ window.submitExpense = async () => {
         return;
     }
 
+    const rawBranch = getBranchId();
+    const branchId = rawBranch && rawBranch !== 'all' ? rawBranch : null;
+
     const btn = document.querySelector('#addExpenseModal .btn-primary');
     const originalText = btn ? btn.innerHTML : 'Save';
     if (btn) {
@@ -273,54 +276,33 @@ window.submitExpense = async () => {
 
     try {
         if (editingExpenseId) {
-            // ── UPDATE ──
-            const updatePayload = {
-                date,
-                category,
-                amount,
-                notes,
-                status:     'active',
-                updated_at: new Date().toISOString()
-            };
-
-            let { error } = await supabase
-                .from('expenses')
-                .update(updatePayload)
-                .eq('company_id', companyId)
-                .eq('expense_id', editingExpenseId);
-
-            if (error) {
-                // Fallback for id if expense_id is not mapped
-                ({ error } = await supabase
-                    .from('expenses')
-                    .update(updatePayload)
-                    .eq('company_id', companyId)
-                    .eq('id', editingExpenseId));
-            }
+            // ── UPDATE (PostgreSQL Atomic RPC) ──
+            const { error } = await supabase.rpc('update_expense_atomic', {
+                p_company_id: companyId,
+                p_expense_id: editingExpenseId,
+                p_branch_id:  branchId,
+                p_date:       date,
+                p_category:   category,
+                p_amount:     amount,
+                p_notes:      notes
+            });
 
             if (error) throw error;
             showToast('Expense updated successfully!');
         } else {
-            // ── CREATE ──
+            // ── CREATE (PostgreSQL Atomic RPC) ──
             const user = getUserInfo();
-            const rawBranch = getBranchId();
-            const branchId = rawBranch && rawBranch !== 'all' ? rawBranch : null;
 
-            const { error } = await supabase
-                .from('expenses')
-                .insert({
-                    company_id: companyId,
-                    branch_id:  branchId,
-                    date,
-                    category,
-                    amount,
-                    notes,
-                    staff_id:   user.id,
-                    staff_name: user.name || user.first_name || 'Admin',
-                    status:     'active',
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                });
+            const { error } = await supabase.rpc('create_expense_atomic', {
+                p_company_id: companyId,
+                p_branch_id:  branchId,
+                p_date:       date,
+                p_category:   category,
+                p_amount:     amount,
+                p_notes:      notes,
+                p_staff_id:   user.id,
+                p_staff_name: user.name || user.first_name || 'Admin'
+            });
 
             if (error) throw error;
             showToast('Expense saved successfully!');
@@ -403,25 +385,14 @@ async function performDeleteExpense() {
     
     try {
         const companyId = getCompanyId();
-        let query = supabase
-            .from('expenses')
-            .update({ status: 'deleted', updated_at: new Date().toISOString() });
+        const rawBranch = getBranchId();
+        const branchId = rawBranch && rawBranch !== 'all' ? rawBranch : null;
 
-        if (companyId) {
-            query = query.eq('company_id', companyId);
-        }
-
-        let { error } = await query.eq('expense_id', id);
-
-        if (error) {
-            let fallbackQuery = supabase
-                .from('expenses')
-                .update({ status: 'deleted', updated_at: new Date().toISOString() });
-            if (companyId) {
-                fallbackQuery = fallbackQuery.eq('company_id', companyId);
-            }
-            ({ error } = await fallbackQuery.eq('id', id));
-        }
+        const { error } = await supabase.rpc('delete_expense_atomic', {
+            p_company_id: companyId,
+            p_expense_id: id,
+            p_branch_id:  branchId
+        });
 
         if (error) throw error;
 
@@ -429,7 +400,7 @@ async function performDeleteExpense() {
         await loadAllExpenseData();
     } catch (err) {
         console.error("Error deleting expense:", err);
-        showToast("Failed to delete expense");
+        showToast("Failed to delete expense: " + (err.message || ''));
     }
 }
 

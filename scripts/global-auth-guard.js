@@ -219,6 +219,72 @@ function setupTokenRefresh() {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Authoritatively fetches session context from Supabase get_session_context RPC.
+ * Populates Gate 1, Gate 2, Gate 3 profiles and synchronizes sessionStorage caches.
+ * Falls back to modular managers if RPC is temporarily unavailable.
+ */
+async function fetchAuthoritativeSessionContext(fallbackUserRow = {}, fallbackCompanyRow = {}) {
+    try {
+        const { data: sessionCtx, error: ctxErr } = await supabase.rpc('get_session_context');
+        if (!ctxErr && sessionCtx) {
+            const sub = sessionCtx.subscription || {};
+            const subProfile = {
+                accessLevel: sub.access_level || 'read-only',
+                status: sub.status || 'none',
+                isTrial: sub.is_trial === true,
+                isExpired: sub.access_level !== 'full',
+                isExpiringSoon: sub.is_expiring_soon === true,
+                daysRemaining: sub.days_remaining || 0,
+                planName: sub.plan_name || 'Standard',
+                billingCycle: sub.billing_cycle || 'monthly',
+                autoRenew: sub.auto_renew !== false,
+                cancelAtCycleEnd: sub.cancel_at_cycle_end === true,
+                nextBillingAt: sub.next_billing_at || null,
+                reason: sub.status || 'none'
+            };
+
+            const planFeatureKeys = Array.isArray(sessionCtx.plan_features) ? sessionCtx.plan_features : [];
+            const planProfile = {
+                planName: sessionCtx.company?.plan_name || 'Standard',
+                features: planFeatureKeys,
+                isUnlocked: (key) => planFeatureKeys.includes(key)
+            };
+
+            const permissionKeys = Array.isArray(sessionCtx.permissions) ? sessionCtx.permissions : [];
+            const hasUniversalAccess = permissionKeys.includes('ALL');
+            const roleName = sessionCtx.user?.role_name || fallbackUserRow.role_name || '';
+            const isOwner = roleName.toLowerCase() === 'owner' || hasUniversalAccess;
+            const rbacProfile = {
+                roleId: sessionCtx.user?.role_id || fallbackUserRow.role_id,
+                roleName: roleName || 'Staff',
+                isOwner,
+                hasUniversalAccess,
+                permissions: permissionKeys,
+                hasPermission: (key) => hasUniversalAccess || permissionKeys.includes(key)
+            };
+
+            // Sync sessionStorage caches for managers
+            try {
+                sessionStorage.setItem('salon_subscription_access_cache', JSON.stringify({ timestamp: Date.now(), profile: subProfile }));
+                sessionStorage.setItem('salon_plan_features_cache', JSON.stringify({ timestamp: Date.now(), profile: planProfile }));
+                sessionStorage.setItem('salon_rbac_permissions_cache', JSON.stringify({ timestamp: Date.now(), profile: rbacProfile }));
+            } catch (_) {}
+
+            return { subProfile, planProfile, rbacProfile, sessionCtx };
+        }
+    } catch (e) {
+        console.warn('[Auth Guard] get_session_context RPC exception, falling back to managers:', e.message);
+    }
+
+    // Fallback: Use individual managers
+    const subProfile = await getSubscriptionAccess(true);
+    const planProfile = await resolvePlanFeatures(true);
+    const rbacProfile = await getUserRoleAndPermissions(true);
+    return { subProfile, planProfile, rbacProfile, sessionCtx: null };
+}
+
 // SECTION 3 — 30-MINUTE SILENT HEARTBEAT
 // Periodically synchronizes Gate 1, Gate 2, Gate 3 state in the background.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -232,14 +298,8 @@ function setupHeartbeat() {
             const companyId = localStorage.getItem('company_id');
             if (!token || !companyId) return;
 
-            // 1. Refresh Gate 1 (Subscription Lifecycle)
-            const subProfile = await getSubscriptionAccess(true);
-
-            // 2. Refresh Gate 3 (Commercial Plan Features)
-            const planProfile = await resolvePlanFeatures(true);
-
-            // 3. Refresh Gate 2 (In-App RBAC Permissions)
-            const rbacProfile = await getUserRoleAndPermissions(true);
+            // Authoritatively refresh all 3 gates in single atomic backend RPC
+            const { subProfile, planProfile, rbacProfile } = await fetchAuthoritativeSessionContext();
 
             // Re-derive userFeatures & userSubFeatures
             let userFeatures = [];
@@ -484,20 +544,14 @@ export async function runGlobalAuthGuard() {
         if (company.plan_id) localStorage.setItem('plan_id', company.plan_id);
         if (company.plan_name) localStorage.setItem('plan_name', company.plan_name);
 
-        // 5. EVALUATE GATE 1: Subscription Lifecycle via SubscriptionStateManager
-        const subProfile = await getSubscriptionAccess(true);
-
-        // 6. EVALUATE GATE 3: Commercial Plan Features via PlanFeaturesManager
-        const planProfile = await resolvePlanFeatures(true);
+        // 5-7. AUTHORITATIVE BACKEND GATE EVALUATION (Single get_session_context RPC)
+        const { subProfile, planProfile, rbacProfile, sessionCtx } = await fetchAuthoritativeSessionContext(userRow, company);
 
         if (!isFeatureUnlocked(featureKey, planProfile)) {
             removeAuthSpinner();
             showPlanUpgradeModal(featureKey);
             return;
         }
-
-        // 7. EVALUATE GATE 2: In-App RBAC Permissions via RbacManager
-        const rbacProfile = await getUserRoleAndPermissions(true);
 
         if (!hasRolePermission(featureKey, rbacProfile)) {
             removeAuthSpinner();
@@ -582,9 +636,7 @@ export async function runGlobalAuthGuard() {
 
         // 10. Construct unified App Context
         try {
-            await supabase.from('users')
-                .update({ last_login_at: new Date().toISOString() })
-                .eq('user_id', user_id);
+            await supabase.rpc('update_user_last_login_atomic', { p_user_id: user_id });
         } catch (_) {}
 
         const appContext = {
@@ -862,13 +914,11 @@ export function populateGlobalHeader() {
                         const userId = localStorage.getItem('user_id');
                         const compId = localStorage.getItem('company_id');
                         if (userId && supabase) {
-                            supabase.from('user_preferences')
-                                .upsert({
-                                    user_id: userId,
-                                    company_id: compId || null,
-                                    branch_id: newBranchId,
-                                    updated_at: new Date().toISOString()
-                                }, { onConflict: 'user_id' })
+                            supabase.rpc('upsert_user_preferences_atomic', {
+                                    p_user_id:    userId,
+                                    p_company_id: compId || null,
+                                    p_branch_id:  newBranchId
+                                })
                                 .then(({ error }) => {
                                     if (error) console.warn('[Auth Guard] Failed to persist branch preference:', error);
                                 });

@@ -114,21 +114,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         markDone(step2);
                         markActive(step3);
 
-                        // Backfill phone into users and profiles if missing (Google OAuth onboarding)
+                        // Backfill phone into users and profiles if missing (Google OAuth onboarding) via atomic RPC
                         if (userPhone && userId) {
                             try {
-                                await Promise.all([
-                                    supabase
-                                        .from('users')
-                                        .update({ phone: userPhone })
-                                        .eq('user_id', userId)
-                                        .eq('company_id', companyId),
-                                    supabase
-                                        .from('profiles')
-                                        .update({ phone: userPhone })
-                                        .eq('user_id', userId)
-                                        .eq('company_id', companyId)
-                                ]);
+                                const { error: backfillErr } = await supabase.rpc('backfill_oauth_phone_atomic', {
+                                    p_company_id: companyId,
+                                    p_user_id:    userId,
+                                    p_phone:      userPhone
+                                });
+                                if (backfillErr) console.warn('[payment-result] Profile phone backfill warning:', backfillErr);
                             } catch (e) {
                                 console.warn('[payment-result] Profile phone backfill warning:', e);
                             }

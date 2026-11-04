@@ -298,9 +298,21 @@ export async function savePaymentSettings() {
             updated_at: now
         };
 
-        const { error: upsertErr } = await supabase
-            .from('business_payment_settings')
-            .upsert(payload, { onConflict: 'company_id,branch_id' });
+        const { data: rpcRes, error: upsertErr } = await supabase.rpc('save_business_payment_settings_atomic', {
+            p_company_id:             companyId,
+            p_branch_id:              branchId,
+            p_cash_enabled:           payload.cash_enabled,
+            p_upi_enabled:            payload.upi_enabled,
+            p_cards_enabled:          payload.cards_enabled,
+            p_online_payment_enabled: payload.online_payment_enabled,
+            p_upi_id:                 payload.upi_id,
+            p_upi_qr_code_url:        payload.upi_qr_code_url,
+            p_payment_note:           payload.payment_note,
+            p_default_payment_method: payload.default_payment_method
+        });
+        if (rpcRes && rpcRes.success === false) {
+            throw new Error(rpcRes.message || 'Failed to save payment settings');
+        }
 
         if (upsertErr) {
             throw new Error(upsertErr.message || 'Failed to save payment settings');

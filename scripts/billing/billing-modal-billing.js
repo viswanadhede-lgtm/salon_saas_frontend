@@ -110,63 +110,15 @@ export function bindBillingInfoEvents() {
                             country: country
                         };
 
-                        let savedViaRpc = false;
-                        try {
-                            const { data: rpcRes, error: rpcErr } = await supabase.rpc('save_billing_information', {
-                                p_company_id: companyId,
-                                p_data: payload
-                            });
+                        const { data: rpcRes, error: rpcErr } = await supabase.rpc('save_billing_information', {
+                            p_company_id: companyId,
+                            p_data: payload
+                        });
 
-                            if (!rpcErr && rpcRes && rpcRes.success !== false) {
-                                if (rpcRes.id) state.billingInfo.id = rpcRes.id;
-                                savedViaRpc = true;
-                                console.log('[Billing] Billing info saved and synchronized via RPC save_billing_information');
-                            } else if (rpcErr) {
-                                console.warn('[Billing] RPC save_billing_information error, falling back to direct table write:', rpcErr.message || rpcErr);
-                            }
-                        } catch (rpcEx) {
-                            console.warn('[Billing] RPC exception, falling back to direct table write:', rpcEx);
-                        }
-
-                        // Direct table fallback if RPC is not yet created in DB
-                        if (!savedViaRpc) {
-                            let rowId = state.billingInfo.id;
-                            if (!rowId) {
-                                const { data: existingRows } = await supabase
-                                    .from('company_billing_information')
-                                    .select('id')
-                                    .eq('company_id', companyId)
-                                    .order('created_at', { ascending: false })
-                                    .limit(1);
-                                if (existingRows && existingRows.length > 0) {
-                                    rowId = existingRows[0].id;
-                                }
-                            }
-
-                            const directPayload = {
-                                ...payload,
-                                company_id: companyId,
-                                updated_at: new Date().toISOString()
-                            };
-
-                            if (rowId) {
-                                const { error: updErr } = await supabase
-                                    .from('company_billing_information')
-                                    .update(directPayload)
-                                    .eq('id', rowId);
-                                if (updErr) throw updErr;
-                                state.billingInfo.id = rowId;
-                            } else {
-                                directPayload.created_at = new Date().toISOString();
-                                const { data: insData, error: insErr } = await supabase
-                                    .from('company_billing_information')
-                                    .insert([directPayload])
-                                    .select('id')
-                                    .maybeSingle();
-                                if (insErr) throw insErr;
-                                if (insData?.id) state.billingInfo.id = insData.id;
-                            }
-                        }
+                        if (rpcErr) throw rpcErr;
+                        if (rpcRes && rpcRes.success === false) throw new Error(rpcRes.message || 'Failed to save billing information');
+                        if (rpcRes?.id) state.billingInfo.id = rpcRes.id;
+                        console.log('[Billing] Billing info saved and synchronized via authoritative RPC');
                     }
                 }
 

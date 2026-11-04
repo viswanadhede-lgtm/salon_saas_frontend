@@ -126,6 +126,11 @@ function showToast(message, isError = false) {
 }
 
 export async function checkStaffDependencies(staffId) {
+    // Authoritative check is enforced transactionally inside app.delete_staff_atomic
+    return { hasDependency: false, reason: null };
+}
+
+async function _legacyCheckStaffDependencies(staffId) {
     const companyId = getCompanyId();
     const branchId = getBranchId();
     const todayStr = new Date().toISOString().split('T')[0];
@@ -516,28 +521,26 @@ function attachEventListeners() {
                 const nowIso = new Date().toISOString();
                 const todayDate = nowIso.split('T')[0];
 
-                const payload = {
-                    company_id,
-                    branch_id,
-                    staff_name: document.getElementById('sfName').value.trim(),
-                    phone: phoneVal,
-                    email: document.getElementById('sfEmail').value.trim() || null,
-                    role_name: 'Staff',
-                    services_offered: document.getElementById('sfServices').value.trim() || null,
-                    notes: document.getElementById('sfNotes').value.trim() || null,
-                    status: document.querySelector('input[name="sfStatus"]:checked')?.value || 'active',
-                    joined_at: todayDate,
-                    created_at: nowIso,
-                    updated_at: nowIso
-                };
-
-                const { error } = await supabase
-                    .from('staff')
-                    .insert(payload);
+                const staffNameVal = document.getElementById('sfName').value.trim();
+                const { data, error } = await supabase.rpc('create_staff_atomic', {
+                    p_company_id: company_id,
+                    p_branch_id: branch_id,
+                    p_staff_name: staffNameVal,
+                    p_phone: phoneVal,
+                    p_email: document.getElementById('sfEmail').value.trim() || null,
+                    p_role_name: 'Staff',
+                    p_services_offered: document.getElementById('sfServices').value.trim() || null,
+                    p_notes: document.getElementById('sfNotes').value.trim() || null,
+                    p_status: document.querySelector('input[name="sfStatus"]:checked')?.value || 'active'
+                });
 
                 if (error) {
                     throw new Error(error.message || 'Failed to create staff member');
                 }
+                if (data && data.success === false) {
+                    throw new Error(data.error || 'Failed to create staff member');
+                }
+                const payload = { staff_name: staffNameVal };
 
                 showToast('Staff member added successfully');
                 refreshUsageCounter('max_staff');
@@ -601,27 +604,27 @@ function attachEventListeners() {
 
                 const nowIso = new Date().toISOString();
 
-                const payload = {
-                    staff_name: document.getElementById('editSfName').value.trim(),
-                    phone: phoneVal,
-                    email: document.getElementById('editSfEmail').value.trim() || null,
-                    role_name: 'Staff',
-                    services_offered: document.getElementById('editSfServices').value.trim() || null,
-                    notes: document.getElementById('editSfNotes').value.trim() || null,
-                    status: document.querySelector('input[name="editSfStatus"]:checked')?.value || 'active',
-                    updated_at: nowIso
-                };
-
-                const { error } = await supabase
-                    .from('staff')
-                    .update(payload)
-                    .eq('staff_id', staffId)
-                    .eq('company_id', company_id)
-                    .eq('branch_id', branch_id);
+                const editNameVal = document.getElementById('editSfName').value.trim();
+                const { data, error } = await supabase.rpc('update_staff_atomic', {
+                    p_company_id: company_id,
+                    p_branch_id: branch_id,
+                    p_staff_id: staffId,
+                    p_staff_name: editNameVal,
+                    p_phone: phoneVal,
+                    p_email: document.getElementById('editSfEmail').value.trim() || null,
+                    p_role_name: 'Staff',
+                    p_services_offered: document.getElementById('editSfServices').value.trim() || null,
+                    p_notes: document.getElementById('editSfNotes').value.trim() || null,
+                    p_status: document.querySelector('input[name="editSfStatus"]:checked')?.value || 'active'
+                });
 
                 if (error) {
                     throw new Error(error.message || 'Failed to update staff member');
                 }
+                if (data && data.success === false) {
+                    throw new Error(data.error || 'Failed to update staff member');
+                }
+                const payload = { staff_name: editNameVal };
 
                 showToast('Staff member updated successfully');
                 if (window.notifyEvent) {
@@ -689,15 +692,18 @@ function attachEventListeners() {
 
                 const nowIso = new Date().toISOString();
 
-                const { error: deleteError } = await supabase
-                    .from('staff')
-                    .update({ 
-                        status: 'deleted',
-                        updated_at: nowIso
-                    })
-                    .eq('staff_id', staffId)
-                    .eq('company_id', company_id)
-                    .eq('branch_id', branch_id);
+                const { data, error: deleteError } = await supabase.rpc('delete_staff_atomic', {
+                    p_company_id: company_id,
+                    p_branch_id: branch_id,
+                    p_staff_id: staffId
+                });
+
+                if (deleteError) {
+                    throw new Error(deleteError.message || 'Failed to delete staff member');
+                }
+                if (data && data.success === false) {
+                    throw new Error(data.error || 'Failed to delete staff member');
+                }
 
                 if (deleteError) {
                     throw new Error(deleteError.message || 'Failed to delete staff member');

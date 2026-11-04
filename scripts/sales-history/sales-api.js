@@ -65,9 +65,21 @@ export async function fetchProductStock(productId) {
 // ─────────────────────────────────────────────────────────────
 
 export async function insertProductPayment(txnData) {
-    return await supabase
-        .from('business_transactions')
-        .insert(txnData);
+    return await supabase.rpc('record_business_transaction_atomic', {
+        p_company_id:      txnData.company_id,
+        p_branch_id:       txnData.branch_id,
+        p_reference_id:    txnData.reference_id,
+        p_reference_type:  txnData.reference_type,
+        p_amount:          txnData.amount,
+        p_payment_method:  txnData.payment_method,
+        p_status:          txnData.status || 'paid',
+        p_notes:           txnData.notes || null,
+        p_discount_type:   txnData.discount_type || null,
+        p_discount_name:   txnData.discount_name || null,
+        p_discount_amount: txnData.discount_amount || null,
+        p_final_amount:    txnData.final_amount || txnData.amount,
+        p_created_by:      txnData.created_by || null
+    });
 }
 
 /**
@@ -100,23 +112,18 @@ export async function executePosRefundAtomic(params) {
 
 /** @deprecated Use executePosRefundAtomic instead */
 export function buildSaleItemUpdatePromise(itemId, updatePayload) {
-    return supabase
-        .from('sales')
-        .update(updatePayload)
-        .eq('id', itemId);
+    console.warn('[sales-api] buildSaleItemUpdatePromise is deprecated. Sale updates are handled atomically by database procedures.');
+    return Promise.resolve({ data: null, error: null });
 }
 
-/** @deprecated Use executePosRefundAtomic instead */
+/** @deprecated Stock is adjusted atomically in PostgreSQL during executePosRefundAtomic */
 export function buildProductStockUpdatePromise(productId, newStock) {
-    return supabase
-        .from('products')
-        .update({ stock_quantity: newStock })
-        .eq('product_id', productId);
+    console.warn('[sales-api] buildProductStockUpdatePromise is deprecated. Stock adjustments are handled atomically by database procedures.');
+    return Promise.resolve({ data: null, error: null });
 }
 
-/** @deprecated Use executePosRefundAtomic instead */
+/** @deprecated Stock and refund ledgers are recorded atomically by process_pos_refund_atomic */
 export async function insertRefundLedger(ledgerRows) {
-    return await supabase
-        .from('business_transactions')
-        .insert(ledgerRows);
+    console.warn('[sales-api] insertRefundLedger is deprecated. Ledger recording is handled atomically by database procedures.');
+    return Promise.resolve({ data: null, error: null });
 }
