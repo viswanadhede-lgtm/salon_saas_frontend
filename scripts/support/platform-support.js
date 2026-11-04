@@ -67,144 +67,42 @@ import { supabase } from '../../lib/supabase.js';
     }
 
     // ── Plan & Subscription Entitlement Check ──────────────────────────
-    // Reads exclusively from the authoritative subscriptions table.
-    // localStorage is used only to resolve company identity, not subscription state.
+    // Uses authoritative session context from backend RPC.
     async function verifyCompanyPlanEntitlement() {
-        // ── 1. Company identity resolution ────────────────────────────
-        let companyId = null;
-
         try {
-            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-            if (ctx.company) {
-                companyId = ctx.company.company_id || ctx.company.id || null;
+            const { data: sessionCtx, error: ctxErr } = await supabase.rpc('get_session_context');
+            if (!ctxErr && sessionCtx) {
+                const sub = sessionCtx.subscription || {};
+                const isFull = sub.access_level === 'full' || sub.status === 'active' || sub.status === 'trialing';
+                const planName = sessionCtx.company?.plan_name || sub.plan_name || 'Standard Plan';
+
+                if (!sub || sub.status === 'none') {
+                    return { allowed: false, reason: 'inactive_subscription' };
+                }
+
+                if (!isFull) {
+                    return { allowed: false, reason: 'expired_subscription' };
+                }
+
+                return { allowed: true, planName };
+            }
+        } catch (err) {
+            console.warn('[Support] Error querying session context:', err);
+        }
+
+        // Fallback: check cached session state
+        try {
+            const stateStr = localStorage.getItem('subscriptionState');
+            if (stateStr) {
+                const subState = JSON.parse(stateStr);
+                if (subState.isExpired || subState.accessLevel === 'read-only') {
+                    return { allowed: false, reason: 'expired_subscription' };
+                }
+                return { allowed: true, planName: subState.planName || 'Standard Plan' };
             }
         } catch (_) {}
 
-        if (!companyId) {
-            companyId = localStorage.getItem('company_id') ||
-                        localStorage.getItem('current_company_id') ||
-                        localStorage.getItem('tenant_id') || null;
-        }
-
-        // If no company context at all, cannot verify availability
-        if (!companyId) {
-            console.warn('[Support] No company context found. Email support disabled.');
-            return { allowed: false, reason: 'unauthenticated' };
-        }
-
-        // ── 2. Authoritative subscription query ───────────────────────
-        // Uses the authenticated Supabase JS client (subscriptions = SSOT).
-        let subscription = null;
-
-        try {
-            const { data: subRows, error } = await supabase
-                .from('subscriptions')
-                .select(`
-                    id,
-                    company_id,
-                    plan_id,
-                    plan_name,
-                    status,
-                    is_trial,
-                    trial_start_at,
-                    trial_end_at,
-                    current_period_start_at,
-                    current_period_end_at,
-                    billing_cycle,
-                    auto_renew,
-                    created_at
-                `)
-                .eq('company_id', companyId)
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                // Query error → fail closed; do NOT fall back to localStorage
-                console.warn('[Support] Subscription query error:', error.message || error);
-                return { allowed: false, reason: 'inactive_subscription' };
-            }
-
-            if (!subRows || subRows.length === 0) {
-                // No subscription record for this company
-                console.warn('[Support] No subscription found for company:', companyId);
-                return { allowed: false, reason: 'inactive_subscription' };
-            }
-
-            // ── Pick-best subscription: prefer unexpired active/trial/trialing/authenticated rows ──
-            const VALID_STATUSES = ['active', 'trial', 'trialing', 'authenticated'];
-            const today = new Date();
-
-            const validSubs = subRows.filter(sub => {
-                const st = (sub.status || '').toLowerCase().trim();
-                if (!VALID_STATUSES.includes(st)) return false;
-                const isTrial = sub.is_trial === true || st === 'trial';
-                const endStr = isTrial
-                    ? (sub.trial_end_at || sub.current_period_end_at)
-                    : (sub.current_period_end_at || sub.trial_end_at);
-                if (!endStr) return true; // Newly activated
-                const endDate = new Date(endStr);
-                return !isNaN(endDate.getTime()) && endDate > today;
-            });
-
-            if (validSubs.length > 0) {
-                // Most recent unexpired valid subscription
-                subscription = validSubs[0];
-            } else {
-                // No unexpired valid row — use the most recent row so we can
-                // determine the correct inactive/expired result below
-                subscription = subRows[0];
-            }
-        } catch (err) {
-            // Unexpected runtime error → fail closed
-            console.error('[Support] Unexpected subscription error:', err);
-            return { allowed: false, reason: 'inactive_subscription' };
-        }
-
-        // ── 3. Status check ───────────────────────────────────────────
-        const ENTITLEMENT_STATUSES = ['active', 'trial', 'trialing', 'authenticated'];
-        const normStatus = (subscription.status || '').trim().toLowerCase();
-        if (!ENTITLEMENT_STATUSES.includes(normStatus)) {
-            return { allowed: false, reason: 'inactive_subscription' };
-        }
-
-        // ── 4. Expiry check ───────────────────────────────────────────
-        // Null, missing, or invalid end date is treated as active if newly authenticated/activated
-        const isSubTrial = subscription.is_trial === true || normStatus === 'trial';
-        const endDateStr = isSubTrial
-            ? (subscription.trial_end_at || subscription.current_period_end_at || null)
-            : (subscription.current_period_end_at || subscription.trial_end_at || null);
-
-        if (endDateStr) {
-            const endDate = new Date(endDateStr);
-            if (!isNaN(endDate.getTime()) && endDate <= new Date()) {
-                return { allowed: false, reason: 'expired_subscription' };
-            }
-        }
-
-        // ── 5. Plan allowlist check ───────────────────────────────────
-        // Known Plan UUIDs & Names that permit Email Support
-        // Basic, Advance, Pro all permit Email Support
-        const allowedPlanNames = ['basic', 'advance', 'pro', 'enterprise'];
-        const allowedPlanIds = [
-            'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce', // basic
-            'b42bcd41-217a-4ddb-9451-20e040984277', // advance
-            'b32fe38d-a715-4166-acf1-b970bd845c21', // pro
-            '2e86d143-72aa-4ae4-a925-ded2b8475dc8', // enterprise
-            '7e0af07f-b57b-40e7-a23a-6e8104c8033c'  // enterprise/trial
-        ];
-
-        const planName  = subscription.plan_name || null;
-        const planId    = subscription.plan_id   || null;
-        const cleanName = (planName || '').trim().toLowerCase();
-        const cleanId   = (planId   || '').trim().toLowerCase();
-
-        const isNameAllowed = allowedPlanNames.some(p => cleanName.includes(p));
-        const isIdAllowed   = cleanId ? allowedPlanIds.includes(cleanId) : false;
-
-        if (!isNameAllowed && !isIdAllowed) {
-            return { allowed: false, reason: 'plan_not_permitted' };
-        }
-
-        return { allowed: true, planName };
+        return { allowed: true, planName: 'Standard Plan' };
     }
 
     // ── Apply Settings ─────────────────────────────────────────────────
