@@ -547,9 +547,11 @@
                             </div>
                             <div class="modal-form-group">
                                 <label class="modal-form-label" for="inputLegalName">
-                                    Legal Business Name <span class="required-star">*</span>
+                                    Legal Business Name
                                 </label>
-                                <input type="text" id="inputLegalName" class="modal-form-input" placeholder="Legal Business Name (as registered)" required>
+                                <!-- Read-only: single source of truth is Settings → Business Profile (companies / company_settings) -->
+                                <input type="text" id="inputLegalName" class="modal-form-input" placeholder="Set in Settings → Business Profile" readonly style="background-color:#f8fafc;color:#475569;cursor:not-allowed;">
+                                <span class="modal-form-hint" style="font-size:0.75rem;color:#94a3b8;margin-top:4px;display:block;">To change your business name, go to <a href="settings-business.html" style="color:#6366f1;text-decoration:underline;">Settings → Business Profile</a>.</span>
                             </div>
                             <div class="modal-form-row-2col">
                                 <div class="modal-form-group">

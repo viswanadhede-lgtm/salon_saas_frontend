@@ -23,7 +23,17 @@ export function bindBillingInfoEvents() {
     const btnOpenEditBilling = document.getElementById('btnOpenEditBilling');
     if (btnOpenEditBilling) {
         btnOpenEditBilling.addEventListener('click', function () {
-            if (dom.inputLegalName) dom.inputLegalName.value = state.billingInfo.legalName || '';
+            // Legal Business Name is read-only in this modal — single source of truth is Settings → Business Profile.
+            // Populate the read-only field from appContext (companies / company_settings) for reference only.
+            if (dom.inputLegalName) {
+                try {
+                    const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+                    const name = ctx.company?.display_name || ctx.company?.company_name || state.billingInfo.legalName || '';
+                    dom.inputLegalName.value = name;
+                } catch (_) {
+                    dom.inputLegalName.value = state.billingInfo.legalName || '';
+                }
+            }
             if (dom.inputGstin) dom.inputGstin.value = state.billingInfo.gstin || '';
             if (dom.inputPan) dom.inputPan.value = state.billingInfo.pan || '';
             if (dom.inputBillingEmail) dom.inputBillingEmail.value = state.billingInfo.email || '';
@@ -41,7 +51,7 @@ export function bindBillingInfoEvents() {
 
     if (dom.btnSaveBillingInfo) {
         dom.btnSaveBillingInfo.addEventListener('click', async function () {
-            const legalName = (dom.inputLegalName && dom.inputLegalName.value.trim()) || '';
+            // Note: legalName is NOT collected here — it is read-only (single source of truth: Settings → Business Profile)
             const email = (dom.inputBillingEmail && dom.inputBillingEmail.value.trim()) || '';
             const addressLine1 = (dom.inputAddressLine1 && dom.inputAddressLine1.value.trim()) || '';
             const city = (dom.inputCity && dom.inputCity.value.trim()) || '';
@@ -54,11 +64,6 @@ export function bindBillingInfoEvents() {
             const district = dom.inputDistrict ? dom.inputDistrict.value.trim() : '';
             const country = (dom.inputCountry && dom.inputCountry.value.trim()) || 'India';
 
-            if (!legalName) {
-                showToast('Please enter legal business name.');
-                if (dom.inputLegalName) dom.inputLegalName.focus();
-                return;
-            }
             if (!email) {
                 showToast('Please enter billing email.');
                 if (dom.inputBillingEmail) dom.inputBillingEmail.focus();
@@ -96,7 +101,7 @@ export function bindBillingInfoEvents() {
                     const { supabase } = await import('../../lib/supabase.js');
                     if (supabase) {
                         const payload = {
-                            legal_business_name: legalName,
+                            // legal_business_name is NOT written here — single source of truth is companies / company_settings (Settings → Business Profile)
                             gstin: gstin,
                             pan: pan,
                             billing_email: email,
@@ -122,7 +127,7 @@ export function bindBillingInfoEvents() {
                     }
                 }
 
-                state.billingInfo.legalName = legalName;
+                // legalName is not updated here — it's read-only, sourced from Settings → Business Profile
                 state.billingInfo.gstin = gstin;
                 state.billingInfo.pan = pan;
                 state.billingInfo.email = email;

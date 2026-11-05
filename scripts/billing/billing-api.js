@@ -313,9 +313,16 @@ export async function loadBillingInformation(supabase, companyId) {
 
         if (data && data.length > 0) {
             const row = data[0];
+            // legalName is sourced from companies / company_settings (single source of truth via appContext),
+            // NOT from company_billing_information.legal_business_name.
+            let resolvedLegalName = '';
+            try {
+                const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+                resolvedLegalName = ctx.company?.display_name || ctx.company?.company_name || '';
+            } catch (_) {}
             state.billingInfo = {
                 id: row.id,
-                legalName: row.legal_business_name || '',
+                legalName: resolvedLegalName,
                 gstin: row.gstin || '',
                 pan: row.pan || '',
                 email: row.billing_email || '',
@@ -694,9 +701,16 @@ export async function loadActiveSubscriptionViaRpc(supabase, companyId) {
         // 6. Process Company Billing Information
         const bInfo = rpcRes.billing_information;
         if (bInfo) {
+            // legalName is sourced from companies / company_settings (single source of truth via appContext),
+            // NOT from company_billing_information.legal_business_name.
+            let resolvedLegalName = '';
+            try {
+                const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+                resolvedLegalName = ctx.company?.display_name || ctx.company?.company_name || '';
+            } catch (_) {}
             state.billingInfo = {
                 id: bInfo.id,
-                legalName: bInfo.legal_business_name || '',
+                legalName: resolvedLegalName,
                 gstin: bInfo.gstin || '',
                 pan: bInfo.pan || '',
                 email: bInfo.billing_email || '',
