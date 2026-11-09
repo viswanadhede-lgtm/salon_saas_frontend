@@ -13,3 +13,4 @@ ALTER TABLE app.bookings_for_business_transaction
 
 ALTER TABLE app.business_transactions
   ADD COLUMN IF NOT EXISTS created_by_user_name text;
+

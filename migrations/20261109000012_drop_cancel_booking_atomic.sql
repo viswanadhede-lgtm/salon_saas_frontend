@@ -9,3 +9,4 @@ DROP FUNCTION IF EXISTS app.cancel_booking_atomic(
     uuid,   -- p_branch_id
     text    -- p_cancel_reason
 );
+
