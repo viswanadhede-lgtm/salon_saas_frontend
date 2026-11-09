@@ -46,9 +46,14 @@ export async function openRefundModal(bookingId, optBookingObj) {
     if (bTimeEl) bTimeEl.textContent = '—';
     if (bTypeEl) bTypeEl.textContent = 'Walk-In';
 
-    const servicesTbody   = document.getElementById('rfServicesTableBody');
-    const servicesTotalEl = document.getElementById('rfServicesTotal');
-    if (servicesTbody) servicesTbody.innerHTML = '<tr><td colspan="3" style="padding:14px;text-align:center;color:#94a3b8;">Loading services...</td></tr>';
+    const servicesContainer = document.getElementById('rfServicesContainer');
+    const servicesTbody     = document.getElementById('rfServicesTableBody');
+    const servicesTotalEl   = document.getElementById('rfServicesTotal');
+    if (servicesContainer) {
+        servicesContainer.innerHTML = '<div style="padding:14px;text-align:center;color:#94a3b8;font-size:0.82rem;">Loading services...</div>';
+    } else if (servicesTbody) {
+        servicesTbody.innerHTML = '<tr><td colspan="3" style="padding:14px;text-align:center;color:#94a3b8;">Loading services...</td></tr>';
+    }
     if (servicesTotalEl) servicesTotalEl.textContent = '₹0';
 
     const origMethodEl = document.getElementById('rfOrigMethod');
@@ -155,47 +160,237 @@ export async function openRefundModal(bookingId, optBookingObj) {
         const prettyType = bookingType.charAt(0).toUpperCase() + bookingType.slice(1).toLowerCase();
         if (bTypeEl) bTypeEl.textContent = prettyType;
 
-        // 3. POPULATE CARD 3: Services in this Booking
-        let serviceItems = [];
-        if (individualBookings.length > 0) {
-            serviceItems = individualBookings.map(item => ({
-                service: item.service_name || 'Service',
-                staff:   item.staff_name   || 'Assigned',
-                price:   Number(item.price || 0)
-            }));
-        } else {
-            const svcNames   = (bft.service_name || (b && (b.service_name || b.service)) || 'Service').split(',').map(s => s.trim()).filter(Boolean);
-            const staffNames = (bft.staff_name   || (b && (b.staff_name   || b.staff))   || 'Assigned').split(',').map(s => s.trim()).filter(Boolean);
-            const rawTotalPrice = Number(bft.total_price || (b && (b.total_price || b.amount)) || 0);
+        // 3. POPULATE CARD 3: Services in this Booking (Services vs Packages)
+        const container = document.getElementById('rfServicesContainer');
 
-            if (svcNames.length <= 1) {
-                serviceItems = [{
-                    service: svcNames[0]  || 'Service',
-                    staff:   staffNames[0] || 'Assigned',
-                    price:   rawTotalPrice
-                }];
-            } else {
-                const perItemPrice = Math.round(rawTotalPrice / svcNames.length);
-                serviceItems = svcNames.map((svc, idx) => ({
-                    service: svc,
-                    staff:   staffNames[idx] || staffNames[0] || 'Assigned',
-                    price:   idx === svcNames.length - 1 ? (rawTotalPrice - (perItemPrice * (svcNames.length - 1))) : perItemPrice
-                }));
+        const individualSvcs = individualBookings.filter(s => !s.package_id);
+        const pkgRowsRaw     = individualBookings.filter(s => s.package_id);
+
+        // Group package rows by package_id
+        const pkgMap = new Map();
+        pkgRowsRaw.forEach(s => {
+            if (!pkgMap.has(s.package_id)) pkgMap.set(s.package_id, []);
+            pkgMap.get(s.package_id).push(s);
+        });
+
+        // Resolve package info (name, final_price) from packages table
+        let packagesInfo = {};
+        if (pkgMap.size > 0) {
+            try {
+                const pkgIds = [...pkgMap.keys()];
+                const { data: pkgData, error: pkgErr } = await supabase
+                    .from('packages')
+                    .select('package_id, package_name, final_price')
+                    .in('package_id', pkgIds);
+                if (!pkgErr && pkgData) {
+                    pkgData.forEach(p => {
+                        packagesInfo[p.package_id] = {
+                            name: p.package_name,
+                            price: Number(p.final_price) || 0
+                        };
+                    });
+                }
+            } catch (pkgEx) {
+                console.warn('[Refund] Package lookup warning:', pkgEx);
             }
         }
 
-        const totalBookingPrice = serviceItems.reduce((acc, curr) => acc + curr.price, 0);
+        // Build package items list
+        const packageItems = [];
+        pkgMap.forEach((subSvcs, pkgId) => {
+            const info = packagesInfo[pkgId] || {};
+            const pkgPrice = info.price !== undefined
+                ? info.price
+                : subSvcs.reduce((sum, s) => sum + (Number(s.price) || 0), 0);
+            packageItems.push({
+                id: pkgId,
+                name: info.name || 'Package',
+                price: pkgPrice,
+                services: subSvcs
+            });
+        });
 
-        if (servicesTbody) {
-            servicesTbody.innerHTML = serviceItems.map(item => `
+        const svcsSubtotal = individualSvcs.reduce((acc, curr) => acc + Number(curr.price || 0), 0);
+        const pkgsSubtotal = packageItems.reduce((acc, curr) => acc + Number(curr.price || 0), 0);
+
+        const totalBookingPrice = (individualSvcs.length > 0 || packageItems.length > 0)
+            ? (svcsSubtotal + pkgsSubtotal)
+            : Number(bft.total_price || (b && (b.total_price || b.amount)) || 0);
+
+        if (container) {
+            let card3Html = '';
+
+            // Section 1: Standalone Services
+            if (individualSvcs.length > 0) {
+                card3Html += `
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <div style="display:flex;align-items:center;gap:8px;padding:4px 0 6px 0;border-bottom:1.5px solid #e0e7ff;">
+                            <span style="font-size:0.78rem;font-weight:700;color:#4f46e5;text-transform:uppercase;letter-spacing:0.04em;">Selected Services</span>
+                            <span style="background:#e0e7ff;color:#4f46e5;border-radius:12px;padding:1px 8px;font-size:0.7rem;font-weight:700;">${individualSvcs.length}</span>
+                        </div>
+                        <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+                            <table style="width:100%;border-collapse:collapse;font-size:0.8rem;table-layout:fixed;">
+                                <thead>
+                                    <tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+                                        <th style="padding:7px 10px;text-align:left;font-size:0.7rem;font-weight:700;color:#64748b;width:45%;">Service</th>
+                                        <th style="padding:7px 10px;text-align:left;font-size:0.7rem;font-weight:700;color:#64748b;width:30%;">Staff</th>
+                                        <th style="padding:7px 10px;text-align:right;font-size:0.7rem;font-weight:700;color:#64748b;width:25%;">Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${individualSvcs.map(s => `
+                                        <tr style="border-bottom:1px solid #f1f5f9;">
+                                            <td style="padding:8px 10px;font-weight:600;color:#0f172a;">${s.service_name || 'Service'}</td>
+                                            <td style="padding:8px 10px;color:#475569;">
+                                                <span style="background:#f8fafc;color:#475569;border:1px solid #e2e8f0;padding:2px 8px;border-radius:10px;font-size:0.72rem;font-weight:600;">
+                                                    ${s.staff_name || 'Assigned'}
+                                                </span>
+                                            </td>
+                                            <td style="padding:8px 10px;text-align:right;font-weight:700;color:#0f172a;">₹${Number(s.price || 0).toLocaleString('en-IN')}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:4px 2px;">
+                            <span style="font-size:0.78rem;font-weight:600;color:#64748b;">Services Subtotal:</span>
+                            <span style="font-size:0.88rem;font-weight:800;color:#0f172a;">₹${svcsSubtotal.toLocaleString('en-IN')}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Section 2: Selected Packages
+            if (packageItems.length > 0) {
+                card3Html += `
+                    <div style="display:flex;flex-direction:column;gap:8px;${individualSvcs.length > 0 ? 'margin-top:6px;' : ''}">
+                        <div style="display:flex;align-items:center;gap:8px;padding:4px 0 6px 0;border-bottom:1.5px solid #e0e7ff;">
+                            <span style="font-size:0.78rem;font-weight:700;color:#4f46e5;text-transform:uppercase;letter-spacing:0.04em;">Selected Packages</span>
+                            <span style="background:#e0e7ff;color:#4f46e5;border-radius:12px;padding:1px 8px;font-size:0.7rem;font-weight:700;">${packageItems.length}</span>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            ${packageItems.map((pkg, pIdx) => {
+                                const cardId = `rfPkgBody_${pIdx}`;
+                                const arrowId = `rfPkgArrow_${pIdx}`;
+                                return `
+                                    <div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:#ffffff;box-shadow:0 1px 2px rgba(0,0,0,0.02);">
+                                        <div onclick="var b=document.getElementById('${cardId}'); var a=document.getElementById('${arrowId}'); var open=b.style.display!=='none'; b.style.display=open?'none':'block'; a.style.transform=open?'rotate(0deg)':'rotate(180deg)';"
+                                             style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;cursor:pointer;user-select:none;background:#ffffff;">
+                                            <div style="display:flex;align-items:center;gap:10px;">
+                                                <div style="width:32px;height:32px;border-radius:8px;background:#eef2ff;border:1px solid #c7d2fe;display:flex;align-items:center;justify-content:center;color:#4f46e5;flex-shrink:0;">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
+                                                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                                                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <div style="display:flex;align-items:center;gap:6px;">
+                                                        <span style="font-weight:700;font-size:0.86rem;color:#0f172a;">${pkg.name}</span>
+                                                        <span style="background:#e0e7ff;color:#4f46e5;font-size:0.65rem;font-weight:700;padding:1px 6px;border-radius:10px;">PACKAGE</span>
+                                                    </div>
+                                                    <div style="font-size:0.72rem;color:#64748b;margin-top:1px;">
+                                                        ${pkg.services.length} included services
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div style="display:flex;align-items:center;gap:10px;">
+                                                <span style="font-weight:800;font-size:0.95rem;color:#0f172a;">₹${pkg.price.toLocaleString('en-IN')}</span>
+                                                <div style="width:24px;height:24px;border-radius:6px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;">
+                                                    <svg id="${arrowId}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.25s;">
+                                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="${cardId}" style="display:none;border-top:1px solid #f1f5f9;background:#fafbfc;padding:6px 12px 10px 12px;">
+                                            <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+                                                <thead>
+                                                    <tr style="border-bottom:1px solid #e2e8f0;color:#64748b;">
+                                                        <th style="padding:4px 6px;text-align:left;width:24px;font-size:0.68rem;font-weight:700;">#</th>
+                                                        <th style="padding:4px 6px;text-align:left;font-size:0.68rem;font-weight:700;">Service</th>
+                                                        <th style="padding:4px 6px;text-align:left;font-size:0.68rem;font-weight:700;">Staff</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${pkg.services.map((s, idx) => `
+                                                        <tr style="border-bottom:1px solid #f1f5f9;">
+                                                            <td style="padding:5px 6px;color:#94a3b8;font-weight:600;">${idx + 1}</td>
+                                                            <td style="padding:5px 6px;font-weight:600;color:#334155;">${s.service_name || 'Service'}</td>
+                                                            <td style="padding:5px 6px;color:#475569;">
+                                                                <span style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;padding:1px 6px;border-radius:8px;font-size:0.7rem;font-weight:600;">
+                                                                    ${s.staff_name || 'Assigned'}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        <div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:4px 2px;">
+                            <span style="font-size:0.78rem;font-weight:600;color:#64748b;">Packages Subtotal:</span>
+                            <span style="font-size:0.88rem;font-weight:800;color:#0f172a;">₹${pkgsSubtotal.toLocaleString('en-IN')}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Fallback if no services rows returned
+            if (individualSvcs.length === 0 && packageItems.length === 0) {
+                const svcNames = (bft.service_name || (b && (b.service_name || b.service)) || 'Service').split(',').map(s => s.trim()).filter(Boolean);
+                card3Html += `
+                    <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+                        <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+                            <tbody>
+                                ${svcNames.map(name => `
+                                    <tr style="border-bottom:1px solid #f1f5f9;">
+                                        <td style="padding:8px 10px;font-weight:600;color:#0f172a;">${name}</td>
+                                        <td style="padding:8px 10px;text-align:right;font-weight:700;color:#0f172a;">—</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            // Summary Section
+            card3Html += `
+                <div style="margin-top:6px;border-top:1.5px dashed #e2e8f0;padding-top:8px;">
+                    ${(individualSvcs.length > 0 && packageItems.length > 0) ? `
+                        <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:#64748b;margin-bottom:3px;">
+                            <span>Services Subtotal</span>
+                            <span style="font-weight:700;color:#0f172a;">₹${svcsSubtotal.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:#64748b;margin-bottom:6px;">
+                            <span>Packages Subtotal</span>
+                            <span style="font-weight:700;color:#0f172a;">₹${pkgsSubtotal.toLocaleString('en-IN')}</span>
+                        </div>
+                    ` : ''}
+                    <div style="display:flex;justify-content:space-between;align-items:center;background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:8px 12px;">
+                        <span style="font-size:0.84rem;font-weight:700;color:#6b21a8;">Total Booking Value</span>
+                        <span style="font-size:1rem;font-weight:800;color:#6b21a8;">₹${totalBookingPrice.toLocaleString('en-IN')}</span>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = card3Html;
+        } else if (servicesTbody) {
+            // Legacy fallback if table exists
+            servicesTbody.innerHTML = individualBookings.map(item => `
                 <tr style="border-bottom:1px solid #f1f5f9;">
-                    <td style="padding:10px 12px;font-weight:600;color:#0f172a;">${item.service}</td>
-                    <td style="padding:10px 12px;color:#475569;">${item.staff}</td>
-                    <td style="padding:10px 12px;text-align:right;font-weight:600;color:#0f172a;">₹${item.price.toLocaleString('en-IN')}</td>
+                    <td style="padding:10px 12px;font-weight:600;color:#0f172a;">${item.service_name || 'Service'}</td>
+                    <td style="padding:10px 12px;color:#475569;">${item.staff_name || 'Assigned'}</td>
+                    <td style="padding:10px 12px;text-align:right;font-weight:600;color:#0f172a;">₹${Number(item.price || 0).toLocaleString('en-IN')}</td>
                 </tr>
             `).join('');
+            if (servicesTotalEl) servicesTotalEl.textContent = `₹${totalBookingPrice.toLocaleString('en-IN')}`;
         }
-        if (servicesTotalEl) servicesTotalEl.textContent = `₹${totalBookingPrice.toLocaleString('en-IN')}`;
 
         // 4. POPULATE CARD 4: Original Payment Details
         const paidTxs = transactions.filter(t => (t.status || '').toLowerCase().trim() === 'paid');

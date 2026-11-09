@@ -131,7 +131,7 @@ export function ensureModalsInjected() {
 
     // 2. Refund Modal (2-Column Premium Layout)
     const existingRefModal = document.getElementById('refundBookingModal');
-    if (existingRefModal && !existingRefModal.querySelector('.rf-col-divided')) {
+    if (existingRefModal && (!existingRefModal.querySelector('.rf-col-divided') || !existingRefModal.querySelector('#rfServicesContainer'))) {
         existingRefModal.remove();
     }
 
@@ -235,25 +235,8 @@ export function ensureModalsInjected() {
                         <!-- CARD 3: Services in this Booking -->
                         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;">
                             <div style="font-size:0.88rem;font-weight:700;color:#0f172a;">Services in this Booking</div>
-                            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
-                                <table style="width:100%;border-collapse:collapse;font-size:0.82rem;table-layout:fixed;">
-                                    <thead>
-                                        <tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
-                                            <th style="padding:8px 12px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;width:45%;">Service</th>
-                                            <th style="padding:8px 12px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;width:30%;">Staff</th>
-                                            <th style="padding:8px 12px;text-align:right;font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;width:25%;">Price</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="rfServicesTableBody">
-                                        <tr><td colspan="3" style="padding:14px;text-align:center;color:#94a3b8;">Loading services...</td></tr>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr style="border-top:1px solid #e2e8f0;background:#faf5ff;">
-                                            <td colspan="2" style="padding:10px 12px;font-weight:700;color:#0f172a;">Total Paid</td>
-                                            <td id="rfServicesTotal" style="padding:10px 12px;text-align:right;font-weight:800;color:#0f172a;font-size:0.9rem;">₹0</td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
+                            <div id="rfServicesContainer" style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;padding:12px;display:flex;flex-direction:column;gap:12px;">
+                                <div style="padding:14px;text-align:center;color:#94a3b8;font-size:0.82rem;">Loading services...</div>
                             </div>
                         </div>
 
