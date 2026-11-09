@@ -222,24 +222,19 @@ export async function openRefundModal(bookingId, optBookingObj) {
         const origTxnId = latestPaidTx?.id ? String(latestPaidTx.id).slice(0, 8).toUpperCase() : '—';
         if (origTxnEl) origTxnEl.textContent = origTxnId !== '—' ? `#${origTxnId}` : '—';
 
-        // 5. COMPUTE REFUNDABLE AMOUNT & RIGHT COLUMN
-        let activeRefundableAmount = transactions.reduce((sum, tx) => {
-            const val = Number(tx.final_amount ?? tx.amount ?? 0);
-            const status = (tx.status || '').toLowerCase().trim();
-            if (status === 'paid')     return sum + val;
-            if (status === 'refunded') return sum - val;
-            return sum;
-        }, 0);
+        // 5. COMPUTE REFUNDABLE AMOUNT — business_transactions is the ONLY source of truth
+        // Formula: SUM(paid rows) - SUM(refunded rows) for this booking_id
+        // No fallback to other tables. If net = 0, the booking is already fully refunded.
+        const totalPaid     = transactions.filter(tx => (tx.status || '').toLowerCase().trim() === 'paid')
+                                          .reduce((sum, tx) => sum + Number(tx.final_amount ?? tx.amount ?? 0), 0);
+        const totalRefunded = transactions.filter(tx => (tx.status || '').toLowerCase().trim() === 'refunded')
+                                          .reduce((sum, tx) => sum + Number(tx.final_amount ?? tx.amount ?? 0), 0);
 
-        // Fallback to booking price if payments not logged in business_transactions
-        if (activeRefundableAmount <= 0) {
-            const rawTot = bft.final_amount ?? bft.total_price ?? (b && (b.final_amount ?? b.total_price ?? b.price)) ?? totalBookingPrice;
-            if (Number(rawTot) > 0 && ['paid', 'partial'].includes((bft.payment_status || (b && b.payment_status) || '').toLowerCase())) {
-                activeRefundableAmount = Number(rawTot);
-            }
-        }
+        const activeRefundableAmount = Math.max(0, totalPaid - totalRefunded);
 
-        if (activeRefundableAmount < 0) activeRefundableAmount = 0;
+        // Determine display state: no payment recorded vs already fully refunded vs refundable
+        const noPaidTransactions = totalPaid === 0;
+        const alreadyRefunded    = totalPaid > 0 && activeRefundableAmount === 0;
 
         // Persist computed amount into shared state for processRefund
         setActiveRefundableAmount(activeRefundableAmount);
@@ -259,19 +254,37 @@ export async function openRefundModal(bookingId, optBookingObj) {
         }
 
         if (confirmBtn) {
-            if (activeRefundableAmount <= 0) {
-                if (amountDisp) amountDisp.style.color = '#94a3b8';
+            if (alreadyRefunded) {
+                // Fully refunded already — show in amber, disable button
+                if (amountDisp) {
+                    amountDisp.textContent = '₹0';
+                    amountDisp.style.color = '#d97706';
+                }
+                if (maxRefundEl) maxRefundEl.textContent = '₹0 (already refunded)';
                 confirmBtn.disabled = true;
-                confirmBtn.textContent = 'Nothing to Refund';
+                confirmBtn.textContent = 'Already Refunded';
+                confirmBtn.style.background = '#d97706';
+            } else if (noPaidTransactions) {
+                // No payment logged at all — nothing to refund
+                if (amountDisp) {
+                    amountDisp.textContent = '₹0';
+                    amountDisp.style.color = '#94a3b8';
+                }
+                if (maxRefundEl) maxRefundEl.textContent = 'No payment recorded';
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = 'No Payment to Refund';
+                confirmBtn.style.background = '#94a3b8';
             } else {
+                // Refund available
                 if (amountDisp) amountDisp.style.color = '#e11d48';
                 confirmBtn.disabled = false;
+                confirmBtn.style.background = '#e11d48';
                 confirmBtn.innerHTML = `
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="1 4 1 10 7 10"></polyline>
                         <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
                     </svg>
-                    <span>Issue Refund</span>
+                    <span>Issue Refund — ${refundFormatted}</span>
                 `;
             }
         }
