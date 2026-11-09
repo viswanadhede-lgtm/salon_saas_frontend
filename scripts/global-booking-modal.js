@@ -92,7 +92,7 @@ export function ensureBookingModalHtml() {
         const linkEl = document.createElement('link');
         linkEl.id = 'globalBookingModalStyles';
         linkEl.rel = 'stylesheet';
-        linkEl.href = 'styles/global-booking-modal.css';
+        linkEl.href = 'styles/global-booking-modal.css?v=2.2.1';
         document.head.appendChild(linkEl);
     }
 
