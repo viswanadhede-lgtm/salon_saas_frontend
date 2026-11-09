@@ -314,7 +314,7 @@ export async function openEditBookingModal(bookingId) {
     // ── Cancel Booking footer button ─────────────────────────────────────
     const cancelBtn = document.getElementById('btnCancelThisBooking');
     if (cancelBtn) {
-        const isCancellable = !['cancelled', 'completed', 'no-show', 'no_show'].includes((b.status || '').toLowerCase());
+        const isCancellable = !['cancelled', 'completed', 'no-show', 'no_show'].includes((b.booking_status || b.status || '').toLowerCase());
         cancelBtn.style.display = isCancellable ? 'inline-flex' : 'none';
         cancelBtn.onclick = () => {
             if (!confirm('Are you sure you want to cancel this booking?')) return;
