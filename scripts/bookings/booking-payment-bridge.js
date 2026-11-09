@@ -453,81 +453,53 @@ export async function processBookingPaymentCallback(payload, row, options = {}) 
         }
         console.log('[BookingPayment] RPC result:', rpcResult);
 
-        // Open post-payment confirmation modal (booking flow only)
-        const bookingRef = '#' + String(bookingId).slice(0, 8).toUpperCase();
-        window.openBookingConfirmModal?.({
-            amountCollected: amount,
-            customerName: row.customer_name || window.globalPaymentConfig?.customerName || 'Customer',
-            bookingRef: bookingRef,
-            onMarkComplete: async () => {
-                // Update booking status → completed via authoritative stored procedure
-                const companyId = row.company_id || localStorage.getItem('company_id');
-                const branchId = row.branch_id || localStorage.getItem('branch_id');
-
-                const { data: resData, error: statusErr } = await supabase.rpc('update_booking_status_atomic', {
-                    p_booking_id: bookingId,
-                    p_company_id: companyId,
-                    p_branch_id: branchId || null,
-                    p_new_status: 'completed'
-                });
-
-                if (statusErr || resData?.success === false) {
-                    console.warn('[BookingPaymentBridge] Status update warning:', statusErr?.message || resData?.error);
-                }
-
-                // Show completion toast
-                const msg = `Booking ${bookingRef} marked as completed`;
-                const toastEl = document.getElementById('toastNotification');
-                if (toastEl) {
-                    toastEl.textContent = msg;
-                    toastEl.style.background = '#10b981';
-                    toastEl.classList.add('show');
-                    setTimeout(() => toastEl.classList.remove('show'), 3500);
-                } else if (window.toast) {
-                    window.toast(msg);
-                }
-
-                if (typeof options.onSuccess === 'function') {
-                    await options.onSuccess({ bookingId, status: 'completed' });
-                } else if (typeof fetchBookings === 'function') {
-                    await fetchBookings();
-                }
-
-                // Dispatch cross-tab / cross-component event
-                document.dispatchEvent(new CustomEvent('payment-recorded', {
-                    detail: { bookingId, amount, status: 'completed' }
-                }));
-                try {
-                    localStorage.setItem('app_payment_sync', JSON.stringify({ bookingId, time: Date.now() }));
-                } catch (e) {}
-            },
-            onExit: async () => {
-                // Payment is already saved — just refresh and show payment toast
-                const toastEl = document.getElementById('toastNotification');
-                if (toastEl) {
-                    toastEl.textContent = 'Payment recorded successfully!';
-                    toastEl.style.background = '#10b981';
-                    toastEl.classList.add('show');
-                    setTimeout(() => toastEl.classList.remove('show'), 3000);
-                } else if (window.toast) {
-                    window.toast('Payment recorded successfully!');
-                }
-
-                if (typeof options.onSuccess === 'function') {
-                    await options.onSuccess({ bookingId, status: 'paid' });
-                } else if (typeof fetchBookings === 'function') {
-                    await fetchBookings();
-                }
-
-                // Dispatch cross-tab / cross-component event
-                document.dispatchEvent(new CustomEvent('payment-recorded', {
-                    detail: { bookingId, amount, status: 'paid' }
-                }));
-                try {
-                    localStorage.setItem('app_payment_sync', JSON.stringify({ bookingId, time: Date.now() }));
-                } catch (e) {}
+        // ── Auto-complete: payment collected = service done in a salon context ──
+        // Immediately mark the booking as completed so it moves out of upcoming
+        const companyId = row.company_id || localStorage.getItem('company_id');
+        const branchId  = row.branch_id  || localStorage.getItem('branch_id');
+        if (companyId) {
+            const { data: autoData, error: autoErr } = await supabase.rpc('update_booking_status_atomic', {
+                p_booking_id: bookingId,
+                p_company_id: companyId,
+                p_branch_id:  branchId || null,
+                p_new_status: 'completed'
+            });
+            if (autoErr || autoData?.success === false) {
+                console.warn('[BookingPayment] Auto-complete status update failed:', autoErr?.message || autoData?.error);
+            } else {
+                console.log('[BookingPayment] Auto-complete: booking marked as completed');
             }
-        });
+        } else {
+            console.warn('[BookingPayment] Auto-complete skipped: company_id not available');
+        }
+
+        // Show success toast
+        const bookingRef = '#' + String(bookingId).slice(0, 8).toUpperCase();
+        const toastEl = document.getElementById('toastNotification');
+        const toastMsg = `Payment collected & booking ${bookingRef} completed!`;
+        if (toastEl) {
+            toastEl.textContent = toastMsg;
+            toastEl.style.background = '#10b981';
+            toastEl.classList.add('show');
+            setTimeout(() => toastEl.classList.remove('show'), 3500);
+        } else if (window.toast) {
+            window.toast(toastMsg);
+        }
+
+        // Refresh the page data
+        if (typeof options.onSuccess === 'function') {
+            await options.onSuccess({ bookingId, status: 'completed' });
+        } else if (typeof fetchBookings === 'function') {
+            await fetchBookings();
+        }
+
+        // Dispatch cross-tab / cross-component event
+        document.dispatchEvent(new CustomEvent('payment-recorded', {
+            detail: { bookingId, amount, status: 'completed' }
+        }));
+        try {
+            localStorage.setItem('app_payment_sync', JSON.stringify({ bookingId, time: Date.now() }));
+        } catch (e) {}
 
     } catch (err) {
         console.error('[BookingPayment] Callback error:', err);
