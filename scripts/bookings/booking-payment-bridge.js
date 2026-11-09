@@ -128,6 +128,14 @@ export async function openBookingPayment(bookingIdOrRow, options = {}) {
         }
     }
 
+    // ── Compute correct grand total:
+    //    individual service prices (package_id = NULL) + each package's final_price (ONE per package)
+    //    This avoids double-counting by ignoring the per-service prices stored inside packages.
+    //    Falls back to row.total_price only when items could not be built.
+    const computedTotal = items.length > 0
+        ? items.reduce((sum, i) => sum + (i.price || 0), 0)
+        : totalOriginal;
+
     if (!window.openGlobalPaymentModal) {
         await new Promise((resolve) => {
             const s = document.createElement('script');
@@ -146,18 +154,18 @@ export async function openBookingPayment(bookingIdOrRow, options = {}) {
             customerId: (row && (row.customer_id || row.customerId)) || null,
             customerName: customerName,
             customerPhone: customerPhone,
-            totalAmount: totalOriginal,
-            amountDue:   totalOriginal,
+            totalAmount: computedTotal,
+            amountDue:   computedTotal,
             items: items,
             onComplete: async (payload) => {
-                await processBookingPaymentCallback(payload, row || { booking_id: targetId, final_amount: totalOriginal }, options);
+                await processBookingPaymentCallback(payload, row || { booking_id: targetId, final_amount: computedTotal }, options);
             }
         });
 
         // ── After GPM renders, replace the flat table with the two-section layout
-        requestAnimationFrame(() => _renderBookingServicesSections(items, totalOriginal));
-        setTimeout(() => _renderBookingServicesSections(items, totalOriginal), 50);
-        setTimeout(() => _renderBookingServicesSections(items, totalOriginal), 150);
+        requestAnimationFrame(() => _renderBookingServicesSections(items, computedTotal));
+        setTimeout(() => _renderBookingServicesSections(items, computedTotal), 50);
+        setTimeout(() => _renderBookingServicesSections(items, computedTotal), 150);
     } else {
         alert('Payment modal not loaded. Please refresh the page.');
     }
