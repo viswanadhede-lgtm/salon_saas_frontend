@@ -962,7 +962,7 @@
     padding: 12px 20px;
     border: none;
     border-radius: 12px;
-    background: #1E3A8A;
+    background: #d946ef;
     color: #ffffff;
     font-size: 0.88rem;
     font-weight: 600;
@@ -971,20 +971,20 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.2), 0 2px 4px -1px rgba(30, 58, 138, 0.12);
+    box-shadow: 0 4px 6px -1px rgba(217, 70, 239, 0.25), 0 2px 4px -1px rgba(217, 70, 239, 0.12);
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     flex-shrink: 0;
 }
 
 .btn-add-services-modal:hover {
-    background: #1e40af;
-    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.25);
+    background: #c026d3;
+    box-shadow: 0 4px 12px rgba(217, 70, 239, 0.3);
     transform: translateY(-1px);
 }
 
 .btn-add-services-modal:active {
     transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(30, 58, 138, 0.15);
+    box-shadow: 0 1px 2px rgba(217, 70, 239, 0.15);
 }
 
 .btn-add-services-modal i,
