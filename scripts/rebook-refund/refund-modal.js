@@ -201,7 +201,7 @@ export async function openRefundModal(bookingId, optBookingObj) {
         const paidTxs = transactions.filter(t => (t.status || '').toLowerCase().trim() === 'paid');
         const latestPaidTx = paidTxs[paidTxs.length - 1] || transactions[0] || null;
 
-        let origMethod = latestPaidTx?.payment_method || (b && (b.payment_method || b.payment)) || 'Cash';
+        let origMethod = latestPaidTx?.payment_method || (b && b.payment_method) || 'Cash';
         origMethod = origMethod.charAt(0).toUpperCase() + origMethod.slice(1).toLowerCase();
         if (origMethodEl) origMethodEl.textContent = origMethod;
 
@@ -234,7 +234,7 @@ export async function openRefundModal(bookingId, optBookingObj) {
         // Fallback to booking price if payments not logged in business_transactions
         if (activeRefundableAmount <= 0) {
             const rawTot = bft.final_amount ?? bft.total_price ?? (b && (b.final_amount ?? b.total_price ?? b.price)) ?? totalBookingPrice;
-            if (Number(rawTot) > 0 && ['paid', 'partial'].includes((bft.payment_status || (b && (b.payment_status || b.payment)) || '').toLowerCase())) {
+            if (Number(rawTot) > 0 && ['paid', 'partial'].includes((bft.payment_status || (b && b.payment_status) || '').toLowerCase())) {
                 activeRefundableAmount = Number(rawTot);
             }
         }
