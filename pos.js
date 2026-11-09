@@ -186,6 +186,8 @@ function renderProducts(products) {
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            height: 270px;
+            min-width: 0;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             opacity: ${isOutOfStock ? '0.65' : '1'};
         `;
