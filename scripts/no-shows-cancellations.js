@@ -1,4 +1,4 @@
-﻿import { supabase } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase.js';
 
 let todaysBookingsData = [];
 let activeTab = 'no-show';
@@ -36,7 +36,7 @@ export async function initPage() {
             .eq('booking_date', localISOTime)
             .order('start_time', { ascending: true });
             
-        query = query.in('status', ['no-show', 'cancelled', 'noshow', 'no_show', 'No-show', 'Cancelled', 'Noshow', 'No_show']);
+        query = query.in('booking_status', ['no-show', 'cancelled', 'noshow', 'no_show', 'No-show', 'Cancelled', 'Noshow', 'No_show']);
 
         const { data, error } = await query;
         if (error) throw error;
@@ -71,8 +71,8 @@ export async function initPage() {
         console.error("Failed to load live bookings:", err);
     }
 
-    const noShows = todaysBookingsData.filter(b => b.booking_status === 'no-show');
-    const cancelled = todaysBookingsData.filter(b => b.booking_status === 'cancelled');
+    const noShows = todaysBookingsData.filter(b => b.status === 'no-show');
+    const cancelled = todaysBookingsData.filter(b => b.status === 'cancelled');
     const noShowBadge = document.getElementById('noscNoShowBadge');
     if (noShowBadge) {
         noShowBadge.textContent = noShows.length + ' no-show' + (noShows.length !== 1 ? 's' : '');
@@ -95,8 +95,8 @@ export async function initPage() {
         switchTab(tabParam);
     } else if (highlightId) {
         const targetBooking = todaysBookingsData.find(b => b.raw_id === highlightId || b.id === highlightId);
-        if (targetBooking && (targetBooking.booking_status === 'cancelled' || targetBooking.booking_status === 'no-show')) {
-            switchTab(targetBooking.booking_status);
+        if (targetBooking && (targetBooking.status === 'cancelled' || targetBooking.status === 'no-show')) {
+            switchTab(targetBooking.status);
         } else {
             renderTable();
         }
@@ -143,14 +143,14 @@ export function renderTable() {
     const tbody = document.getElementById('noscTableBody');
     if (!tbody) return;
     tbody.innerHTML = '';
-    const filtered = todaysBookingsData.filter(b => b.booking_status === activeTab);
+    const filtered = todaysBookingsData.filter(b => b.status === activeTab);
     if (filtered.length === 0) {
         tbody.innerHTML = `<tr><td colspan="9" class="nosc-empty">No ${activeTab === 'no-show' ? 'no-show' : 'cancelled'} appointments today.</td></tr>`;
         return;
     }
     filtered.forEach((b, idx) => {
-        const statusClass = 'tb-status-' + b.booking_status.replace('-', '');
-        const statusLabel = b.booking_status === 'no-show' ? 'No-show' : 'Cancelled';
+        const statusClass = 'tb-status-' + b.status.replace('-', '');
+        const statusLabel = b.status === 'no-show' ? 'No-show' : 'Cancelled';
 
         // Service pills
         let serviceHtml = '-';

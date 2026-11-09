@@ -1,4 +1,4 @@
-﻿import { supabase } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase.js';
 
 let todaysBookingsData = [];
 let currentActionData = null;
@@ -36,7 +36,7 @@ export async function initPage() {
             .eq('booking_date', localISOTime)
             .order('start_time', { ascending: true });
             
-        query = query.in('status', ['completed', 'Completed']);
+        query = query.in('booking_status', ['completed', 'Completed']);
 
         const { data, error } = await query;
         if (error) throw error;
@@ -68,7 +68,7 @@ export async function initPage() {
         console.error("Failed to load live bookings:", err);
     }
 
-    const completed = todaysBookingsData.filter(b => (b.booking_status || '').toLowerCase() === 'completed');
+    const completed = todaysBookingsData.filter(b => (b.status || '').toLowerCase() === 'completed');
     const countBadge = document.getElementById('caCountBadge');
     if (countBadge) {
         countBadge.textContent = completed.length + ' completed';
@@ -108,7 +108,7 @@ export function renderTable() {
     const tbody = document.getElementById('caTableBody');
     if (!tbody) return;
     tbody.innerHTML = '';
-    const completedList = todaysBookingsData.filter(b => b.booking_status === 'completed');
+    const completedList = todaysBookingsData.filter(b => b.status === 'completed');
     if (completedList.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:32px; color:#94a3b8;">No completed appointments today.</td></tr>';
         return;
@@ -158,8 +158,8 @@ export function renderTable() {
         else if (b.payment_status === 'partial') { payStyle = 'color:#9f1239; font-weight:600;'; payLabel = 'Partial'; }
 
         // Status label
-        const statusLabel = b.booking_status === 'completed' ? 'Completed' : b.booking_status.charAt(0).toUpperCase() + b.booking_status.slice(1);
-        const statusClass = 'tb-status-' + b.booking_status;
+        const statusLabel = b.status === 'completed' ? 'Completed' : (b.status || 'completed').charAt(0).toUpperCase() + (b.status || 'completed').slice(1);
+        const statusClass = 'tb-status-' + b.status;
 
         const tr = document.createElement('tr');
         tr.className = 'tb-row';
