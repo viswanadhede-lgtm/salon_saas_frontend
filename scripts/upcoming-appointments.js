@@ -1,4 +1,4 @@
-﻿import { supabase } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase.js';
 import { openBookingPayment } from './bookings/booking-payment-bridge.js';
 
 // ================================================================
@@ -122,10 +122,10 @@ function renderBookingsTable() {
     }
 
     todaysBookingsData.forEach((b, idx) => {
-        const statusClass = 'tb-status-' + b.booking_status;
-        const statusLabel = b.booking_status === 'noshow'
+        const statusClass = 'tb-status-' + b.status;
+        const statusLabel = b.status === 'noshow' || b.status === 'no-show'
             ? 'No-show'
-            : b.booking_status.charAt(0).toUpperCase() + b.booking_status.slice(1);
+            : (b.status || 'booked').charAt(0).toUpperCase() + (b.status || 'booked').slice(1);
 
         let serviceHtml = '-';
         const rawServices = (b.service || '').split(',').map(s => s.trim()).filter(Boolean);
