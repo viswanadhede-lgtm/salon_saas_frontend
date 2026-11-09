@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase.js';
+﻿import { supabase } from '../lib/supabase.js';
 import { openBookingPayment } from './bookings/booking-payment-bridge.js';
 
 // ================================================================
@@ -41,7 +41,7 @@ window.initPage = async function () {
         if (error) throw error;
 
         const upcomingData = (data || []).filter(b => {
-            const st = (b.status || '').toLowerCase().trim();
+            const st = (b.booking_status || '').toLowerCase().trim();
             return !['completed', 'cancelled', 'no-show', 'noshow'].includes(st);
         });
 
@@ -64,7 +64,7 @@ window.initPage = async function () {
                 raw_date: b.booking_date,
                 service: b.service_name || 'N/A',
                 staff: b.staff_name || 'Unassigned',
-                status: (b.status || 'booked').toLowerCase(),
+                status: (b.booking_status || 'booked').toLowerCase(),
                 amount: '₹' + (b.total_price || 0).toLocaleString('en-IN'),
                 payment: (b.payment_status || 'pending').toLowerCase()
             };
@@ -122,10 +122,10 @@ function renderBookingsTable() {
     }
 
     todaysBookingsData.forEach((b, idx) => {
-        const statusClass = 'tb-status-' + b.status;
-        const statusLabel = b.status === 'noshow'
+        const statusClass = 'tb-status-' + b.booking_status;
+        const statusLabel = b.booking_status === 'noshow'
             ? 'No-show'
-            : b.status.charAt(0).toUpperCase() + b.status.slice(1);
+            : b.booking_status.charAt(0).toUpperCase() + b.booking_status.slice(1);
 
         let serviceHtml = '-';
         const rawServices = (b.service || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -188,7 +188,7 @@ function renderBookingsTable() {
                 <span style="display:inline-block; padding:4px 12px; background:#dcfce7; color:#166534; border-radius:9999px; font-size:0.75rem; font-weight:700;">${b.amount}</span>
             </td>
             <td style="padding:16px 16px;">
-                ${b.payment !== 'paid' ? `
+                ${b.payment_status !== 'paid' ? `
                 <button onclick="openRowPayment('${b.raw_id}')" style="background:#4f46e5; border:none; border-radius:6px; cursor:pointer; color:#fff; padding:6px 14px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap: 6px; font-size: 0.8rem; font-weight: 600;" onmouseover="this.style.background='#4338ca';" onmouseout="this.style.background='#4f46e5';">
                     <i data-feather="credit-card" style="width:14px; height:14px;"></i> Collect
                 </button>
@@ -250,7 +250,7 @@ window.handleBookingAction = function (action, idx) {
         </div>
         <div>
             <p style="font-size:0.72rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; margin:0 0 3px;">Payment</p>
-            <p style="font-size:0.875rem; font-weight:500; color:#374151; margin:0; text-transform:capitalize;">${booking.payment}</p>
+            <p style="font-size:0.875rem; font-weight:500; color:#374151; margin:0; text-transform:capitalize;">${booking.payment_status}</p>
         </div>
     `;
 
@@ -311,10 +311,10 @@ function confirmBookingAction() {
     const booking = todaysBookingsData[idx];
 
     if (action === 'complete') {
-        todaysBookingsData[idx].status = 'completed';
+        todaysBookingsData[idx].booking_status = 'completed';
         showToast(`${booking.customer}'s booking marked as completed.`, '#10b981');
     } else if (action === 'cancel') {
-        todaysBookingsData[idx].status = 'cancelled';
+        todaysBookingsData[idx].booking_status = 'cancelled';
         showToast(`${booking.customer}'s booking has been cancelled.`, '#dc2626');
     } else if (action === 'edit') {
         showToast(`Opening edit for ${booking.customer}'s booking... (demo)`, '#16a34a');
@@ -438,3 +438,4 @@ if (document.readyState === 'loading') {
 } else {
     init();
 }
+

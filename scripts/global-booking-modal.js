@@ -1,4 +1,4 @@
-// scripts/global-booking-modal.js — Unified, High-Performance Global Booking Modal
+﻿// scripts/global-booking-modal.js — Unified, High-Performance Global Booking Modal
 // Aligned with the two-modal workflow: Main Booking Modal + Add Services / Packages Picker.
 
 import { supabase } from '../lib/supabase.js';
@@ -1949,7 +1949,7 @@ export function initGlobalBookingModal() {
                 start_time:   p.start_time,
                 end_time:     p.end_time || null,
                 price:        Number(p.price) || 0,
-                status:       p.status || 'booked'
+                booking_status: p.booking_status || 'booked'
             }));
 
             // Atomic RPC
@@ -2063,7 +2063,7 @@ export function initGlobalBookingModal() {
                     : 0;
 
                 const services = [];
-                const currentStatus = editModeBookingData?.status || 'booked';
+                const currentStatus = editModeBookingData?.booking_status || 'booked';
 
                 for (const item of selectedBookingItems) {
                     if (item.type === 'service') {
@@ -2376,3 +2376,4 @@ export function initGlobalBookingModal() {
         }
     } catch { /* ignore */ }
 }
+

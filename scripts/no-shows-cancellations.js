@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase.js';
+﻿import { supabase } from '../lib/supabase.js';
 
 let todaysBookingsData = [];
 let activeTab = 'no-show';
@@ -50,7 +50,7 @@ export async function initPage() {
             const formattedTime = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
             const displayId = (b.booking_id || '').slice(0, 8).toUpperCase();
 
-            let normStatus = (b.status || 'no-show').toLowerCase().trim();
+            let normStatus = (b.booking_status || 'no-show').toLowerCase().trim();
             if (normStatus === 'noshow' || normStatus === 'no_show') normStatus = 'no-show';
 
             return {
@@ -71,8 +71,8 @@ export async function initPage() {
         console.error("Failed to load live bookings:", err);
     }
 
-    const noShows = todaysBookingsData.filter(b => b.status === 'no-show');
-    const cancelled = todaysBookingsData.filter(b => b.status === 'cancelled');
+    const noShows = todaysBookingsData.filter(b => b.booking_status === 'no-show');
+    const cancelled = todaysBookingsData.filter(b => b.booking_status === 'cancelled');
     const noShowBadge = document.getElementById('noscNoShowBadge');
     if (noShowBadge) {
         noShowBadge.textContent = noShows.length + ' no-show' + (noShows.length !== 1 ? 's' : '');
@@ -95,8 +95,8 @@ export async function initPage() {
         switchTab(tabParam);
     } else if (highlightId) {
         const targetBooking = todaysBookingsData.find(b => b.raw_id === highlightId || b.id === highlightId);
-        if (targetBooking && (targetBooking.status === 'cancelled' || targetBooking.status === 'no-show')) {
-            switchTab(targetBooking.status);
+        if (targetBooking && (targetBooking.booking_status === 'cancelled' || targetBooking.booking_status === 'no-show')) {
+            switchTab(targetBooking.booking_status);
         } else {
             renderTable();
         }
@@ -143,14 +143,14 @@ export function renderTable() {
     const tbody = document.getElementById('noscTableBody');
     if (!tbody) return;
     tbody.innerHTML = '';
-    const filtered = todaysBookingsData.filter(b => b.status === activeTab);
+    const filtered = todaysBookingsData.filter(b => b.booking_status === activeTab);
     if (filtered.length === 0) {
         tbody.innerHTML = `<tr><td colspan="9" class="nosc-empty">No ${activeTab === 'no-show' ? 'no-show' : 'cancelled'} appointments today.</td></tr>`;
         return;
     }
     filtered.forEach((b, idx) => {
-        const statusClass = 'tb-status-' + b.status.replace('-', '');
-        const statusLabel = b.status === 'no-show' ? 'No-show' : 'Cancelled';
+        const statusClass = 'tb-status-' + b.booking_status.replace('-', '');
+        const statusLabel = b.booking_status === 'no-show' ? 'No-show' : 'Cancelled';
 
         // Service pills
         let serviceHtml = '-';
@@ -191,8 +191,8 @@ export function renderTable() {
         // Payment
         let payStyle = 'color:#dc2626; opacity:0.75; font-weight:700;';
         let payLabel = 'Not Paid';
-        if (b.payment === 'paid') { payStyle = 'color:#059669; font-weight:700;'; payLabel = 'Paid'; }
-        else if (b.payment === 'partial') { payStyle = 'color:#9f1239; font-weight:600;'; payLabel = 'Partial'; }
+        if (b.payment_status === 'paid') { payStyle = 'color:#059669; font-weight:700;'; payLabel = 'Paid'; }
+        else if (b.payment_status === 'partial') { payStyle = 'color:#9f1239; font-weight:600;'; payLabel = 'Partial'; }
 
         const tr = document.createElement('tr');
         tr.className = 'tb-row';
@@ -236,3 +236,4 @@ if (document.readyState === 'loading') {
 } else {
     init();
 }
+

@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase.js';
+﻿import { supabase } from '../lib/supabase.js';
 
 let todaysBookingsData = [];
 let currentActionData = null;
@@ -58,7 +58,7 @@ export async function initPage() {
                 time: formattedTime,
                 service: b.service_name || 'N/A',
                 staff: b.staff_name || 'Unassigned',
-                status: (b.status || 'completed').toLowerCase().trim(),
+                status: (b.booking_status || 'completed').toLowerCase().trim(),
                 amount: '₹' + (b.total_price || 0).toLocaleString('en-IN'),
                 payment: (b.payment_status || 'pending').toLowerCase()
             };
@@ -68,7 +68,7 @@ export async function initPage() {
         console.error("Failed to load live bookings:", err);
     }
 
-    const completed = todaysBookingsData.filter(b => (b.status || '').toLowerCase() === 'completed');
+    const completed = todaysBookingsData.filter(b => (b.booking_status || '').toLowerCase() === 'completed');
     const countBadge = document.getElementById('caCountBadge');
     if (countBadge) {
         countBadge.textContent = completed.length + ' completed';
@@ -108,7 +108,7 @@ export function renderTable() {
     const tbody = document.getElementById('caTableBody');
     if (!tbody) return;
     tbody.innerHTML = '';
-    const completedList = todaysBookingsData.filter(b => b.status === 'completed');
+    const completedList = todaysBookingsData.filter(b => b.booking_status === 'completed');
     if (completedList.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:32px; color:#94a3b8;">No completed appointments today.</td></tr>';
         return;
@@ -154,12 +154,12 @@ export function renderTable() {
         // Payment label/style
         let payStyle = 'color:#b45309; font-weight:600;';
         let payLabel = 'Pending';
-        if (b.payment === 'paid') { payStyle = 'color:#059669; font-weight:700;'; payLabel = 'Paid'; }
-        else if (b.payment === 'partial') { payStyle = 'color:#9f1239; font-weight:600;'; payLabel = 'Partial'; }
+        if (b.payment_status === 'paid') { payStyle = 'color:#059669; font-weight:700;'; payLabel = 'Paid'; }
+        else if (b.payment_status === 'partial') { payStyle = 'color:#9f1239; font-weight:600;'; payLabel = 'Partial'; }
 
         // Status label
-        const statusLabel = b.status === 'completed' ? 'Completed' : b.status.charAt(0).toUpperCase() + b.status.slice(1);
-        const statusClass = 'tb-status-' + b.status;
+        const statusLabel = b.booking_status === 'completed' ? 'Completed' : b.booking_status.charAt(0).toUpperCase() + b.booking_status.slice(1);
+        const statusClass = 'tb-status-' + b.booking_status;
 
         const tr = document.createElement('tr');
         tr.className = 'tb-row';
@@ -200,7 +200,7 @@ export function showViewModal(idx) {
             <div><p style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px;">Service</p><p style="font-size:0.875rem;font-weight:500;color:#374151;margin:0;">${b.service}</p></div>
             <div><p style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px;">Staff</p><p style="font-size:0.875rem;font-weight:500;color:#374151;margin:0;">${b.staff}</p></div>
             <div><p style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px;">Amount</p><p style="font-size:0.875rem;font-weight:700;color:#1e293b;margin:0;">${b.amount}</p></div>
-            <div><p style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px;">Payment</p><p style="font-size:0.875rem;font-weight:500;color:#374151;margin:0;text-transform:capitalize;">${b.payment}</p></div>`;
+            <div><p style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px;">Payment</p><p style="font-size:0.875rem;font-weight:500;color:#374151;margin:0;text-transform:capitalize;">${b.payment_status}</p></div>`;
     }
     const confirmBtn = document.getElementById('actionSummaryConfirm');
     if (confirmBtn) {
@@ -245,3 +245,4 @@ if (document.readyState === 'loading') {
 } else {
     init();
 }
+
