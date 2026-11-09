@@ -36,7 +36,7 @@ export async function initPage() {
             .eq('booking_date', localISOTime)
             .order('start_time', { ascending: true });
             
-        query = query.in('booking_status', ['completed', 'Completed']);
+        query = query.in('status', ['completed', 'Completed']);
 
         const { data, error } = await query;
         if (error) throw error;
@@ -154,8 +154,8 @@ export function renderTable() {
         // Payment label/style
         let payStyle = 'color:#b45309; font-weight:600;';
         let payLabel = 'Pending';
-        if (b.payment_status === 'paid') { payStyle = 'color:#059669; font-weight:700;'; payLabel = 'Paid'; }
-        else if (b.payment_status === 'partial') { payStyle = 'color:#9f1239; font-weight:600;'; payLabel = 'Partial'; }
+        if (b.payment === 'paid') { payStyle = 'color:#059669; font-weight:700;'; payLabel = 'Paid'; }
+        else if (b.payment === 'partial') { payStyle = 'color:#9f1239; font-weight:600;'; payLabel = 'Partial'; }
 
         // Status label
         const statusLabel = b.status === 'completed' ? 'Completed' : (b.status || 'completed').charAt(0).toUpperCase() + (b.status || 'completed').slice(1);
@@ -200,7 +200,7 @@ export function showViewModal(idx) {
             <div><p style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px;">Service</p><p style="font-size:0.875rem;font-weight:500;color:#374151;margin:0;">${b.service}</p></div>
             <div><p style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px;">Staff</p><p style="font-size:0.875rem;font-weight:500;color:#374151;margin:0;">${b.staff}</p></div>
             <div><p style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px;">Amount</p><p style="font-size:0.875rem;font-weight:700;color:#1e293b;margin:0;">${b.amount}</p></div>
-            <div><p style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px;">Payment</p><p style="font-size:0.875rem;font-weight:500;color:#374151;margin:0;text-transform:capitalize;">${b.payment_status}</p></div>`;
+            <div><p style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px;">Payment</p><p style="font-size:0.875rem;font-weight:500;color:#374151;margin:0;text-transform:capitalize;">${b.payment}</p></div>`;
     }
     const confirmBtn = document.getElementById('actionSummaryConfirm');
     if (confirmBtn) {
