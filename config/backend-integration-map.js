@@ -150,7 +150,7 @@
 
 //DB TRIGGERS:
 
-// Trigger 1 : trg_create_initial_business_transaction -- Whenever a new booking summary row is inserted, it immediately inserts a row into business_transactions
+// 
 // Trigger 2 : trg_update_customer_stats_on_complete -- updates the customers table's total spent and last visit columns ...
 
 // RPC FUNCTIONS // ==============================================

@@ -7,3 +7,4 @@ ALTER TABLE app.bookings
 
 ALTER TABLE app.bookings_for_business_transaction
   ADD COLUMN IF NOT EXISTS total_duration integer;
+
