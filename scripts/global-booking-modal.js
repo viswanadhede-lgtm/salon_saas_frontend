@@ -1974,6 +1974,9 @@ export function initGlobalBookingModal() {
                 const label = payloads.length > 1 ? `${payloads.length} bookings` : 'Booking';
                 showMsg(`${label} created successfully!`);
 
+                overrideOverlay?.classList.remove('active');
+                closeModal();
+
                 if (window.notifyEvent) {
                     try {
                         window.notifyEvent('bookings', 'evt_booking_created', {
@@ -2014,31 +2017,35 @@ export function initGlobalBookingModal() {
                     }
                 }
 
-                overrideOverlay?.classList.remove('active');
-                closeModal();
-
-                // Refresh bookings table if available
+                // Trigger live sync broadcast across open tabs
                 try {
-                    if (typeof window.fetchBookings === 'function') await window.fetchBookings();
-                } catch (refreshErr) {
-                    console.warn('[Booking Modal] fetchBookings refresh error:', refreshErr);
-                }
+                    localStorage.setItem('app_payment_sync', JSON.stringify({ type: 'booking-created', timestamp: Date.now() }));
+                    window.dispatchEvent(new CustomEvent('booking-created', { detail: { bookingId: payloads[0]?.booking_id } }));
+                } catch (_) {}
 
-                // Refresh dashboard if available
-                try {
-                    if (typeof window.refreshAllData === 'function') {
-                        window.refreshAllData(getBranchId());
-                    } else {
-                        if (typeof window.fetchAndRenderDashboardKPIs === 'function') {
-                            window.fetchAndRenderDashboardKPIs(getBranchId());
-                        }
-                        if (typeof window.fetchAndRenderAppointments === 'function') {
-                            window.fetchAndRenderAppointments(getBranchId());
-                        }
+                // Refresh table & dashboard in background (non-blocking)
+                (async () => {
+                    try {
+                        if (typeof window.fetchBookings === 'function') await window.fetchBookings();
+                    } catch (refreshErr) {
+                        console.warn('[Booking Modal] fetchBookings refresh error:', refreshErr);
                     }
-                } catch (dashErr) {
-                    console.warn('[Booking Modal] Dashboard refresh error:', dashErr);
-                }
+
+                    try {
+                        if (typeof window.refreshAllData === 'function') {
+                            window.refreshAllData(getBranchId());
+                        } else {
+                            if (typeof window.fetchAndRenderDashboardKPIs === 'function') {
+                                window.fetchAndRenderDashboardKPIs(getBranchId());
+                            }
+                            if (typeof window.fetchAndRenderAppointments === 'function') {
+                                window.fetchAndRenderAppointments(getBranchId());
+                            }
+                        }
+                    } catch (dashErr) {
+                        console.warn('[Booking Modal] Dashboard refresh error:', dashErr);
+                    }
+                })();
             } else {
                 showMsg('Error saving booking: ' + error.message, true);
             }
@@ -2198,25 +2205,36 @@ export function initGlobalBookingModal() {
         try {
             // Staff overlap check against first service row
             const first = payloads[0];
-            const { data: existing, error: bErr } = await supabase.schema('app')
-                .from('bookings')
-                .select('start_time, duration, status')
-                .eq('staff_id', first.staff_id)
-                .eq('booking_date', first.booking_date);
-
             let isAvailable   = true;
             let overlapReason = '';
 
-            if (!bErr && existing && existing.length > 0) {
-                const newStart = timeToMins(first.start_time);
-                const newEnd   = newStart + (parseInt(first.duration) || 0);
-                for (const eb of existing) {
-                    const ebStart = timeToMins(eb.start_time);
-                    const ebEnd   = ebStart + (eb.duration || 0);
-                    if (newStart < ebEnd && newEnd > ebStart) {
-                        isAvailable   = false;
-                        overlapReason = `Staff is already booked from ${minsToDisplay(ebStart)} to ${minsToDisplay(ebEnd)}.`;
-                        break;
+            if (first && first.staff_id) {
+                let query = supabase.schema('app')
+                    .from('bookings')
+                    .select('start_time, duration, booking_status')
+                    .eq('company_id', getCompanyId())
+                    .eq('staff_id', first.staff_id)
+                    .eq('booking_date', first.booking_date)
+                    .not('booking_status', 'in', '("cancelled","no-show","no_show")');
+
+                const activeBranch = getBranchId();
+                if (activeBranch && activeBranch !== 'all' && activeBranch !== 'branch_1' && activeBranch !== 'branch_2') {
+                    query = query.eq('branch_id', activeBranch);
+                }
+
+                const { data: existing, error: bErr } = await query;
+
+                if (!bErr && existing && existing.length > 0) {
+                    const newStart = timeToMins(first.start_time);
+                    const newEnd   = newStart + (parseInt(first.duration) || 0);
+                    for (const eb of existing) {
+                        const ebStart = timeToMins(eb.start_time);
+                        const ebEnd   = ebStart + (eb.duration || 0);
+                        if (newStart < ebEnd && newEnd > ebStart) {
+                            isAvailable   = false;
+                            overlapReason = `Staff is already booked from ${minsToDisplay(ebStart)} to ${minsToDisplay(ebEnd)}.`;
+                            break;
+                        }
                     }
                 }
             }

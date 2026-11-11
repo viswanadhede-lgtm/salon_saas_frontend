@@ -11,6 +11,55 @@ const manageState = {
     activeBooking: null
 };
 
+// ─── Helpers: Escape HTML & Expandable +N Badges ─────────────────────────────
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+export function toggleMbExtra(btn, extraCount) {
+    if (!btn) return;
+    const el = btn.nextElementSibling;
+    if (!el) return;
+    const isHidden = el.style.display === 'none' || el.style.display === '';
+    el.style.display = isHidden ? 'flex' : 'none';
+    btn.textContent  = isHidden ? '▲ less' : `+${extraCount}`;
+}
+
+if (typeof window !== 'undefined') {
+    window.toggleMbExtra = toggleMbExtra;
+}
+
+function renderExpandableList(items) {
+    if (!items || !items.length) return '—';
+    const firstItem = items[0];
+    if (items.length === 1) {
+        return `<span style="font-size:0.86rem;font-weight:700;color:#0f172a;word-break:break-word;">${escapeHtml(firstItem)}</span>`;
+    }
+    const extraCount = items.length - 1;
+    const extraPills = items.slice(1).map(item =>
+        `<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:0.75rem;font-weight:600;background:#f8fafc;border:1px solid #e2e8f0;color:#334155;word-break:break-word;">${escapeHtml(item)}</span>`
+    ).join('');
+
+    return `
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:5px;">
+            <span style="font-size:0.86rem;font-weight:700;color:#0f172a;word-break:break-word;">${escapeHtml(firstItem)}</span>
+            <span onclick="window.toggleMbExtra(this, ${extraCount})"
+                style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:700;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;transition:all 0.15s;"
+                onmouseover="this.style.background='#c7d2fe'"
+                onmouseout="this.style.background='#e0e7ff'">+${extraCount}</span>
+            <div style="display:none;flex-wrap:wrap;gap:4px;width:100%;margin-top:4px;">
+                ${extraPills}
+            </div>
+        </div>
+    `;
+}
+
 // ─── Status Configurations & SVGs ─────────────────────────────────────────────
 const STATUS_CONFIGS = {
     'booked': {
@@ -192,22 +241,26 @@ export async function openManageBookingModal(bookingId) {
     // 7. Services & Staff
     const svcEl = document.getElementById('mbSummaryServices');
     if (svcEl) {
+        svcEl.style.whiteSpace = 'normal';
+        svcEl.style.overflow = 'visible';
         const servicesList = (Array.isArray(b.service_names) ? b.service_names : [b.service_name])
             .filter(Boolean)
             .flatMap(s => s.split(',').map(item => item.trim()))
             .filter(Boolean);
-        svcEl.textContent = servicesList.length ? servicesList.join(', ') : '—';
-        svcEl.title = svcEl.textContent;
+        svcEl.innerHTML = renderExpandableList(servicesList);
+        svcEl.title = servicesList.join(', ');
     }
 
     const staffEl = document.getElementById('mbSummaryStaff');
     if (staffEl) {
+        staffEl.style.whiteSpace = 'normal';
+        staffEl.style.overflow = 'visible';
         const staffList = (Array.isArray(b.staff_names) ? b.staff_names : [b.staff_name])
             .filter(Boolean)
             .flatMap(s => s.split(',').map(item => item.trim()))
             .filter(Boolean);
-        staffEl.textContent = staffList.length ? staffList.join(', ') : '—';
-        staffEl.title = staffEl.textContent;
+        staffEl.innerHTML = renderExpandableList(staffList);
+        staffEl.title = staffList.join(', ');
     }
 
     // 8. Amount
