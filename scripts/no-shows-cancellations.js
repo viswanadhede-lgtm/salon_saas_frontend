@@ -15,6 +15,13 @@ function getBranchId() {
     return b || null;
 }
 
+function getCompanyId() {
+    try {
+        const ctx = JSON.parse(localStorage.getItem('appContext') || localStorage.getItem('active_company_context') || '{}');
+        return ctx.company?.company_id || ctx.company?.id || localStorage.getItem('company_id') || null;
+    } catch (_) { return localStorage.getItem('company_id') || null; }
+}
+
 export async function initPage() {
     const now = new Date();
     const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -25,16 +32,22 @@ export async function initPage() {
     
     try {
         const branchId = getBranchId();
-        if (!branchId) throw new Error("No branch selected.");
+        const companyId = getCompanyId();
 
         const localISOTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
         let query = supabase.schema('app')
             .from('bookings_for_business_transaction')
             .select('*')
-            .eq('branch_id', branchId)
             .eq('booking_date', localISOTime)
             .order('start_time', { ascending: true });
+
+        if (companyId) {
+            query = query.eq('company_id', companyId);
+        }
+        if (branchId && branchId !== 'branch_1' && branchId !== 'branch_2' && branchId !== 'all') {
+            query = query.eq('branch_id', branchId);
+        }
             
         query = query.in('booking_status', ['no-show', 'cancelled', 'noshow', 'no_show', 'No-show', 'Cancelled', 'Noshow', 'No_show']);
 
@@ -228,6 +241,20 @@ window.todaysBookingsData = todaysBookingsData;
 // Self-initialization
 function init() {
     if (window.feather) window.feather.replace();
+
+    // Live sync listeners
+    document.addEventListener('payment-recorded', () => {
+        initPage();
+    });
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'app_payment_sync' || e.key === 'branch_id') {
+            initPage();
+        }
+    });
+    window.addEventListener('branch:changed', () => {
+        initPage();
+    });
+
     initPage();
 }
 

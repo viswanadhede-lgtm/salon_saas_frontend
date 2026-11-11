@@ -26,23 +26,34 @@ window.initPage = async function () {
                 branchId = ctx.branch?.branch_id || ctx.branch?.id || null;
             } catch { }
         }
-        if (!branchId) throw new Error('No branch selected.');
+
+        const companyId = localStorage.getItem('company_id') || (() => {
+            try { return JSON.parse(localStorage.getItem('appContext') || '{}').company?.id; } catch { return null; }
+        })();
 
         const localISOTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
             .toISOString().split('T')[0];
 
-        const { data, error } = await supabase.schema('app')
+        let query = supabase.schema('app')
             .from('bookings_for_business_transaction')
             .select('*')
-            .eq('branch_id', branchId)
             .eq('booking_date', localISOTime)
             .order('start_time', { ascending: true });
+
+        if (companyId) {
+            query = query.eq('company_id', companyId);
+        }
+        if (branchId && branchId !== 'branch_1' && branchId !== 'branch_2' && branchId !== 'all') {
+            query = query.eq('branch_id', branchId);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
         const upcomingData = (data || []).filter(b => {
-            const st = (b.booking_status || '').toLowerCase().trim();
-            return !['completed', 'cancelled', 'no-show', 'noshow'].includes(st);
+            const st = (b.booking_status || b.status || '').toLowerCase().trim();
+            return !['completed', 'cancelled', 'no-show', 'noshow', 'no_show'].includes(st);
         });
 
         todaysBookingsData = upcomingData.map((b) => {
@@ -53,6 +64,7 @@ window.initPage = async function () {
             hours = hours % 12 || 12;
             const formattedTime = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
             const displayId = (b.booking_id || '').slice(0, 8).toUpperCase();
+            const payStatus = (b.payment_status || b.payment || 'pending').toLowerCase().trim();
 
             return {
                 id: displayId,
@@ -66,9 +78,10 @@ window.initPage = async function () {
                 raw_date: b.booking_date,
                 service: b.service_name || 'N/A',
                 staff: b.staff_name || 'Unassigned',
-                status: (b.booking_status || 'booked').toLowerCase(),
+                status: (b.booking_status || 'booked').toLowerCase().trim(),
                 amount: '₹' + (b.total_price || 0).toLocaleString('en-IN'),
-                payment: (b.payment_status || 'pending').toLowerCase()
+                payment: payStatus,
+                payment_status: payStatus
             };
         });
     } catch (err) {
@@ -432,6 +445,19 @@ function init() {
 
     document.addEventListener('click', (e) => {
         if (activeMenuEl && !activeMenuEl.contains(e.target)) closeOpenMenu();
+    });
+
+    // Live sync listeners
+    document.addEventListener('payment-recorded', async () => {
+        await window.initPage();
+    });
+    window.addEventListener('storage', async (e) => {
+        if (e.key === 'app_payment_sync' || e.key === 'branch_id') {
+            await window.initPage();
+        }
+    });
+    window.addEventListener('branch:changed', async () => {
+        await window.initPage();
     });
 
     window.initPage();

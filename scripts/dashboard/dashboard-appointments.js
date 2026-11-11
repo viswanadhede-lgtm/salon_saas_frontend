@@ -45,9 +45,18 @@ export async function fetchAndRenderAppointments(currentBranchId) {
 
         if (error) throw error;
 
-        const upcomingFull = (bookings || []).filter(b => !['completed', 'cancelled', 'no-show'].includes(b.status));
-        const completedFull = (bookings || []).filter(b => b.status === 'completed');
-        const noshowFull = (bookings || []).filter(b => ['cancelled', 'no-show'].includes(b.status));
+        const normalized = (bookings || []).map(b => {
+            const rawSt = (b.booking_status || b.status || 'booked').toLowerCase().trim();
+            const normSt = (rawSt === 'noshow' || rawSt === 'no_show') ? 'no-show' : rawSt;
+            return {
+                ...b,
+                status: normSt
+            };
+        });
+
+        const upcomingFull = normalized.filter(b => !['completed', 'cancelled', 'no-show'].includes(b.status));
+        const completedFull = normalized.filter(b => b.status === 'completed');
+        const noshowFull = normalized.filter(b => ['cancelled', 'no-show'].includes(b.status));
 
         const uBadge = document.getElementById('badgeUpcoming');
         const cBadge = document.getElementById('badgeCompleted');

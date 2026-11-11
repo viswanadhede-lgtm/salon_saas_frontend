@@ -160,9 +160,9 @@ async function _legacyCheckStaffDependencies(staffId) {
     try {
         let bbtQuery = supabase.schema('app')
             .from('bookings_for_business_transaction')
-            .select('booking_id, booking_date, status')
+            .select('booking_id, booking_date, booking_status')
             .ilike('staff_id', `%${staffId}%`)
-            .in('status', ['booked', 'confirmed'])
+            .in('booking_status', ['booked', 'confirmed'])
             .gte('booking_date', todayStr);
 
         if (companyId) bbtQuery = bbtQuery.eq('company_id', companyId);

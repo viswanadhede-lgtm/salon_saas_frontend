@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .from('bookings_for_business_transaction')
                 .select('*')
                 .eq('payment_status', 'pending')
-                .in('status', ['booked', 'confirmed'])
+                .in('booking_status', ['booked', 'confirmed'])
                 .order('booking_date', { ascending: false });
 
             if (companyId) {

@@ -362,12 +362,13 @@ export async function saveManageBookingStatus() {
 
     try {
         const companyId = manageState.activeBooking?.company_id || localStorage.getItem('company_id');
-        const branchId = manageState.activeBooking?.branch_id || localStorage.getItem('branch_id');
+        const rawBranch = manageState.activeBooking?.branch_id || localStorage.getItem('branch_id');
+        const branchId  = (rawBranch && rawBranch !== 'all' && rawBranch !== 'branch_1' && rawBranch !== 'branch_2') ? rawBranch : null;
 
         const { data: resData, error: dbError } = await supabase.rpc('update_booking_status_atomic', {
             p_booking_id: bookingId,
             p_company_id: companyId,
-            p_branch_id: branchId || null,
+            p_branch_id: branchId,
             p_new_status: newStatus
         });
 
@@ -379,6 +380,14 @@ export async function saveManageBookingStatus() {
         }
 
         window.toast && window.toast(`Booking status updated to ${newStatus}`);
+
+        // Dispatch cross-tab / cross-component sync event
+        document.dispatchEvent(new CustomEvent('payment-recorded', {
+            detail: { bookingId, status: newStatus }
+        }));
+        try {
+            localStorage.setItem('app_payment_sync', JSON.stringify({ bookingId, status: newStatus, time: Date.now() }));
+        } catch (e) {}
 
         // Fire notification events
         if (window.notifyEvent) {

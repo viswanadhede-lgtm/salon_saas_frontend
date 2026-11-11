@@ -107,6 +107,18 @@ window.refreshAllData = function(branchId) {
             // Wire appointment tabs
             initAppointmentTabs();
 
+            // Wire cross-tab / cross-modal sync
+            document.addEventListener('payment-recorded', () => {
+                const bId = getBranchId();
+                if (bId && typeof window.refreshAllData === 'function') window.refreshAllData(bId);
+            });
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'app_payment_sync' || e.key === 'branch_id') {
+                    const bId = getBranchId();
+                    if (bId && typeof window.refreshAllData === 'function') window.refreshAllData(bId);
+                }
+            });
+
             // Initial fetch if branch is resolved
             const branchId = getBranchId();
             if (branchId) {
