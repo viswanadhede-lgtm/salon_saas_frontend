@@ -4,6 +4,21 @@
 import { supabase } from '../../lib/supabase.js';
 import { getCompanyId } from './dashboard-state.js';
 
+// Global toggle helper for expandable service/staff chips
+if (typeof window !== 'undefined') {
+    window.toggleDashboardExtra = function(btn, extraCount) {
+        if (!btn) return;
+        const extraDiv = btn.nextElementSibling;
+        if (!extraDiv) return;
+        const isHidden = extraDiv.style.display === 'none' || extraDiv.style.display === '';
+        extraDiv.style.display = isHidden ? 'flex' : 'none';
+        btn.textContent = isHidden ? '▲ less' : `+${extraCount}`;
+    };
+    if (!window.toggleSvcExtra) {
+        window.toggleSvcExtra = window.toggleDashboardExtra;
+    }
+}
+
 export async function fetchAndRenderAppointments(currentBranchId) {
     const upcomingList = document.getElementById('tabUpcomingList');
     const completedList = document.getElementById('tabCompletedList');
@@ -75,6 +90,54 @@ export async function fetchAndRenderAppointments(currentBranchId) {
                 const escapedCustName = custName.replace(/'/g, "\\'");
                 const statusClass = b.status ? b.status.toLowerCase() : 'booked';
 
+                // Multi-service formatting: first chip + expandable +N
+                const serviceNames = (Array.isArray(b.service_names) ? b.service_names : [b.service_name || b.service])
+                    .filter(Boolean)
+                    .flatMap(s => typeof s === 'string' ? s.split(',').map(item => item.trim()) : [String(s).trim()])
+                    .filter(Boolean);
+
+                let serviceHtml = '<span style="font-size:0.85rem; color:var(--text-muted);">N/A</span>';
+                if (serviceNames.length === 1) {
+                    serviceHtml = `<span class="badge" style="background:#f1f5f9; color:#475569; font-size:0.75rem; font-weight:500;">${serviceNames[0]}</span>`;
+                } else if (serviceNames.length > 1) {
+                    const svcExtraCount = serviceNames.length - 1;
+                    const extraSvcChips = serviceNames.slice(1).map(s => `<span class="badge" style="background:#f1f5f9; color:#475569; font-size:0.75rem; font-weight:500;">${s}</span>`).join('');
+                    serviceHtml = `
+                        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:4px;">
+                            <span class="badge" style="background:#f1f5f9; color:#475569; font-size:0.75rem; font-weight:500;">${serviceNames[0]}</span>
+                            <span onclick="event.stopPropagation(); window.toggleDashboardExtra(this, ${svcExtraCount})"
+                                style="display:inline-block; padding:2px 7px; border-radius:20px; font-size:0.7rem; font-weight:600; background:#e0e7ff; color:#4f46e5; cursor:pointer; user-select:none;">+${svcExtraCount}</span>
+                            <div style="display:none; flex-wrap:wrap; gap:4px; width:100%; margin-top:4px;">
+                                ${extraSvcChips}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Multi-staff formatting: first badge + expandable +N
+                const staffNames = (Array.isArray(b.staff_names) ? b.staff_names : [b.staff_name || b.staff])
+                    .filter(Boolean)
+                    .flatMap(s => typeof s === 'string' ? s.split(',').map(item => item.trim()) : [String(s).trim()])
+                    .filter(Boolean);
+
+                let staffHtml = '<span class="badge">Unassigned</span>';
+                if (staffNames.length === 1) {
+                    staffHtml = `<span class="badge">${staffNames[0]}</span>`;
+                } else if (staffNames.length > 1) {
+                    const staffExtraCount = staffNames.length - 1;
+                    const extraStaffChips = staffNames.slice(1).map(s => `<span class="badge">${s}</span>`).join('');
+                    staffHtml = `
+                        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:4px;">
+                            <span class="badge">${staffNames[0]}</span>
+                            <span onclick="event.stopPropagation(); window.toggleDashboardExtra(this, ${staffExtraCount})"
+                                style="display:inline-block; padding:2px 7px; border-radius:20px; font-size:0.7rem; font-weight:600; background:#e0e7ff; color:#4f46e5; cursor:pointer; user-select:none;">+${staffExtraCount}</span>
+                            <div style="display:none; flex-wrap:wrap; gap:4px; width:100%; margin-top:4px;">
+                                ${extraStaffChips}
+                            </div>
+                        </div>
+                    `;
+                }
+
                 return `
                     <div class="appointment-item" style="cursor: pointer;" ondblclick="navigateToBooking('${b.status || ''}', '${b.booking_id || ''}')">
                         <div class="time-block">
@@ -88,11 +151,11 @@ export async function fetchAndRenderAppointments(currentBranchId) {
                                 </div>
                                 <div class="name-service">
                                     <h4><span class="customer-link" onclick="if(window.viewCustomerProfile) window.viewCustomerProfile('${custId}', '${escapedCustName}')">${custName}</span></h4>
-                                    <p>${b.service_name || 'N/A'}</p>
+                                    <div style="margin-top:2px;">${serviceHtml}</div>
                                 </div>
                             </div>
                         </div>
-                        <div class="staff-block"><span class="badge">${b.staff_name || 'Unassigned'}</span></div>
+                        <div class="staff-block" style="min-width:110px; width:auto;">${staffHtml}</div>
                         <div class="status-block">
                             <span class="status-pill ${statusClass}">${(b.status || 'booked').charAt(0).toUpperCase() + (b.status || 'booked').slice(1)}</span>
                         </div>
