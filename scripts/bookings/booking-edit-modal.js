@@ -223,7 +223,7 @@ export async function openEditBookingModal(bookingId) {
 
     // Status badge
     const viewStatusBadge = document.getElementById('viewBkStatusBadge');
-    if (viewStatusBadge) viewStatusBadge.innerHTML = statusBadge(b.status || 'booked');
+    if (viewStatusBadge) viewStatusBadge.innerHTML = statusBadge(b.booking_status || b.status || 'booked');
 
     // Payment badge
     const viewPaymentBadge = document.getElementById('viewBkPaymentBadge');
@@ -244,7 +244,7 @@ export async function openEditBookingModal(bookingId) {
     const quickActions = document.getElementById('viewBkQuickActions');
     if (quickActions) {
         let html = '';
-        const status = (b.status || '').toLowerCase();
+        const status = (b.booking_status || b.status || '').toLowerCase();
         const payment = (b.payment_status || b.payment || '').toLowerCase();
         if (payment !== 'paid' && !['cancelled', 'no-show', 'no_show'].includes(status)) {
             html += `<button type="button" onclick="window.openBookingPayment('${bookingId}')" data-sub-feature="collect_payment" style="width:100%;padding:7px 12px;border-radius:6px;border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='#e0e7ff'" onmouseout="this.style.background='#eef2ff'">
@@ -290,7 +290,7 @@ export async function openEditBookingModal(bookingId) {
 
     // Set the status dropdown
     editState.allowCompleteWithoutPayment = false;
-    editState.previousEditBkStatus = (b.status || 'booked').toLowerCase();
+    editState.previousEditBkStatus = (b.booking_status || b.status || 'booked').toLowerCase();
     const statusSelect = document.getElementById('editBkStatus');
     if (statusSelect) statusSelect.value = editState.previousEditBkStatus;
 

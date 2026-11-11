@@ -5,6 +5,7 @@ import { formatTime12, todayISO } from './bookings-state.js';
 export function statusBadge(status) {
     const map = {
         booked:    { color: '#1e40af', bg: '#dbeafe', label: 'Booked' },
+        pending:   { color: '#1e40af', bg: '#dbeafe', label: 'Booked' },
         confirmed: { color: '#1e40af', bg: '#dbeafe', label: 'Confirmed' },
         completed: { color: '#065f46', bg: '#d1fae5', label: 'Completed' },
         cancelled: { color: '#991b1b', bg: '#fee2e2', label: 'Cancelled' },
@@ -69,7 +70,7 @@ export function buildRow(b, includeDate = false) {
     const dateOnly     = b.booking_date || '';
     const timeOnly     = b.start_time   || '';
     const amount       = b.final_amount != null ? `₹${Number(b.final_amount).toLocaleString('en-IN')}` : (b.total_price != null ? `₹${Number(b.total_price).toLocaleString('en-IN')}` : '—');
-    const status       = b.status || '';
+    const status       = b.booking_status || b.status || 'booked';
     const payment      = b.payment_status || b.payment || '';
 
     // Multi-service support: flatMap splits each element by comma, handles both

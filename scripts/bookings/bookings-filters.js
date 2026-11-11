@@ -71,7 +71,7 @@ export function getFilteredBookings() {
 
     let filtered = results.filter(b => {
         // Status Check — skip if "All" is checked OR no individual statuses are checked
-        if (!statusAllChecked && activeStatuses.length > 0 && !activeStatuses.includes(String(b.status).toLowerCase())) {
+        if (!statusAllChecked && activeStatuses.length > 0 && !activeStatuses.includes(String(b.booking_status || b.status || 'booked').toLowerCase())) {
             return false;
         }
 

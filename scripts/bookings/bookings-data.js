@@ -47,7 +47,11 @@ export async function fetchBookings() {
             return;
         }
 
-        setLiveBookings(data || []);
+        const normalized = (data || []).map(b => ({
+            ...b,
+            status: b.booking_status || b.status || 'booked'
+        }));
+        setLiveBookings(normalized);
         if (onBookingsRefreshedCb) onBookingsRefreshedCb();
 
     } catch (err) {

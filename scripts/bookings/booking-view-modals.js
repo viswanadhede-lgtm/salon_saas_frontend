@@ -75,7 +75,7 @@ export function openViewBookingModal(bookingId) {
 
     // Status badge
     const vbiStatusBadge = document.getElementById('vbiStatusBadge');
-    if (vbiStatusBadge) vbiStatusBadge.innerHTML = statusBadge(b.status || 'completed');
+    if (vbiStatusBadge) vbiStatusBadge.innerHTML = statusBadge(b.booking_status || b.status || 'completed');
 
     // Payment badge
     const vbiPaymentBadge = document.getElementById('vbiPaymentBadge');
@@ -237,7 +237,7 @@ export async function openCancelledBookingModal(bookingId) {
     const el = (id) => document.getElementById(id);
 
     // Dynamic Title & Status Badge based on status
-    const rawStatus = (b.status || '').toLowerCase().trim();
+    const rawStatus = (b.booking_status || b.status || '').toLowerCase().trim();
     const isNoShow = ['no-show', 'noshow', 'no_show'].includes(rawStatus);
 
     if (el('cbmModalTitle')) {

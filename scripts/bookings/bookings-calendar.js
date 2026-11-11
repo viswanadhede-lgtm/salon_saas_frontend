@@ -67,7 +67,7 @@ function buildClientSideSummary(year, month) {
         const dc = dayCounts[dateStr];
         dc.total_bookings++;
 
-        const s = (b.status || '').toLowerCase().trim();
+        const s = (b.booking_status || b.status || '').toLowerCase().trim();
         if (s === 'booked')        dc.booked_count++;
         else if (s === 'confirmed')  dc.confirmed_count++;
         else if (s === 'completed')  dc.completed_count++;
@@ -300,7 +300,7 @@ export function openCalendarDayModal(dateStr) {
             <td style="padding:12px 8px; max-width:220px;">${serviceCell}</td>
             <td style="padding:12px 8px; white-space:nowrap;">${priceCell}</td>
             <td style="padding:12px 8px; max-width:180px;">${staffCell}</td>
-            <td style="padding:12px 8px;">${statusBadge(b.status)}</td>
+            <td style="padding:12px 8px;">${statusBadge(b.booking_status || b.status || 'booked')}</td>
         `;
         tbody.appendChild(tr);
     });
