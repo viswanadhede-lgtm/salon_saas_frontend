@@ -1,0 +1,64 @@
+-- Migration: Drop all 59 public schema views
+-- These were passthrough views to app/shared/platform schemas.
+-- Frontend now uses direct schema access via Accept-Profile / Content-Profile headers.
+-- Safe to drop: all PostgREST table queries now target the real schemas directly.
+
+DROP VIEW IF EXISTS public.add_ons CASCADE;
+DROP VIEW IF EXISTS public.billing_settings CASCADE;
+DROP VIEW IF EXISTS public.bookings CASCADE;
+DROP VIEW IF EXISTS public.bookings_for_business_transaction CASCADE;
+DROP VIEW IF EXISTS public.branches CASCADE;
+DROP VIEW IF EXISTS public.business_hours CASCADE;
+DROP VIEW IF EXISTS public.business_payment_settings CASCADE;
+DROP VIEW IF EXISTS public.business_transactions CASCADE;
+DROP VIEW IF EXISTS public.companies CASCADE;
+DROP VIEW IF EXISTS public.company_billing_information CASCADE;
+DROP VIEW IF EXISTS public.company_contacts CASCADE;
+DROP VIEW IF EXISTS public.company_settings CASCADE;
+DROP VIEW IF EXISTS public.company_tax_settings CASCADE;
+DROP VIEW IF EXISTS public.coupons CASCADE;
+DROP VIEW IF EXISTS public.customers CASCADE;
+DROP VIEW IF EXISTS public.discount_usages CASCADE;
+DROP VIEW IF EXISTS public.expenses CASCADE;
+DROP VIEW IF EXISTS public.invoice_settings CASCADE;
+DROP VIEW IF EXISTS public.issue_attachments CASCADE;
+DROP VIEW IF EXISTS public.issue_messages CASCADE;
+DROP VIEW IF EXISTS public.issues CASCADE;
+DROP VIEW IF EXISTS public.membership_purchases CASCADE;
+DROP VIEW IF EXISTS public.memberships CASCADE;
+DROP VIEW IF EXISTS public.notification_settings CASCADE;
+DROP VIEW IF EXISTS public.notifications CASCADE;
+DROP VIEW IF EXISTS public.offers CASCADE;
+DROP VIEW IF EXISTS public.package_services CASCADE;
+DROP VIEW IF EXISTS public.packages CASCADE;
+DROP VIEW IF EXISTS public.payment_history_view CASCADE;
+DROP VIEW IF EXISTS public.payment_refunds CASCADE;
+DROP VIEW IF EXISTS public.payments CASCADE;
+DROP VIEW IF EXISTS public.plan_features CASCADE;
+DROP VIEW IF EXISTS public.plan_limits CASCADE;
+DROP VIEW IF EXISTS public.plan_sub_features CASCADE;
+DROP VIEW IF EXISTS public.plans CASCADE;
+DROP VIEW IF EXISTS public.platform_support_settings CASCADE;
+DROP VIEW IF EXISTS public.product_categories CASCADE;
+DROP VIEW IF EXISTS public.products CASCADE;
+DROP VIEW IF EXISTS public.profiles CASCADE;
+DROP VIEW IF EXISTS public.razorpay_webhook_events CASCADE;
+DROP VIEW IF EXISTS public.reviews CASCADE;
+DROP VIEW IF EXISTS public.role_permissions CASCADE;
+DROP VIEW IF EXISTS public.roles CASCADE;
+DROP VIEW IF EXISTS public.sales CASCADE;
+DROP VIEW IF EXISTS public.sales_for_business_transactions CASCADE;
+DROP VIEW IF EXISTS public.service_categories CASCADE;
+DROP VIEW IF EXISTS public.services CASCADE;
+DROP VIEW IF EXISTS public.staff CASCADE;
+DROP VIEW IF EXISTS public.staff_schedule CASCADE;
+DROP VIEW IF EXISTS public.subscription_add_ons CASCADE;
+DROP VIEW IF EXISTS public.subscription_cancellation_logs CASCADE;
+DROP VIEW IF EXISTS public.subscription_invoices CASCADE;
+DROP VIEW IF EXISTS public.subscription_plan_changes CASCADE;
+DROP VIEW IF EXISTS public.subscriptions CASCADE;
+DROP VIEW IF EXISTS public.suggestion_attachments CASCADE;
+DROP VIEW IF EXISTS public.suggestions CASCADE;
+DROP VIEW IF EXISTS public.usage_counters CASCADE;
+DROP VIEW IF EXISTS public.user_preferences CASCADE;
+DROP VIEW IF EXISTS public.users CASCADE;
