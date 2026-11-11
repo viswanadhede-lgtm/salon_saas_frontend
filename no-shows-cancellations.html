@@ -60,18 +60,27 @@
 
         
         <!-- Section Title Bar (Specific to No-shows & Cancellations) -->
-        <div class="nosc-page-header" style="position:relative; border-bottom: 1px solid #e2e8f0; padding: 18px 32px 14px 32px; background: #fff;">
-            <div style="display:flex; align-items:center; gap:14px;">
+        <div class="nosc-page-header" style="position:relative; border-bottom: 1px solid #e2e8f0; padding: 18px 32px 14px 32px; background: #fff; display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; flex-direction:column; align-items:flex-start;">
+                <a href="dashboard.html" 
+                   style="display:inline-flex; align-items:center; gap:6px; color:#2563eb; font-size:0.85rem; font-weight:600; text-decoration:none; margin-bottom:8px; transition:color 0.15s;"
+                   onmouseover="this.style.color='#1d4ed8'; this.style.textDecoration='underline';"
+                   onmouseout="this.style.color='#2563eb'; this.style.textDecoration='none';">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Go to Dashboard
+                </a>
                 <div>
                     <h1 style="font-size:1.45rem; font-weight:700; color:#1e293b; margin:0;">No-shows &amp; Cancellations Today</h1>
                     <p style="font-size:0.95rem; color:#64748b; margin:2px 0 0 0;" id="noscDateLabel"></p>
                 </div>
             </div>
-            <div style="display:flex; align-items:center; gap:10px; margin-right:32px;">
+            <div style="display:flex; align-items:center; gap:10px;">
                 <div id="noscNoShowBadge" style="background:#fee2e2; border-radius:8px; padding:6px 14px; font-size:0.82rem; color:#991b1b; font-weight:600;">0 no-shows</div>
                 <div id="noscCancelledBadge" style="background:#fef9c3; border-radius:8px; padding:6px 14px; font-size:0.82rem; color:#92400e; font-weight:600;">0 cancelled</div>
             </div>
-            <a href="dashboard.html" title="Close" style="position:absolute; top:0; right:0; display:flex; align-items:center; justify-content:center; width:36px; height:36px; background:#f8fafc; color:#64748b; transition:all 0.2s; text-decoration:none;" onmouseover="this.style.background='#fee2e2'; this.style.color='#ef4444';" onmouseout="this.style.background='#f8fafc'; this.style.color='#64748b';"><i data-feather="x" style="width:18px; height:18px;"></i></a>
         </div>
 
         
