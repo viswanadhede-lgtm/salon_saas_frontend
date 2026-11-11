@@ -515,7 +515,7 @@ export async function runGlobalAuthGuard() {
 
         // 3. Load user record from public.users
         const cachedCompanyId = localStorage.getItem('company_id');
-        const { data: userRows, error: userErr } = await supabase.from('users')
+        const { data: userRows, error: userErr } = await supabase.schema('shared').from('users')
             .select('company_id, branch_id, role_id, role_name, name, email, phone, status, last_login_at, created_at')
             .eq('user_id', user_id);
 
@@ -534,7 +534,7 @@ export async function runGlobalAuthGuard() {
         const resolvedCompanyId = userRow.company_id || cachedCompanyId;
 
         // 4. Load company record
-        const { data: compRows } = await supabase.from('companies')
+        const { data: compRows } = await supabase.schema('shared').from('companies')
             .select('company_id, company_name, display_name, logo_url, plan_id, plan_name')
             .eq('company_id', resolvedCompanyId);
 
@@ -588,20 +588,20 @@ export async function runGlobalAuthGuard() {
         }
 
         // 9. Load user profile, preferences, and branch switcher options
-        const { data: profileRows } = await supabase.from('profiles')
+        const { data: profileRows } = await supabase.schema('shared').from('profiles')
             .select('first_name, last_name, phone, email, joined_on, emergency_contact_name, emergency_contact_number, profile_photo')
             .eq('user_id', user_id);
         const profile = profileRows?.[0];
 
         let userPref = null;
         try {
-            const { data: prefRows } = await supabase.from('user_preferences')
+            const { data: prefRows } = await supabase.schema('shared').from('user_preferences')
                 .select('branch_id, notifications')
                 .eq('user_id', user_id);
             userPref = prefRows?.[0] || null;
         } catch (_) {}
 
-        const { data: branches } = await supabase.from('branches')
+        const { data: branches } = await supabase.schema('shared').from('branches')
             .select('branch_id, branch_name')
             .eq('company_id', resolvedCompanyId)
             .eq('status', 'active');

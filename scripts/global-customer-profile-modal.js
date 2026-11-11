@@ -33,7 +33,7 @@ window.viewCustomerProfile = async function(customerId, customerName) {
     if ((!customerId || customerId === 'undefined' || customerId === 'null') && customerName && customerName !== 'Unknown' && customerName.toLowerCase() !== 'walk-in' && customerName !== '—') {
         try {
             const companyId = localStorage.getItem('company_id') || null;
-            let query = supabase.from('customers').select('customer_id').eq('customer_name', customerName);
+            let query = supabase.schema('app').from('customers').select('customer_id').eq('customer_name', customerName);
             if (companyId && companyId !== 'all') query = query.eq('company_id', companyId);
             const { data: found } = await query.limit(1);
             if (found && found.length > 0 && found[0].customer_id) {

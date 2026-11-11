@@ -541,12 +541,12 @@ export function initGlobalBookingModal() {
             const branch_id  = getBranchId();
 
             const [svcRes, staffRes, custRes, pkgRes, pkgSvcRes, catRes] = await Promise.all([
-                supabase.from('services').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
-                supabase.from('staff').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
-                supabase.from('customers').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
-                supabase.from('packages').select('*').eq('company_id', company_id).eq('branch_id', branch_id).eq('is_active', true).neq('status', 'deleted'),
-                supabase.from('package_services').select('*'),
-                supabase.from('service_categories').select('category_id, category_name').eq('company_id', company_id).eq('branch_id', branch_id).neq('status', 'deleted')
+                supabase.schema('app').from('services').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
+                supabase.schema('app').from('staff').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
+                supabase.schema('app').from('customers').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
+                supabase.schema('app').from('packages').select('*').eq('company_id', company_id).eq('branch_id', branch_id).eq('is_active', true).neq('status', 'deleted'),
+                supabase.schema('app').from('package_services').select('*'),
+                supabase.schema('app').from('service_categories').select('category_id, category_name').eq('company_id', company_id).eq('branch_id', branch_id).neq('status', 'deleted')
             ]);
 
             liveCategoriesDB      = catRes.data || [];

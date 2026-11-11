@@ -97,7 +97,7 @@ export async function fetchSchedules(renderCallback) {
         }
 
         const filterMonth = DOM.monthFilter?.value; // 'YYYY-MM'
-        let query = supabase.from('staff_schedule').select('*').eq('company_id', companyId).eq('branch_id', branchId);
+        let query = supabase.schema('app').from('staff_schedule').select('*').eq('company_id', companyId).eq('branch_id', branchId);
         
         if (filterMonth) {
             const [yyyy, mm] = filterMonth.split('-').map(Number);

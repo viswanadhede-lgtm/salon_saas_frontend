@@ -163,3 +163,4 @@ BEGIN
         COALESCE(v_completion_rate, 0);
 END;
 $function$;
+

@@ -128,13 +128,13 @@ async function loadPageData() {
         });
 
         // 3. Fetch Catalog Add-ons
-        let { data: catData } = await supabase
+        let { data: catData } = await supabase.schema('platform')
             .from('add_ons')
             .select('*')
             .eq('status', 'active');
 
         if (!catData || catData.length === 0) {
-            const fallbackRes = await supabase.from('add_ons').select('*');
+            const fallbackRes = await supabase.schema('platform').from('add_ons').select('*');
             if (fallbackRes.data && fallbackRes.data.length > 0) catData = fallbackRes.data;
         }
 

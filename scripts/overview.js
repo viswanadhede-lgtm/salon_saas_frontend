@@ -123,7 +123,7 @@ async function initBranchSelector() {
     if (!branchSelect) return;
     try {
         const companyId = getCompanyId();
-        let query = supabase.from('branches').select('branch_id, branch_name, status');
+        let query = supabase.schema('shared').from('branches').select('branch_id, branch_name, status');
         if (isValidUuid(companyId)) query = query.eq('company_id', companyId);
         const { data: branches, error } = await query;
         const activeId = getBranchId();

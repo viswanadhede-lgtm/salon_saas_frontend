@@ -7,9 +7,9 @@ export async function loadEditDropdownData() {
     const company_id = getCompanyId();
     const branch_id  = getBranchId();
     const [svcRes, staffRes, pkgRes] = await Promise.all([
-        supabase.from('services').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
-        supabase.from('staff').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
-        supabase.from('packages').select('*').eq('company_id', company_id).eq('branch_id', branch_id).eq('is_active', true).neq('status', 'deleted')
+        supabase.schema('app').from('services').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
+        supabase.schema('app').from('staff').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
+        supabase.schema('app').from('packages').select('*').eq('company_id', company_id).eq('branch_id', branch_id).eq('is_active', true).neq('status', 'deleted')
     ]);
     editState.liveServices = (svcRes.data || []).filter(s => (s.status || '').trim().toLowerCase() === 'active');
     editState.livePackages = pkgRes.data || [];

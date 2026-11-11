@@ -462,8 +462,8 @@ export async function loadPlanFeatures(supabase, planId) {
         // 1. Fetch all distinct feature keys across plan_features (master catalog)
         // 2. Fetch feature keys for the current plan_id
         const [allRes, planRes] = await Promise.all([
-            supabase.from('plan_features').select('feature_key'),
-            supabase.from('plan_features').select('feature_key').eq('plan_id', planId)
+            supabase.schema('platform').from('plan_features').select('feature_key'),
+            supabase.schema('platform').from('plan_features').select('feature_key').eq('plan_id', planId)
         ]);
 
         if (allRes.error) {

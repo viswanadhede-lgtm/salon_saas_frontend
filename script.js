@@ -586,7 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let userData = null;
 
                 if (userEmail) {
-                    const emailRes = await supabase.from('users')
+                    const emailRes = await supabase.schema('shared').from('users')
                         .select('user_id, company_id, branch_id, role_id, status, email')
                         .eq('email', userEmail);
                     if (emailRes.data && emailRes.data.length > 0) {
@@ -594,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 if (!userData && user_id) {
-                    const idRes = await supabase.from('users')
+                    const idRes = await supabase.schema('shared').from('users')
                         .select('user_id, company_id, branch_id, role_id, status, email')
                         .eq('user_id', user_id);
                     if (idRes.data && idRes.data.length > 0) {

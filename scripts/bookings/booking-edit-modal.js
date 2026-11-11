@@ -339,7 +339,7 @@ export async function openEditBookingModal(bookingId) {
         // Parallel: load dropdown data + fetch all service rows for this booking group
         const [, { data: allRows, error }] = await Promise.all([
             loadEditDropdownData(),
-            supabase.from('bookings').select('*').eq('booking_id', bookingId)
+            supabase.schema('app').from('bookings').select('*').eq('booking_id', bookingId)
         ]);
 
         if (error) throw error;

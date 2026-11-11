@@ -167,7 +167,7 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
 
         try {
             // Load Branches
-            const { data: bData } = await supabase.from('branches').select('branch_id, branch_name').eq('company_id', cid).eq('status', 'active');
+            const { data: bData } = await supabase.schema('shared').from('branches').select('branch_id, branch_name').eq('company_id', cid).eq('status', 'active');
             const uBranch = document.getElementById('uBranch');
             if (uBranch && bData) {
                 availableBranches = bData;
@@ -181,7 +181,7 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
             }
 
             // Load Roles
-            const { data: rData } = await supabase.from('roles').select('role_id, role_name').eq('company_id', cid);
+            const { data: rData } = await supabase.schema('shared').from('roles').select('role_id, role_name').eq('company_id', cid);
             const uRole = document.getElementById('uRole');
             if (uRole && rData) {
                 availableRoles = rData;

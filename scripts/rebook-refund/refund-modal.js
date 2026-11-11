@@ -78,9 +78,9 @@ export async function openRefundModal(bookingId, optBookingObj) {
     try {
         // Query DB for complete booking, service items, and payment transactions
         const [bftRes, bkRes, txRes] = await Promise.all([
-            supabase.from('bookings_for_business_transaction').select('*').eq('booking_id', bookingId).maybeSingle(),
-            supabase.from('bookings').select('*').eq('booking_id', bookingId),
-            supabase.from('business_transactions').select('*').eq('reference_id', bookingId).eq('reference_type', 'booking').order('paid_at', { ascending: true })
+            supabase.schema('app').from('bookings_for_business_transaction').select('*').eq('booking_id', bookingId).maybeSingle(),
+            supabase.schema('app').from('bookings').select('*').eq('booking_id', bookingId),
+            supabase.schema('app').from('business_transactions').select('*').eq('reference_id', bookingId).eq('reference_type', 'booking').order('paid_at', { ascending: true })
         ]);
 
         const bft = bftRes?.data || {};
@@ -96,7 +96,7 @@ export async function openRefundModal(bookingId, optBookingObj) {
         // Attempt fresh lookup from customers table if details missing
         if (custId) {
             try {
-                const { data: custRecord } = await supabase.from('customers').select('*').eq('customer_id', custId).maybeSingle();
+                const { data: custRecord } = await supabase.schema('app').from('customers').select('*').eq('customer_id', custId).maybeSingle();
                 if (custRecord) {
                     if (!custName  || custName  === 'Customer') custName  = custRecord.customer_name  || custName;
                     if (!custPhone || custPhone === '—')        custPhone = custRecord.customer_phone || custRecord.phone || '—';

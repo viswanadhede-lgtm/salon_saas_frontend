@@ -485,7 +485,7 @@ function showDrilldownModal(refId, supabase) {
     document.getElementById('drilldownSubtitle').textContent = `Settlement ledger for Ref #${shortRef}`;
     if (window.feather) feather.replace();
 
-    supabase.from('business_transactions')
+    supabase.schema('app').from('business_transactions')
         .select('*')
         .eq('reference_id', refId)
         .order('created_at', { ascending: false })

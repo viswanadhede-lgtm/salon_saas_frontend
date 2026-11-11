@@ -2069,7 +2069,7 @@ async function renderBkCancelled(data, supabase) {
             if (needsCustId) {
                 const names = [...new Set(rows.map(r => r.customer).filter(n => n && n !== 'Unknown' && n !== '—'))];
                 try {
-                    let q = supabase.from('customers').select('customer_id, customer_name');
+                    let q = supabase.schema('app').from('customers').select('customer_id, customer_name');
                     if (companyId && companyId !== 'all') q = q.eq('company_id', companyId);
                     const { data: custList } = await q.in('customer_name', names);
                     if (custList && custList.length > 0) {
@@ -2622,7 +2622,7 @@ async function renderBkNoShows(data, supabase) {
             if (needsCustId) {
                 const names = [...new Set(rows.map(r => r.customer).filter(n => n && n !== 'Unknown' && n !== '—'))];
                 try {
-                    let q = supabase.from('customers').select('customer_id, customer_name');
+                    let q = supabase.schema('app').from('customers').select('customer_id, customer_name');
                     if (companyId && companyId !== 'all') q = q.eq('company_id', companyId);
                     const { data: custList } = await q.in('customer_name', names);
                     if (custList && custList.length > 0) {
@@ -3201,7 +3201,7 @@ async function renderBkRefunds(data, supabase) {
             if (needsCustId) {
                 const names = [...new Set(rows.map(r => r.customer).filter(n => n && n !== 'Unknown' && n !== '—'))];
                 try {
-                    let q = supabase.from('customers').select('customer_id, customer_name');
+                    let q = supabase.schema('app').from('customers').select('customer_id, customer_name');
                     if (companyId && companyId !== 'all') q = q.eq('company_id', companyId);
                     const { data: custList } = await q.in('customer_name', names);
                     if (custList && custList.length > 0) {

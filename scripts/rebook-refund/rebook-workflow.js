@@ -20,7 +20,7 @@ export async function triggerRebook(bookingId, optBookingObj) {
     const custId = (b && b.customer_id) || '';
     if (!cEmail && custId) {
         try {
-            const { data } = await supabase.from('customers').select('customer_email').eq('customer_id', custId).limit(1).single();
+            const { data } = await supabase.schema('app').from('customers').select('customer_email').eq('customer_id', custId).limit(1).single();
             if (data && data.customer_email) cEmail = data.customer_email;
         } catch(e) { console.error('Failed to fetch customer email', e); }
     }
@@ -31,7 +31,7 @@ export async function triggerRebook(bookingId, optBookingObj) {
     // If serviceIds empty, fetch from bookings table
     if (serviceIds.length === 0 && bookingId) {
         try {
-            const { data: rows } = await supabase.from('bookings').select('service_id, package_id, staff_id').eq('booking_id', bookingId);
+            const { data: rows } = await supabase.schema('app').from('bookings').select('service_id, package_id, staff_id').eq('booking_id', bookingId);
             if (rows && rows.length > 0) {
                 serviceIds = rows.map(r => r.service_id || r.package_id).filter(Boolean);
                 staffIds   = rows.map(r => r.staff_id).filter(Boolean);
