@@ -505,10 +505,10 @@ export function setupModals() {
             }
         </style>
         <div class="modal-overlay" id="manageBookingModal" style="z-index:9999;backdrop-filter:blur(6px);">
-            <div class="modal-container" style="width:860px !important;max-width:96vw !important;background:#ffffff;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);border:1px solid #e2e8f0;overflow:hidden;display:flex;flex-direction:column;">
+            <div class="modal-container" style="width:860px !important;max-width:96vw !important;max-height:92vh !important;background:#ffffff;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);border:1px solid #e2e8f0;overflow:hidden;display:flex;flex-direction:column;">
                 
                 <!-- Header -->
-                <div style="padding:18px 24px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;background:#ffffff;">
+                <div style="padding:18px 24px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;background:#ffffff;flex-shrink:0;">
                     <div style="display:flex;align-items:center;gap:12px;">
                         <div style="width:40px;height:40px;border-radius:10px;background:#f5f3ff;border:1px solid #ede9fe;display:flex;align-items:center;justify-content:center;color:#7c3aed;">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><path d="m9 16 2 2 4-4"></path></svg>
@@ -524,7 +524,7 @@ export function setupModals() {
                 </div>
 
                 <!-- Body: 2-Column Grid (Left: Summary, Right: Status & Action) -->
-                <div id="manageBookingGrid" style="padding:22px 24px;display:grid;grid-template-columns:1.08fr 1fr;gap:20px;background:#ffffff;align-items:stretch;">
+                <div id="manageBookingGrid" style="padding:22px 24px;display:grid;grid-template-columns:1.08fr 1fr;gap:20px;background:#ffffff;align-items:stretch;overflow-y:auto;max-height:calc(92vh - 80px);">
                     
                     <!-- LEFT COLUMN: Booking Summary Card -->
                     <div style="background:#f8fafc;border:1px solid #eef2f6;border-radius:14px;padding:20px;display:flex;flex-direction:column;justify-content:space-between;gap:16px;">

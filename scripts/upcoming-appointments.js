@@ -57,6 +57,8 @@ window.initPage = async function () {
             return {
                 id: displayId,
                 raw_id: b.booking_id,
+                company_id: b.company_id || null,
+                branch_id: b.branch_id || null,
                 customer: b.customer_name || 'Walk-in Customer',
                 customer_id: b.customer_id || '',
                 phone: b.customer_phone || b.phone || '',
@@ -353,6 +355,8 @@ window.openRowPayment = async function (bookingId) {
     // Map upcoming-appointments row shape → bridge-expected shape
     const bridgeRow = {
         booking_id:    row.raw_id,
+        company_id:    row.company_id || null,
+        branch_id:     row.branch_id || null,
         customer_name: row.customer,
         customer_id:   row.customer_id || null,
         customer_phone: row.phone || '',
