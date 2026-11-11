@@ -25,7 +25,7 @@ export async function loadTaxData() {
 
     try {
         // 1. Fetch Legal Business Name from company_settings (read-only)
-        const { data: compSettings, error: settErr } = await supabase
+        const { data: compSettings, error: settErr } = await supabase.schema('shared')
             .from('company_settings')
             .select('legal_business_name, display_name')
             .eq('company_id', companyId)
@@ -39,7 +39,7 @@ export async function loadTaxData() {
 
         // Fallback to companies table if company_settings doesn't have legal_business_name yet
         if (!legalBusinessName) {
-            const { data: comp } = await supabase
+            const { data: comp } = await supabase.schema('shared')
                 .from('companies')
                 .select('company_name, display_name')
                 .eq('company_id', companyId)
@@ -51,7 +51,7 @@ export async function loadTaxData() {
         setVal('companyName', legalBusinessName);
 
         // 2. Fetch from company_tax_settings table
-        const { data: taxData, error: taxErr } = await supabase
+        const { data: taxData, error: taxErr } = await supabase.schema('shared')
             .from('company_tax_settings')
             .select('*')
             .eq('company_id', companyId)
@@ -73,7 +73,7 @@ export async function loadTaxData() {
         } else {
             // Row not yet created in company_tax_settings: prefill defaults
             // Prefill state from company_contacts if available
-            const { data: contact } = await supabase
+            const { data: contact } = await supabase.schema('shared')
                 .from('company_contacts')
                 .select('state')
                 .eq('company_id', companyId)

@@ -120,7 +120,7 @@ export async function fetchAndRenderUserSchedule() {
         const { supabase } = await import('../../lib/supabase.js');
 
         // 1. Find staff_id by email
-        let staffQuery = supabase
+        let staffQuery = supabase.schema('app')
             .from('staff')
             .select('staff_id, role_name')
             .eq('email', userEmail);
@@ -177,7 +177,7 @@ export async function fetchAndRenderUserSchedule() {
 
         // 3. Fetch Schedules
         const allDates = [...thisWeekDates, ...nextWeekDates];
-        const { data: schedData, error: schedErr } = await supabase
+        const { data: schedData, error: schedErr } = await supabase.schema('app')
             .from('staff_schedule')
             .select('*')
             .eq('staff_id', staffId)

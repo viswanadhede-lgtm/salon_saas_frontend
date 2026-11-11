@@ -79,7 +79,7 @@
         if (!userId || !client) return;
 
         try {
-            const { data, error } = await client
+            const { data, error } = await client.schema('shared')
                 .from('user_preferences')
                 .select('notifications')
                 .eq('user_id', userId)
@@ -177,7 +177,7 @@
         if (!companyId || !client) return;
 
         try {
-            let query = client
+            let query = client.schema('app')
                 .from('notifications')
                 .select('id, user_id, category, event_key, title, message, link, metadata, is_read, created_at')
                 .eq('company_id', companyId)
@@ -703,7 +703,7 @@
         }
 
         try {
-            let query = client
+            let query = client.schema('app')
                 .from('notifications')
                 .select('id', { count: 'exact', head: true })
                 .eq('company_id', companyId)

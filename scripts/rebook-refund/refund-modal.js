@@ -178,7 +178,7 @@ export async function openRefundModal(bookingId, optBookingObj) {
         if (pkgMap.size > 0) {
             try {
                 const pkgIds = [...pkgMap.keys()];
-                const { data: pkgData, error: pkgErr } = await supabase
+                const { data: pkgData, error: pkgErr } = await supabase.schema('app')
                     .from('packages')
                     .select('package_id, package_name, final_price')
                     .in('package_id', pkgIds);

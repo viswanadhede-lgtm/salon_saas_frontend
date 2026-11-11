@@ -26,7 +26,7 @@ export async function openCancelledBookingModal(bookingIdOrObj) {
         // If not found in memory, fetch from Supabase
         if (!b) {
             try {
-                const { data } = await supabase
+                const { data } = await supabase.schema('app')
                     .from('bookings_for_business_transaction')
                     .select('*')
                     .eq('booking_id', bookingId)
@@ -148,7 +148,7 @@ export async function openCancelledBookingModal(bookingIdOrObj) {
     // Check transactions table asynchronously to guarantee accuracy
     let refundedAmount = 0;
     try {
-        const { data: txs } = await supabase
+        const { data: txs } = await supabase.schema('app')
             .from('business_transactions')
             .select('amount, status')
             .eq('reference_id', bookingId)

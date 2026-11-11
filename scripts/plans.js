@@ -183,7 +183,7 @@ export function initPlans() {
                         try {
                             // Dynamic import keeps supabase out of this script's global scope
                             const { supabase } = await import('../lib/supabase.js');
-                            const { data: planRow, error: planErr } = await supabase
+                            const { data: planRow, error: planErr } = await supabase.schema('platform')
                                 .from('plans')
                                 .select('plan_id, plan_name')
                                 .ilike('plan_name', selectedPlan || 'growth')

@@ -608,7 +608,7 @@ async function fetchExpenses() {
         const rawBranchId = getBranchId();
         const branchId = rawBranchId && rawBranchId !== 'all' ? rawBranchId : null;
 
-        let query = supabase
+        let query = supabase.schema('app')
             .from('expenses')
             .select('*')
             .eq('company_id', companyId)

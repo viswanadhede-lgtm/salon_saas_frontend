@@ -102,7 +102,7 @@ async function fetchCustomers() {
         const FIELDS = 'customer_id,company_id,branch_id,customer_name,customer_phone,customer_email,dob,tags,total_spent,last_visit,notes,status,created_at,updated_at';
 
         // Build base query
-        let query = supabase
+        let query = supabase.schema('app')
             .from('customers')
             .select(FIELDS, { count: 'exact' })
             .eq('company_id', companyId)
@@ -879,7 +879,7 @@ function showToast(msg, isError = false) {
         try {
             // Fetch ALL active customers (no pagination limit)
             const FIELDS = 'customer_name,created_at,customer_phone,customer_email,total_spent,last_visit,tags,status';
-            const { data, error } = await supabase
+            const { data, error } = await supabase.schema('app')
                 .from('customers')
                 .select(FIELDS)
                 .eq('company_id', companyId)

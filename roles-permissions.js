@@ -86,18 +86,18 @@ async function fetchRoles() {
 
         // Fetch roles, their permissions, and users in parallel
         const [rolesRes, permsRes, usersRes] = await Promise.all([
-            supabase
+            supabase.schema('shared')
                 .from('roles')
                 .select('*')
                 .eq('company_id', companyId)
                 .neq('status', 'deleted')
                 .order('created_at', { ascending: true }),
-            supabase
+            supabase.schema('shared')
                 .from('role_permissions')
                 .select('role_id, permission_key')
                 .eq('company_id', companyId)
                 .eq('status', 'active'),
-            supabase
+            supabase.schema('shared')
                 .from('users')
                 .select('user_id, role_id')
                 .eq('company_id', companyId)

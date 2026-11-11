@@ -1,4 +1,4 @@
-﻿import { supabase } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase.js';
 
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // STATE
@@ -150,7 +150,7 @@ async function loadCoupons() {
     if (window.feather) feather.replace();
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabase.schema('app')
             .from('coupons')
             .select('*')
             .eq('company_id', getCompanyId())

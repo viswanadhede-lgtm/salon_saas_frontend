@@ -29,7 +29,7 @@ export async function loadBusinessData() {
 
     try {
         // 1. Fetch from company_settings table
-        const { data: settingsData, error: settingsErr } = await supabase
+        const { data: settingsData, error: settingsErr } = await supabase.schema('shared')
             .from('company_settings')
             .select('*')
             .eq('company_id', companyId)
@@ -55,7 +55,7 @@ export async function loadBusinessData() {
             currentCoverUrl = settingsData.cover_image_url || null;
         } else {
             // Fallback: row not yet created in company_settings, prefill defaults from companies table
-            const { data: comp, error: compErr } = await supabase
+            const { data: comp, error: compErr } = await supabase.schema('shared')
                 .from('companies')
                 .select('*')
                 .eq('company_id', companyId)

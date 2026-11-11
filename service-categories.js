@@ -561,7 +561,7 @@ export async function fetchCategories() {
             return;
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await supabase.schema('app')
             .from('service_categories')
             .select('*')
             .eq('company_id', companyId)

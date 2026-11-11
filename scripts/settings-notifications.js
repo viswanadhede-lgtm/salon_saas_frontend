@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch {}
 
         if (companyId) {
-            const { data: bList } = await supabase
+            const { data: bList } = await supabase.schema('shared')
                 .from('branches')
                 .select('branch_id')
                 .eq('company_id', companyId)
@@ -475,7 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Fetch single row for this company and branch
-            const { data, error } = await supabase
+            const { data, error } = await supabase.schema('app')
                 .from('notification_settings')
                 .select('*')
                 .eq('company_id', companyId)

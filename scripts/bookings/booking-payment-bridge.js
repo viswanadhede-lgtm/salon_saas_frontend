@@ -36,7 +36,7 @@ export async function openBookingPayment(bookingIdOrRow, options = {}) {
     // package_id = UUID  → belongs to a package (group by package_id)
     let svcRows = [];
     try {
-        const { data, error: svcErr } = await supabase
+        const { data, error: svcErr } = await supabase.schema('app')
             .from('bookings')
             .select('service_name, staff_name, price, booking_date, start_time, end_time, package_id, service_id')
             .eq('booking_id', targetId)
@@ -62,7 +62,7 @@ export async function openBookingPayment(bookingIdOrRow, options = {}) {
     if (pkgMap.size > 0) {
         try {
             const pkgIds = [...pkgMap.keys()];
-            const { data: pkgData } = await supabase
+            const { data: pkgData } = await supabase.schema('app')
                 .from('packages')
                 .select('package_id, package_name, final_price')
                 .in('package_id', pkgIds);

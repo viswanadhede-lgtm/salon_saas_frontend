@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Fetch Company Users for Manager selection ───────────────────────────
     async function loadCompanyUsers() {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabase.schema('shared')
                 .from('users')
                 .select('user_id, id, name, role_name, email')
                 .eq('company_id', companyId)
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Fetch Branches from Supabase ───────────────────────────────────────
     async function loadBranches() {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabase.schema('shared')
                 .from('branches')
                 .select('*')
                 .eq('company_id', companyId)

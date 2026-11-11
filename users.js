@@ -216,7 +216,7 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
         if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#64748b;">Loading users...</td></tr>';
         
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabase.schema('shared')
                 .from('users')
                 .select('user_id, name, email, phone, role_id, role_name, branch_id, status, last_login_at, created_at')
                 .eq('company_id', cid)

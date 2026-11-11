@@ -16,7 +16,7 @@ export async function fetchAndRenderProductSales(currentBranchId) {
         const today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
         // Fetch paid/completed product sales for today
-        let query = supabase
+        let query = supabase.schema('app')
             .from('sales')
             .select('product_name, quantity, total_amount, price, status')
             .eq('branch_id', currentBranchId)

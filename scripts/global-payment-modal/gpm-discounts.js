@@ -16,7 +16,7 @@ export async function fetchCustomerMembership(customerId) {
         const { supabase } = await import('../../lib/supabase.js');
         const today = new Date().toISOString().split('T')[0];
 
-        const { data: purchases, error: pErr } = await supabase
+        const { data: purchases, error: pErr } = await supabase.schema('app')
             .from('membership_purchases')
             .select('membership_id, plan_name, expiry_date')
             .eq('customer_id', customerId)
@@ -36,7 +36,7 @@ export async function fetchCustomerMembership(customerId) {
 
         const purchase = purchases[0];
 
-        const { data: membership, error: mErr } = await supabase
+        const { data: membership, error: mErr } = await supabase.schema('app')
             .from('memberships')
             .select('plan_name, discount_type, discount_value')
             .eq('membership_id', purchase.membership_id)
@@ -122,7 +122,7 @@ export async function applyCouponCode() {
             || document.getElementById('branchSelect')?.value
             || null;
 
-        let query = supabase
+        let query = supabase.schema('app')
             .from('coupons')
             .select('*')
             .eq('coupon_code', code)
@@ -214,7 +214,7 @@ export async function loadAvailableOffers() {
         const { supabase } = await import('../../lib/supabase.js');
 
         // Select * so we never fail if optional columns (like service_id, usage_limit) are missing from the table
-        let query = supabase
+        let query = supabase.schema('app')
             .from('offers')
             .select('*')
             .neq('status', 'deleted');

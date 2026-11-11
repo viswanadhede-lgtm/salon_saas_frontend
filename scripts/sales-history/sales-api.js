@@ -12,7 +12,7 @@ import { supabase } from '../../lib/supabase.js';
 // ─────────────────────────────────────────────────────────────
 
 export async function fetchSalesHistoryFromDb(companyId, branchId) {
-    return await supabase
+    return await supabase.schema('app')
         .from('sales_for_business_transactions')
         .select('*')
         .eq('company_id', companyId)
@@ -21,7 +21,7 @@ export async function fetchSalesHistoryFromDb(companyId, branchId) {
 }
 
 export async function fetchCustomerById(customerId) {
-    return await supabase
+    return await supabase.schema('app')
         .from('customers')
         .select('*')
         .eq('customer_id', customerId)
@@ -29,7 +29,7 @@ export async function fetchCustomerById(customerId) {
 }
 
 export async function fetchOriginalTransaction(saleId) {
-    return await supabase
+    return await supabase.schema('app')
         .from('business_transactions')
         .select('id, payment_method')
         .eq('reference_id', saleId)
@@ -38,14 +38,14 @@ export async function fetchOriginalTransaction(saleId) {
 }
 
 export async function fetchSaleLineItems(saleId) {
-    return await supabase
+    return await supabase.schema('app')
         .from('sales')
         .select('*')
         .eq('sale_id', saleId);
 }
 
 export async function fetchSaleLineItemsOrdered(saleId) {
-    return await supabase
+    return await supabase.schema('app')
         .from('sales')
         .select('*')
         .eq('sale_id', saleId)
@@ -53,7 +53,7 @@ export async function fetchSaleLineItemsOrdered(saleId) {
 }
 
 export async function fetchProductStock(productId) {
-    return await supabase
+    return await supabase.schema('app')
         .from('products')
         .select('stock_quantity')
         .eq('product_id', productId)

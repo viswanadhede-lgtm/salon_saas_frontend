@@ -25,7 +25,7 @@ export async function loadContactData() {
 
     try {
         // 1. Fetch from company_contacts table
-        const { data: contactData, error: contactErr } = await supabase
+        const { data: contactData, error: contactErr } = await supabase.schema('shared')
             .from('company_contacts')
             .select('*')
             .eq('company_id', companyId)
@@ -64,7 +64,7 @@ export async function loadContactData() {
             setVal('primaryContactEmail',   contactData.contact_person_email || '');
         } else {
             // Fallback: row not yet created in company_contacts, prefill defaults from companies table
-            const { data: comp, error: compErr } = await supabase
+            const { data: comp, error: compErr } = await supabase.schema('shared')
                 .from('companies')
                 .select('*')
                 .eq('company_id', companyId)

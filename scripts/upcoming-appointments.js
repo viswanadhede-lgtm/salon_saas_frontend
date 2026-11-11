@@ -31,7 +31,7 @@ window.initPage = async function () {
         const localISOTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
             .toISOString().split('T')[0];
 
-        const { data, error } = await supabase
+        const { data, error } = await supabase.schema('app')
             .from('bookings_for_business_transaction')
             .select('*')
             .eq('branch_id', branchId)

@@ -95,7 +95,7 @@ async function fetchProducts() {
         const companyId = getCompanyId();
         const branchId = getBranchId();
 
-        let query = supabase
+        let query = supabase.schema('app')
             .from('products')
             .select('*');
 
@@ -137,7 +137,7 @@ async function fetchCustomers() {
         const companyId = getCompanyId();
         const branchId = getBranchId();
 
-        let query = supabase
+        let query = supabase.schema('app')
             .from('customers')
             .select('*');
 

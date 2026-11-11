@@ -1,4 +1,4 @@
-﻿// scripts/reports/report-modules/misc.js
+// scripts/reports/report-modules/misc.js
 // Shared utilities import
 import { formatCurrency, updateKPIs, renderTrendChart, renderDistributionChart, updateTable } from './shared.js';
 
@@ -15,13 +15,13 @@ async function renderMembership(data, supabase) {
         try {
             // Fetch purchases and plans in parallel
             const [purchasesRes, plansRes] = await Promise.all([
-                supabase
+                supabase.schema('app')
                     .from('membership_purchases')
                     .select('*')
                     .eq('company_id', companyId)
                     .eq('branch_id', branchId)
                     .order('purchase_date', { ascending: false }),
-                supabase
+                supabase.schema('app')
                     .from('memberships')
                     .select('membership_id, plan_name, price, duration_months, status')
                     .eq('company_id', companyId)
@@ -104,14 +104,14 @@ async function renderMarketing(data, supabase) {
         try {
             // Fetch offers and coupons in parallel
             const [offersRes, couponsRes] = await Promise.all([
-                supabase
+                supabase.schema('app')
                     .from('offers')
                     .select('offer_id, offer_name, discount_type, discount_value, valid_from, valid_to, status, current_usage_count, total_usage_limit')
                     .eq('company_id', companyId)
                     .eq('branch_id', branchId)
                     .neq('status', 'deleted')
                     .order('created_at', { ascending: false }),
-                supabase
+                supabase.schema('app')
                     .from('coupons')
                     .select('coupon_id, coupon_code, discount_type, discount_value, valid_from, valid_to, status, current_usage_count, total_usage_limit')
                     .eq('company_id', companyId)
@@ -211,7 +211,7 @@ async function renderProducts(data, supabase) {
         }
 
         try {
-            const { data: dbProducts, error } = await supabase
+            const { data: dbProducts, error } = await supabase.schema('app')
                 .from('products')
                 .select('*')
                 .eq('company_id', companyId)

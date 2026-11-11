@@ -153,7 +153,7 @@ export async function openManageBookingModal(bookingId) {
     let cEmail = b.customer_email || b.customer_mail || b.email || '';
     if (!cEmail && b.customer_id) {
         try {
-            const { data } = await supabase
+            const { data } = await supabase.schema('app')
                 .from('customers')
                 .select('customer_email')
                 .eq('customer_id', b.customer_id)

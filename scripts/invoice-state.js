@@ -42,7 +42,7 @@ export async function getBranchId(companyId) {
 
     const cId = companyId || getCompanyId();
     if (cId) {
-        const { data: bList } = await supabase
+        const { data: bList } = await supabase.schema('shared')
             .from('branches')
             .select('branch_id')
             .eq('company_id', cId)
@@ -401,7 +401,7 @@ export async function loadInvoiceSettingsFromDB(invoiceType, targetBranchId = nu
     const branchId = targetBranchId || await getBranchId(companyId);
 
     try {
-        let query = supabase
+        let query = supabase.schema('app')
             .from('invoice_settings')
             .select('*')
             .eq('company_id', companyId);
@@ -541,7 +541,7 @@ export async function loadBusinessPreviewData() {
         const branchId = await getBranchId(companyId);
 
         // 1. Company Settings
-        const { data: cSettings } = await supabase
+        const { data: cSettings } = await supabase.schema('shared')
             .from('company_settings')
             .select('display_name, legal_business_name, website, logo_url')
             .eq('company_id', companyId)
@@ -556,7 +556,7 @@ export async function loadBusinessPreviewData() {
 
         // 2. Branch Info
         if (branchId) {
-            const { data: bData } = await supabase
+            const { data: bData } = await supabase.schema('shared')
                 .from('branches')
                 .select('branch_name, branch_address, address_line_1, city, state, branch_phone')
                 .eq('branch_id', branchId)
@@ -571,7 +571,7 @@ export async function loadBusinessPreviewData() {
         }
 
         // 3. Tax Settings
-        const { data: tData } = await supabase
+        const { data: tData } = await supabase.schema('shared')
             .from('company_tax_settings')
             .select('gstin, pan')
             .eq('company_id', companyId)
@@ -583,7 +583,7 @@ export async function loadBusinessPreviewData() {
         }
 
         // 4. Company Contacts
-        const { data: ctData } = await supabase
+        const { data: ctData } = await supabase.schema('shared')
             .from('company_contacts')
             .select('phone_number, email, address_line1, city, state, postal_code')
             .eq('company_id', companyId)

@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // If plan info is missing from URL & localStorage, fetch from public.companies
     if ((!effectivePlanId || !effectivePlanName) && companyId) {
         try {
-            const { data: compData } = await supabase
+            const { data: compData } = await supabase.schema('shared')
                 .from('companies')
                 .select('company_id, plan_id, plan_name')
                 .eq('company_id', companyId)
@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         // 1. Try lookup by plan_id UUID (strictly using plan_id column)
         if (effectivePlanId) {
-            const { data: planById, error: errId } = await supabase
+            const { data: planById, error: errId } = await supabase.schema('platform')
                 .from('plans')
                 .select('plan_id, plan_name, price_monthly, price_yearly, status')
                 .eq('plan_id', effectivePlanId)
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 2. If not found by plan_id UUID, lookup by plan_name
         if (!dbPlan && effectivePlanName) {
-            const { data: planByName, error: errName } = await supabase
+            const { data: planByName, error: errName } = await supabase.schema('platform')
                 .from('plans')
                 .select('plan_id, plan_name, price_monthly, price_yearly, status')
                 .ilike('plan_name', effectivePlanName.trim())

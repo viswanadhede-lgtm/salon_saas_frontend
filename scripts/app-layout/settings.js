@@ -22,7 +22,7 @@ export async function fetchAndPopulateSettings() {
 
         const { supabase } = await import('../../lib/supabase.js');
 
-        const { data, error } = await supabase
+        const { data, error } = await supabase.schema('shared')
             .from('user_preferences')
             .select('*')
             .eq('user_id', user_id)

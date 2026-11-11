@@ -154,7 +154,7 @@ export async function openRefundModal(sale) {
         salesState.currentDiscountUsage = null;
         try {
             const { supabase } = await import('../../lib/supabase.js');
-            const { data: dRow } = await supabase
+            const { data: dRow } = await supabase.schema('app')
                 .from('discount_usages')
                 .select('*')
                 .eq('reference_id', sale.id)

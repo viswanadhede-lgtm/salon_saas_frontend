@@ -62,3 +62,4 @@ DROP VIEW IF EXISTS public.suggestions CASCADE;
 DROP VIEW IF EXISTS public.usage_counters CASCADE;
 DROP VIEW IF EXISTS public.user_preferences CASCADE;
 DROP VIEW IF EXISTS public.users CASCADE;
+

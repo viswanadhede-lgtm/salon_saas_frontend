@@ -130,7 +130,7 @@ export async function calculateAndRenderRevenue() {
         const unifiedRows = [];
 
         // 2a. SERVICES (completed bookings)
-        const { data: bookingsData, error: bookingsError } = await supabase
+        const { data: bookingsData, error: bookingsError } = await supabase.schema('app')
             .from('bookings_for_business_transaction')
             .select('*')
             .eq('branch_id', branchId)
@@ -154,7 +154,7 @@ export async function calculateAndRenderRevenue() {
         });
 
         // 2b. PRODUCTS (paid POS sales)
-        const { data: salesData, error: salesError } = await supabase
+        const { data: salesData, error: salesError } = await supabase.schema('app')
             .from('sales_for_business_transactions')
             .select('*')
             .eq('branch_id', branchId)
@@ -175,7 +175,7 @@ export async function calculateAndRenderRevenue() {
         });
 
         // 2c. MEMBERSHIPS (paid today)
-        const { data: memberData, error: memberError } = await supabase
+        const { data: memberData, error: memberError } = await supabase.schema('app')
             .from('membership_purchases')
             .select('*')
             .eq('branch_id', branchId)

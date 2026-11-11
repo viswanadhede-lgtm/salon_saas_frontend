@@ -52,7 +52,7 @@ export async function getBranchId() {
 
     const companyId = getCompanyId();
     if (companyId) {
-        const { data } = await supabase
+        const { data } = await supabase.schema('shared')
             .from('branches')
             .select('branch_id, branch_name')
             .eq('company_id', companyId)
@@ -170,7 +170,7 @@ export async function loadHoursData(overrideBranchId = null) {
     }
 
     try {
-        const { data: rows, error } = await supabase
+        const { data: rows, error } = await supabase.schema('app')
             .from('business_hours')
             .select('*')
             .eq('company_id', companyId)

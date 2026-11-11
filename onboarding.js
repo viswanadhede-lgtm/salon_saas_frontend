@@ -141,7 +141,7 @@ async function submitOnboarding() {
         // If no UUID was stored, attempt a live fetch from public.plans
         if (!activePlanId || String(activePlanId).length < 30) {
             try {
-                const { data: planRow, error: planFetchErr } = await supabase
+                const { data: planRow, error: planFetchErr } = await supabase.schema('platform')
                     .from('plans')
                     .select('plan_id, plan_name')
                     .ilike('plan_name', activePlanName.replace(/^plan_0?[123]$/i, 'growth'))

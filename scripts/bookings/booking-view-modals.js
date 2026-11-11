@@ -224,7 +224,7 @@ export async function openCancelledBookingModal(bookingId) {
     }
     if (!b) {
         try {
-            const { data } = await supabase
+            const { data } = await supabase.schema('app')
                 .from('bookings_for_business_transaction')
                 .select('*')
                 .eq('booking_id', bookingId)
@@ -297,7 +297,7 @@ export async function openCancelledBookingModal(bookingId) {
 
     // Check transactions asynchronously to ensure accurate refund button visibility
     try {
-        const { data: txs } = await supabase
+        const { data: txs } = await supabase.schema('app')
             .from('business_transactions')
             .select('amount, status')
             .eq('reference_id', bookingId)

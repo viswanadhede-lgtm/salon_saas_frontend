@@ -39,7 +39,7 @@ export async function getBranchId() {
 
     const companyId = getCompanyId();
     if (companyId) {
-        const { data } = await supabase
+        const { data } = await supabase.schema('shared')
             .from('branches')
             .select('branch_id, branch_name')
             .eq('company_id', companyId)
@@ -149,7 +149,7 @@ export async function loadPaymentSettings(branchIdOverride = null) {
     }
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabase.schema('app')
             .from('business_payment_settings')
             .select('*')
             .eq('company_id', companyId)

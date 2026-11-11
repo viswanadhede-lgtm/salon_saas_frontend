@@ -29,7 +29,7 @@ export async function initPage() {
 
         const localISOTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
-        let query = supabase
+        let query = supabase.schema('app')
             .from('bookings_for_business_transaction')
             .select('*')
             .eq('branch_id', branchId)

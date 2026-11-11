@@ -162,7 +162,7 @@ async function fetchNotifications() {
 
     try {
         // Build base query
-        let query = supabase
+        let query = supabase.schema('app')
             .from('notifications')
             .select('id, company_id, branch_id, user_id, category, event_key, title, message, link, metadata, is_read, read_at, created_at', { count: 'exact' })
             .eq('company_id', companyId);
@@ -242,7 +242,7 @@ async function refreshCategoryCounts() {
     if (!companyId) return;
 
     try {
-        let countQuery = supabase
+        let countQuery = supabase.schema('app')
             .from('notifications')
             .select('category, is_read')
             .eq('company_id', companyId);

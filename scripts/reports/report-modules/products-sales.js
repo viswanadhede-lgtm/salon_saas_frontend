@@ -37,7 +37,7 @@ function resolveBranchId(filterBranch) {
 async function initBranchDropdown(supabase, companyId, filterBranch) {
     try {
         if (!filterBranch) return;
-        const { data: bList } = await supabase
+        const { data: bList } = await supabase.schema('shared')
             .from('branches')
             .select('branch_id, branch_name')
             .eq('company_id', companyId);

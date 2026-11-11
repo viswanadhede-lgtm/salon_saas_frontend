@@ -42,7 +42,7 @@ export async function fetchStaff() {
         const branchId = getBranchId();
 
         if (companyId && branchId) {
-            const { data, error } = await supabase
+            const { data, error } = await supabase.schema('app')
                 .from('staff')
                 .select('*')
                 .eq('company_id', companyId)
@@ -210,7 +210,7 @@ export async function fetchTodayBookings(staffIds) {
         const today = new Date();
         const todayStr = toISODate(today); // 'YYYY-MM-DD'
 
-        const { data, error } = await supabase
+        const { data, error } = await supabase.schema('app')
             .from('bookings_for_business_transaction')
             .select('staff_id')
             .eq('branch_id', branchId)

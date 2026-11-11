@@ -150,7 +150,7 @@ async function loadOffers() {
             return;
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await supabase.schema('app')
             .from('offers')
             .select('*')
             .eq('company_id', companyId)

@@ -48,7 +48,7 @@ export async function submitIssue({ category, subject, description, file }) {
     if (file) {
         try {
             // Find the trigger-created initial customer message
-            const { data: initialMsg, error: msgErr } = await supabase
+            const { data: initialMsg, error: msgErr } = await supabase.schema('shared')
                 .from('issue_messages')
                 .select('id')
                 .eq('issue_id', issue.id)
@@ -112,7 +112,7 @@ export async function getIssues() {
         return { data: [], error: new Error('Company context not found.') };
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase.schema('shared')
         .from('issues')
         .select('id, reference_number, category, subject, description, status, created_at, updated_at')
         .eq('company_id', companyId)
@@ -128,12 +128,12 @@ export async function getIssueThread(issueId) {
     if (!issueId) return { messages: [], allAttachments: [] };
 
     const [msgRes, attRes] = await Promise.all([
-        supabase
+        supabase.schema('shared')
             .from('issue_messages')
             .select('id, issue_id, sender_type, sender_user_id, sender_name, message, created_at')
             .eq('issue_id', issueId)
             .order('created_at', { ascending: true }),
-        supabase
+        supabase.schema('shared')
             .from('issue_attachments')
             .select('id, issue_id, message_id, storage_path, file_name, content_type, size_bytes, created_at')
             .eq('issue_id', issueId)

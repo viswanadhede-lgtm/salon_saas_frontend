@@ -1,4 +1,4 @@
-﻿// scripts/global-booking-modal.js — Unified, High-Performance Global Booking Modal
+// scripts/global-booking-modal.js — Unified, High-Performance Global Booking Modal
 // Aligned with the two-modal workflow: Main Booking Modal + Add Services / Packages Picker.
 
 import { supabase } from '../lib/supabase.js';
@@ -1466,7 +1466,7 @@ export function initGlobalBookingModal() {
         // 8. Fetch all booking rows
         let allRows = [];
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabase.schema('app')
                 .from('bookings')
                 .select('*')
                 .eq('booking_id', bookingId);
@@ -2198,7 +2198,7 @@ export function initGlobalBookingModal() {
         try {
             // Staff overlap check against first service row
             const first = payloads[0];
-            const { data: existing, error: bErr } = await supabase
+            const { data: existing, error: bErr } = await supabase.schema('app')
                 .from('bookings')
                 .select('start_time, duration, status')
                 .eq('staff_id', first.staff_id)

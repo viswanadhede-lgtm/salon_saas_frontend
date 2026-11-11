@@ -87,7 +87,7 @@ export async function resolveCompanyId() {
             if (userRes.ok) {
                 const authUser = await userRes.json().catch(() => null);
                 if (authUser?.id) {
-                    const { data: uRows } = await supabase
+                    const { data: uRows } = await supabase.schema('shared')
                         .from('users')
                         .select('company_id')
                         .eq('user_id', authUser.id)
@@ -120,7 +120,7 @@ export async function loadActiveAddons(supabase, subscriptionId, companyId) {
 
     try {
         // Query subscription_add_ons for current company/subscription where status is active or cancelling
-        let query = supabase
+        let query = supabase.schema('platform')
             .from('subscription_add_ons')
             .select('id, subscription_id, company_id, addon_id, addon_name, price, status, started_at, ended_at')
             .in('status', ['active', 'cancelling']);
@@ -147,7 +147,7 @@ export async function loadActiveAddons(supabase, subscriptionId, companyId) {
         let masterMap = {};
         if (addonIds.length > 0) {
             try {
-                const { data: masterRows } = await supabase
+                const { data: masterRows } = await supabase.schema('platform')
                     .from('add_ons')
                     .select('addon_id, name, description')
                     .in('addon_id', addonIds);
@@ -211,13 +211,13 @@ export async function loadActiveAddons(supabase, subscriptionId, companyId) {
 export async function loadAvailableAddonsCatalog(supabase) {
     if (!supabase) return;
     try {
-        let { data, error } = await supabase
+        let { data, error } = await supabase.schema('platform')
             .from('add_ons')
             .select('*')
             .eq('status', 'active');
 
         if (error || !data || data.length === 0) {
-            const fallbackRes = await supabase
+            const fallbackRes = await supabase.schema('platform')
                 .from('add_ons')
                 .select('*');
             if (!fallbackRes.error && fallbackRes.data && fallbackRes.data.length > 0) {
@@ -260,7 +260,7 @@ export async function loadAvailableAddonsCatalog(supabase) {
 export async function loadBillingSettings(supabase, companyId) {
     if (!supabase || !companyId) return;
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabase.schema('app')
             .from('billing_settings')
             .select('tax_name, tax_rate, is_active')
             .eq('company_id', companyId)
@@ -299,7 +299,7 @@ export async function loadBillingSettings(supabase, companyId) {
 export async function loadBillingInformation(supabase, companyId) {
     if (!supabase || !companyId) return;
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabase.schema('shared')
             .from('company_billing_information')
             .select('*')
             .eq('company_id', companyId)
@@ -353,7 +353,7 @@ export async function loadPaymentHistory(supabase, companyId) {
     }
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabase.schema('platform')
             .from('payments')
             .select('id, razorpay_payment_id, razorpay_invoice_id, razorpay_subscription_id, amount_minor, status, payment_method, payment_type, captured_at, authorized_at, failed_at, failure_description, created_at, plan_id')
             .eq('company_id', companyId)
@@ -857,7 +857,7 @@ export async function loadActiveSubscription() {
         console.log('[Billing] RPC unavailable or returned error, falling back to direct table queries...');
 
         // 1. Fetch subscription for current company (prefer active/trial/past_due/cancelled status)
-        let { data: subRows, error: subErr } = await supabase
+        let { data: subRows, error: subErr } = await supabase.schema('platform')
             .from('subscriptions')
             .select('id, razorpay_subscription_id, company_id, plan_id, billing_cycle, billing_amount_minor, status, is_trial, trial_start_at, trial_end_at, current_period_start_at, current_period_end_at, next_billing_at, auto_renew, cancel_at_cycle_end, cancellation_requested_at, plan_name, created_at')
             .eq('company_id', companyId)
@@ -871,7 +871,7 @@ export async function loadActiveSubscription() {
 
         // Fallback to most recent subscription row for company
         if (!subRows || subRows.length === 0) {
-            const { data: recentRows, error: recentErr } = await supabase
+            const { data: recentRows, error: recentErr } = await supabase.schema('platform')
                 .from('subscriptions')
                 .select('id, razorpay_subscription_id, company_id, plan_id, billing_cycle, billing_amount_minor, status, is_trial, trial_start_at, trial_end_at, current_period_start_at, current_period_end_at, next_billing_at, auto_renew, cancel_at_cycle_end, cancellation_requested_at, plan_name, created_at')
                 .eq('company_id', companyId)
@@ -889,7 +889,7 @@ export async function loadActiveSubscription() {
                 const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
                 const userId = ctx.user?.user_id || ctx.user?.id;
                 if (userId) {
-                    const { data: userSubRows } = await supabase
+                    const { data: userSubRows } = await supabase.schema('platform')
                         .from('subscriptions')
                         .select('id, razorpay_subscription_id, company_id, plan_id, billing_cycle, billing_amount_minor, status, is_trial, trial_start_at, trial_end_at, current_period_start_at, current_period_end_at, next_billing_at, auto_renew, cancel_at_cycle_end, cancellation_requested_at, plan_name, created_at')
                         .eq('user_id', userId)
@@ -941,7 +941,7 @@ export async function loadActiveSubscription() {
 
         // 2. Fetch plan_name from plans table if plan_id exists
         if (sub.plan_id) {
-            const { data: planData, error: planErr } = await supabase
+            const { data: planData, error: planErr } = await supabase.schema('platform')
                 .from('plans')
                 .select('plan_name')
                 .eq('plan_id', sub.plan_id)

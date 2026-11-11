@@ -199,7 +199,7 @@ export async function fetchCustomerMembership(customerId, supabaseClient) {
         const today = new Date().toISOString().split('T')[0];
 
         // Step 1: Active membership purchase for customer
-        const { data: purchases, error: pErr } = await supabase
+        const { data: purchases, error: pErr } = await supabase.schema('app')
             .from('membership_purchases')
             .select('membership_id, plan_name, expiry_date')
             .eq('customer_id', customerId)
@@ -214,7 +214,7 @@ export async function fetchCustomerMembership(customerId, supabaseClient) {
         const purchase = purchases[0];
 
         // Step 2: Fetch discount values from memberships
-        const { data: membership, error: mErr } = await supabase
+        const { data: membership, error: mErr } = await supabase.schema('app')
             .from('memberships')
             .select('plan_name, discount_type, discount_value')
             .eq('membership_id', purchase.membership_id)
@@ -254,7 +254,7 @@ export async function fetchActiveOffers(companyId, branchId, supabaseClient) {
             return [];
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await supabase.schema('app')
             .from('offers')
             .select('offer_id, offer_name, discount_type, discount_value, min_bill_amount, valid_from, valid_to, service_id, service_name, total_usage_limit, current_usage_count')
             .eq('company_id', companyId)
@@ -305,7 +305,7 @@ export async function validateCouponCode(code, companyId, branchId, serviceIds =
     const cleanCode = (code || '').trim().toUpperCase();
     if (!cleanCode) throw new Error('Please enter a coupon code.');
 
-    const { data: rows, error } = await supabase
+    const { data: rows, error } = await supabase.schema('app')
         .from('coupons')
         .select('*')
         .eq('company_id', companyId)

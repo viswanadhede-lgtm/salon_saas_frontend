@@ -24,7 +24,7 @@ export async function fetchServicesFromDb() {
         return { data: [], error: { message: 'Missing company or branch context' } };
     }
 
-    return await supabase
+    return await supabase.schema('app')
         .from('services')
         .select('*')
         .eq('company_id', companyId)
@@ -37,7 +37,7 @@ export async function fetchPackagesFromDb() {
     const companyId = getCompanyId();
     const branchId = getBranchId();
 
-    let query = supabase
+    let query = supabase.schema('app')
         .from('packages')
         .select('*, package_services(service_id, service_name)')
         .neq('status', 'deleted')
@@ -50,14 +50,14 @@ export async function fetchPackagesFromDb() {
 }
 
 export async function fetchPackageServicesForEdit(packageId) {
-    return await supabase
+    return await supabase.schema('app')
         .from('package_services')
         .select('service_id')
         .eq('package_id', packageId);
 }
 
 export async function fetchPackageServicesForBreakdown(packageId) {
-    return await supabase
+    return await supabase.schema('app')
         .from('package_services')
         .select('service_id, service_name')
         .eq('package_id', packageId);

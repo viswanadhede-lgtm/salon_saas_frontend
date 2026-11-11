@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            let query = supabase
+            let query = supabase.schema('app')
                 .from('bookings_for_business_transaction')
                 .select('*')
                 .eq('payment_status', 'pending')

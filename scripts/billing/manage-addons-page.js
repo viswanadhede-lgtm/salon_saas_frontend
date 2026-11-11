@@ -67,7 +67,7 @@ async function loadPageData() {
 
     try {
         // 1. Fetch Subscription Info
-        const { data: subData } = await supabase
+        const { data: subData } = await supabase.schema('platform')
             .from('subscriptions')
             .select('id, plan_id, status, billing_cycle, current_period_end_at')
             .eq('company_id', pageState.companyId)
@@ -80,7 +80,7 @@ async function loadPageData() {
             pageState.plan.cycle = sub.billing_cycle || 'monthly';
 
             if (sub.plan_id) {
-                const { data: pData } = await supabase
+                const { data: pData } = await supabase.schema('platform')
                     .from('plans')
                     .select('plan_name, price_monthly, price_yearly')
                     .eq('plan_id', sub.plan_id)
@@ -96,7 +96,7 @@ async function loadPageData() {
         }
 
         // 2. Fetch Active Add-ons
-        const { data: addOnsData, error: addOnsErr } = await supabase
+        const { data: addOnsData, error: addOnsErr } = await supabase.schema('platform')
             .from('subscription_add_ons')
             .select('id, addon_id, addon_name, price, status, started_at, ended_at')
             .eq('company_id', pageState.companyId)

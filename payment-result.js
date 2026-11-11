@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 //    razorpay_subscription_id is the Razorpay "sub_..." ID returned
                 //    in the URL callback and stored as a UNIQUE text column.
                 //    (The old 'subscription_id' text column no longer exists in the schema.)
-                let { data: sub, error: subError } = await supabase
+                let { data: sub, error: subError } = await supabase.schema('platform')
                     .from('subscriptions')
                     .select('*')
                     .eq('razorpay_subscription_id', reference_id)
@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Fallback: check by company_id if reference_id lookup returns no row yet
                 if (!sub && companyId) {
-                    const { data: companySubs } = await supabase
+                    const { data: companySubs } = await supabase.schema('platform')
                         .from('subscriptions')
                         .select('*')
                         .eq('company_id', companyId)

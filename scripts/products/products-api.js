@@ -11,7 +11,7 @@ import { productsState, getCompanyId, getBranchId } from './products-state.js';
 
 export async function fetchProductCategories() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabase.schema('app')
             .from('product_categories')
             .select('*')
             .eq('company_id', getCompanyId())
@@ -39,7 +39,7 @@ export async function fetchProductCategories() {
 
 export async function fetchProducts() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabase.schema('app')
             .from('products')
             .select('*')
             .eq('company_id', getCompanyId())
@@ -142,7 +142,7 @@ export async function cascadeRenameCategoryOnProducts(catId, newCategoryName) {
 
 // products READ for edit (product_image_url)
 export async function fetchProductImageUrl(productId) {
-    return supabase
+    return supabase.schema('app')
         .from('products')
         .select('product_image_url')
         .eq('product_id', productId)
@@ -152,7 +152,7 @@ export async function fetchProductImageUrl(productId) {
 
 // products READ for delete (product_image_url)
 export async function fetchProductImageUrlForDelete(productId) {
-    return supabase
+    return supabase.schema('app')
         .from('products')
         .select('product_image_url')
         .eq('product_id', productId)

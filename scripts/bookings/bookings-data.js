@@ -29,7 +29,7 @@ export async function fetchBookings() {
         const companyId = getCompanyId();
         const branchId  = getBranchId();
 
-        let query = supabase
+        let query = supabase.schema('app')
             .from('bookings_for_business_transaction')
             .select('*')
             .order('booking_date', { ascending: false });

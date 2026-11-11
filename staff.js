@@ -12,7 +12,7 @@ window.fetchStaff = async function() {
         const branch_id = getBranchId();
         if (!company_id || !branch_id) return;
 
-        const { data, error } = await supabase
+        const { data, error } = await supabase.schema('app')
             .from('staff')
             .select('*')
             .eq('company_id', company_id)
@@ -136,7 +136,7 @@ async function _legacyCheckStaffDependencies(staffId) {
     const todayStr = new Date().toISOString().split('T')[0];
 
     try {
-        let bookingQuery = supabase
+        let bookingQuery = supabase.schema('app')
             .from('bookings')
             .select('booking_id, booking_date, status')
             .eq('staff_id', staffId)
@@ -158,7 +158,7 @@ async function _legacyCheckStaffDependencies(staffId) {
     }
 
     try {
-        let bbtQuery = supabase
+        let bbtQuery = supabase.schema('app')
             .from('bookings_for_business_transaction')
             .select('booking_id, booking_date, status')
             .ilike('staff_id', `%${staffId}%`)

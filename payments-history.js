@@ -83,7 +83,7 @@ window.phOpenCustomerProfile = async function(customerId, customerName, customer
 
     // Graceful fallback: look up customer_id using correct columns from `customers` table
     try {
-        let query = supabase
+        let query = supabase.schema('app')
             .from('customers')
             .select('customer_id, customer_name, customer_phone');
 
@@ -105,7 +105,7 @@ window.phOpenCustomerProfile = async function(customerId, customerName, customer
 
         // Secondary fallback by customer_name if phone query didn't yield a match
         if (customerPhone) {
-            const { data: byName } = await supabase
+            const { data: byName } = await supabase.schema('app')
                 .from('customers')
                 .select('customer_id, customer_name')
                 .ilike('customer_name', customerName.trim())
@@ -185,8 +185,8 @@ async function fetchPaymentHistory() {
             return;
         }
 
-        let query = supabase
-            .from('payment_history_view')
+        let query = supabase.schema('app')
+            .from('business_transactions')
             .select('*')
             .eq('company_id', companyId);
 

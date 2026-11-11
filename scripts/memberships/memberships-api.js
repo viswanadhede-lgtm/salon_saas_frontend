@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase.js';
 
 // ── Customers (Read-Only) ──────────────────────────────────────────────────
 export async function fetchCustomersApi(companyId, branchId) {
-    return await supabase
+    return await supabase.schema('app')
         .from('customers')
         .select('*')
         .eq('company_id', companyId)
@@ -14,7 +14,7 @@ export async function fetchCustomersApi(companyId, branchId) {
 }
 
 export async function fetchCustomerByIdApi(customerId) {
-    return await supabase
+    return await supabase.schema('app')
         .from('customers')
         .select('*')
         .eq('customer_id', customerId)
@@ -23,7 +23,7 @@ export async function fetchCustomerByIdApi(customerId) {
 
 // ── Services (Read-Only) ───────────────────────────────────────────────────
 export async function fetchServicesApi(companyId, branchId) {
-    return await supabase
+    return await supabase.schema('app')
         .from('services')
         .select('service_id, service_name, status')
         .eq('company_id', companyId)
@@ -33,14 +33,14 @@ export async function fetchServicesApi(companyId, branchId) {
 // ── Plans (Read-Only) ──────────────────────────────────────────────────────
 export async function fetchPlansAndMemberCountsApi(companyId, branchId) {
     return await Promise.all([
-        supabase
+        supabase.schema('app')
             .from('memberships')
             .select('*')
             .eq('company_id', companyId)
             .eq('branch_id', branchId)
             .neq('status', 'deleted')
             .order('created_at', { ascending: false }),
-        supabase
+        supabase.schema('app')
             .from('membership_purchases')
             .select('membership_id')
             .eq('company_id', companyId)
@@ -64,7 +64,7 @@ export async function deleteMembershipPlanRpcApi(rpcPayload) {
 
 // ── Purchases (Read-Only) ──────────────────────────────────────────────────
 export async function fetchPurchasesApi(companyId, branchId) {
-    return await supabase
+    return await supabase.schema('app')
         .from('membership_purchases')
         .select('*')
         .eq('company_id', companyId)
@@ -73,7 +73,7 @@ export async function fetchPurchasesApi(companyId, branchId) {
 }
 
 export async function checkDuplicateActivePurchaseApi(customerId, membershipId, companyId, branchId) {
-    let dupQuery = supabase
+    let dupQuery = supabase.schema('app')
         .from('membership_purchases')
         .select('*')
         .eq('customer_id', customerId)
@@ -87,14 +87,14 @@ export async function checkDuplicateActivePurchaseApi(customerId, membershipId, 
 }
 
 export async function fetchPurchaseByIdApi(purchaseId) {
-    const res = await supabase
+    const res = await supabase.schema('app')
         .from('membership_purchases')
         .select('*')
         .eq('purchase_id', purchaseId)
         .limit(1);
 
     if (res.error) {
-        return await supabase
+        return await supabase.schema('app')
             .from('membership_purchases')
             .select('*')
             .eq('id', purchaseId)
@@ -125,7 +125,7 @@ export async function syncExpiredMembershipsRpcApi(companyId, branchId) {
 
 // ── Business Transactions Ledger (Read-Only) ───────────────────────────────
 export async function fetchTransactionsForPurchaseApi(purchaseId) {
-    return await supabase
+    return await supabase.schema('app')
         .from('business_transactions')
         .select('*')
         .eq('reference_id', purchaseId)
@@ -133,7 +133,7 @@ export async function fetchTransactionsForPurchaseApi(purchaseId) {
 }
 
 export async function fetchTransactionsSummaryForPurchaseApi(purchaseId) {
-    return await supabase
+    return await supabase.schema('app')
         .from('business_transactions')
         .select('amount, status, created_at, paid_at, notes')
         .eq('reference_id', purchaseId)
