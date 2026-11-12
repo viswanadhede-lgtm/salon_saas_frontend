@@ -497,16 +497,17 @@
 
 //   In the Active Memberships table, when a record is in State 1 (status = 'active' & payment_status = 'paid'), the action column displays View and Cancel.
 // Clicking Cancel opens the confirmation modal displaying customer name, plan name, start date, elapsed duration, and an optional Reason / Notes textarea.
-// Clicking "Cancel Membership" in the modal activates this RPC cancel_membership
+// Clicking "Cancel Membership" in the modal activates this RPC cancel_membership (cancel_membership_atomic)
 
-// so what this RPC [cancel_membership]do is (it updates only one table) it will read from membership purchases table and updates the memberhsip purchases table ...
-
-//it updates the below columns in the membership purchases table.
-
-// 1. status = cancelled
-// 2. cancelled date = current date ?
-// 3. udpated at = now
-// 4. notes = if any.
+// So what this RPC [cancel_membership] does is (it updates only ONE table: app.membership_purchases - NO financial transaction):
+// It reads from membership_purchases and updates the record with:
+// 1. status = 'cancelled'
+// 2. cancelled_date = CURRENT_DATE
+// 3. cancelled_by_user_id = Logged-in Staff ID (auth.uid fallback)
+// 4. cancelled_by_user_name = Logged-in Staff Name
+// 5. cancellation_reason = Reason entered in modal
+// 6. updated_at = NOW()
+// Note: It does NOT write to business_transactions because zero money is exchanged during cancellation.
 
 
 //  ----------------------------------------------------------------------------------
@@ -517,19 +518,31 @@
 
 // Clicking Refund opens the Process Membership Refund modal displaying:
 //  Original plan price & collected amount.
-//  Refund amount input (defaults to the collected amount, with validation preventing refunds higher than paid).
+//  Refund amount input (strictly locked to the full collected amount - ONLY full refunds permitted).
 //  Refund payment method selection (cash, upi, card).
 //  Refund reason dropdown (e.g., Customer Relocation, Dissatisfied with Service, Medical Issues, Other) + optional notes.
 
-// Clicking the "Issue Refund" button activates this RPC: process_membership_refund.
+// Clicking the "Issue Refund" button activates this RPC: process_membership_refund (process_membership_refund_atomic).
 
-
-// So what this RPC [process_membership_refund]do is It executes the entire refund operation inside one atomic database transaction (BEGIN ... COMMIT). If any part fails (e.g., refund exceeds paid amount, invalid payment method), everything is rolled back:
-
-// Validates that the membership is cancelled and has not already been refunded.
-// Updates the purchase record status to 'refunded'.
-// Records a new financial refund entry in the central ledger (business_transactions).
-// Reverses the refunded amount from the customer's lifetime spend (customers.total_spent).
+// So what this RPC [process_membership_refund] does: It executes inside one atomic database transaction:
+// 1. Validates that the membership is cancelled and has not already been refunded.
+// 2. Enforces full refund only (refund_amount must equal final_amount).
+// 3. Updates the purchase record in app.membership_purchases:
+//    - status = 'refunded'
+//    - payment_status = 'refunded'
+//    - refunded_date = CURRENT_DATE
+//    - refund_amount = final_amount
+//    - refunded_by_user_id = Logged-in Staff ID
+//    - refunded_by_user_name = Logged-in Staff Name
+//    - refund_reason = Reason entered
+// 4. Records a new financial refund ledger entry in central ledger (business_transactions):
+//    - reference_type = 'membership'
+//    - reference_id = purchase_id
+//    - amount = final_amount
+//    - status = 'refunded'
+//    - created_by = Logged-in Staff ID
+//    - created_by_user_name = Logged-in Staff Name
+// 5. Automatically updates customer lifetime spend (customers.total_spent) via trigger.
 
 
 // WHICH TABLES DOES IT READ FROM

@@ -39,25 +39,17 @@ export function handleMemRefundAmountChange(val) {
         return;
     }
 
-    if (refundableMembershipAmount > 0 && num > refundableMembershipAmount) {
+    if (refundableMembershipAmount > 0 && num !== refundableMembershipAmount) {
         num = refundableMembershipAmount;
         if (input) input.value = num;
-        showToast(`Refund amount cannot exceed paid limit of ₹${refundableMembershipAmount.toLocaleString('en-IN')}`, '#f59e0b');
+        showToast(`Only full refund of ₹${refundableMembershipAmount.toLocaleString('en-IN')} is permitted.`, '#f59e0b');
     }
 
     if (refundableMembershipAmount > 0) {
-        if (num >= refundableMembershipAmount) {
-            if (badge) {
-                badge.textContent = 'Full Refund';
-                badge.style.background = '#ffe4e6';
-                badge.style.color = '#e11d48';
-            }
-        } else {
-            if (badge) {
-                badge.textContent = 'Partial Refund';
-                badge.style.background = '#fef3c7';
-                badge.style.color = '#d97706';
-            }
+        if (badge) {
+            badge.textContent = 'Full Refund';
+            badge.style.background = '#ffe4e6';
+            badge.style.color = '#e11d48';
         }
     } else {
         if (badge) {
@@ -429,11 +421,13 @@ export async function refundMembershipPurchase(purchaseId) {
     if (origDateEl) origDateEl.textContent = formattedStartDate;
     if (origPaidAmountEl) origPaidAmountEl.textContent = `₹${fallbackPaid.toLocaleString('en-IN')}`;
 
-    // 4. Right Column Form - Always keep amountInput editable!
+    // 4. Right Column Form - Locked to Full Refund only
     if (amountInput) {
         amountInput.disabled = false;
+        amountInput.readOnly = true;
         amountInput.value = fallbackPaid > 0 ? fallbackPaid : '';
-        amountInput.placeholder = 'Enter amount';
+        amountInput.placeholder = 'Full refund amount';
+        amountInput.title = 'Only full refunds are permitted';
         if (fallbackPaid > 0) amountInput.max = fallbackPaid;
     }
     if (maxRefundEl) maxRefundEl.textContent = `₹${fallbackPaid.toLocaleString('en-IN')}`;
@@ -569,9 +563,11 @@ export async function processMembershipRefund() {
 
     try {
         let staffId = null;
+        let staffName = null;
         try {
             const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-            staffId = ctx.user?.id || ctx.user?.user_id || null;
+            staffId = ctx.user?.id || ctx.user?.user_id || localStorage.getItem('user_id') || null;
+            staffName = ctx.user?.name || (ctx.user?.first_name ? `${ctx.user.first_name} ${ctx.user.last_name || ''}`.trim() : null) || localStorage.getItem('user_name') || null;
         } catch (e) {}
 
         let safeMethod = method;
@@ -587,7 +583,9 @@ export async function processMembershipRefund() {
             p_refund_amount: enteredRefundAmount,
             p_payment_method: safeMethod,
             p_refund_reason: fullNotes || 'Customer Requested Refund',
-            p_staff_id: staffId
+            p_staff_id: staffId,
+            p_refunded_by_user_id: staffId,
+            p_refunded_by_user_name: staffName
         });
 
         if (error) throw error;
@@ -723,11 +721,15 @@ export async function viewRefundInfo(purchaseId) {
                     <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Refunded Amount</div>
                     <div style="font-size: 1.1rem; font-weight: 700; color: #dc2626;">₹${refundedAmount.toLocaleString('en-IN')}</div>
                 </div>
+                <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: #fff;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Refunded By</div>
+                    <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${purchase.refunded_by_user_name || 'Staff'}</div>
+                </div>
             </div>
             
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
-                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Reason for Cancellation</div>
-                <div style="font-size: 0.9rem; color: #334155; line-height: 1.5; white-space: pre-wrap;">${purchase.notes || 'No reason specified.'}</div>
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Refund Reason</div>
+                <div style="font-size: 0.9rem; color: #334155; line-height: 1.5; white-space: pre-wrap;">${purchase.refund_reason || purchase.notes || 'No reason specified.'}</div>
             </div>
         `;
         if (window.feather) feather.replace();

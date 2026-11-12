@@ -123,11 +123,23 @@ export function cancelMembershipPurchase(purchaseId) {
 // ── Execute Cancellation in DB ─────────────────────────────────────────────
 export async function executeCancelMembershipPurchase(purchaseId, notes = null) {
     try {
+        let staffId = null;
+        let staffName = null;
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+            staffId = ctx.user?.id || ctx.user?.user_id || localStorage.getItem('user_id') || null;
+            staffName = ctx.user?.name || (ctx.user?.first_name ? `${ctx.user.first_name} ${ctx.user.last_name || ''}`.trim() : null) || localStorage.getItem('user_name') || null;
+        } catch (e) {}
+
         const { data, error } = await cancelMembershipRpcApi({
             p_purchase_id: purchaseId,
             p_company_id: getCompanyId(),
             p_branch_id: getBranchId(),
-            p_notes: notes
+            p_notes: notes,
+            p_staff_id: staffId,
+            p_cancellation_reason: notes,
+            p_cancelled_by_user_id: staffId,
+            p_cancelled_by_user_name: staffName
         });
 
         if (error) throw error;
@@ -228,12 +240,13 @@ export function renderCancelNoteLayout(record, contentElem) {
                 <div style="font-size: 0.95rem; font-weight: 600; color: #4f46e5;">${durationText}</div>
             </div>
             <div style="padding: 16px; background: #fff;">
-                <!-- Empty cell to cleanly finish the grid row -->
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Cancelled By</div>
+                <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${record.cancelled_by_user_name || 'Staff'}</div>
             </div>
         </div>
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
             <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Reason for Cancellation</div>
-            <div style="font-size: 0.9rem; color: #334155; line-height: 1.5; white-space: pre-wrap;">${notesStr}</div>
+            <div style="font-size: 0.9rem; color: #334155; line-height: 1.5; white-space: pre-wrap;">${record.cancellation_reason || record.notes || 'No reason specified.'}</div>
         </div>
     `;
 }
