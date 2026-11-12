@@ -134,6 +134,65 @@ export function openBookingUpdateChoiceModal(bookingId) {
 
     const modal = document.getElementById('bookingUpdateChoiceModal');
     if (modal) {
+        const editCard = modal.querySelector('#cardChoiceEditBooking');
+        const payStatus = (b.payment_status || b.payment || '').toLowerCase();
+        const isPaid = payStatus === 'paid';
+        const isRefunded = payStatus === 'refunded';
+
+        if (editCard) {
+            if (isPaid || isRefunded) {
+                editCard.dataset.disabled = 'true';
+                editCard.style.opacity = '0.55';
+                editCard.style.cursor = 'not-allowed';
+                editCard.style.background = '#f8fafc';
+                editCard.style.borderColor = '#e2e8f0';
+
+                const badge = editCard.querySelector('.edit-card-badge');
+                if (badge) {
+                    badge.textContent = isPaid ? 'Locked (Paid)' : 'Locked (Refunded)';
+                    badge.style.color = isPaid ? '#047857' : '#b91c1c';
+                    badge.style.background = isPaid ? '#d1fae5' : '#fee2e2';
+                }
+                const note = editCard.querySelector('.edit-card-note');
+                if (note) {
+                    note.textContent = isPaid
+                        ? 'This appointment is already paid. Services, staff, and pricing cannot be edited.'
+                        : 'This appointment is refunded and cannot be edited.';
+                }
+                const action = editCard.querySelector('.edit-card-action');
+                if (action) {
+                    action.innerHTML = `
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#64748b;"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        <span style="color:#64748b;">Editing Locked</span>
+                    `;
+                }
+            } else {
+                editCard.dataset.disabled = 'false';
+                editCard.style.opacity = '1';
+                editCard.style.cursor = 'pointer';
+                editCard.style.background = '#ffffff';
+                editCard.style.borderColor = '#e2e8f0';
+
+                const badge = editCard.querySelector('.edit-card-badge');
+                if (badge) {
+                    badge.textContent = 'Schedule & Svc';
+                    badge.style.color = '#4338ca';
+                    badge.style.background = '#e0e7ff';
+                }
+                const note = editCard.querySelector('.edit-card-note');
+                if (note) {
+                    note.textContent = 'Modify appointment date, time, services, assigned staff, or pricing.';
+                }
+                const action = editCard.querySelector('.edit-card-action');
+                if (action) {
+                    action.innerHTML = `
+                        Open Editor
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    `;
+                }
+            }
+        }
+
         modal.classList.add('active');
     }
 }
@@ -510,6 +569,18 @@ export function attachManageModalListeners() {
         // 2. Choice Modal: Click "Edit Booking" card
         const editCard = e.target.closest('#cardChoiceEditBooking');
         if (editCard) {
+            if (editCard.dataset.disabled === 'true') {
+                const payStatus = (manageState.activeBooking?.payment_status || manageState.activeBooking?.payment || '').toLowerCase();
+                const msg = payStatus === 'paid'
+                    ? 'This booking is already paid. Services and pricing cannot be edited. Please issue a refund first if changes are needed.'
+                    : 'Refunded bookings cannot be edited.';
+                if (window.toast) {
+                    window.toast(msg, '#ef4444');
+                } else {
+                    alert(msg);
+                }
+                return;
+            }
             const bId = manageState.activeBookingId;
             closeBookingUpdateChoiceModal();
             if (bId) {

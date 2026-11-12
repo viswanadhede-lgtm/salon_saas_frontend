@@ -445,19 +445,19 @@ export function setupModals() {
                     
                     <!-- Card 1: Edit Booking -->
                     <div id="cardChoiceEditBooking" style="background:#ffffff;border:1.5px solid #e2e8f0;border-radius:12px;padding:20px;cursor:pointer;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.03);"
-                        onmouseover="this.style.borderColor='#6366f1';this.style.background='#fcfaff';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 16px -4px rgba(99,102,241,0.12)';"
-                        onmouseout="this.style.borderColor='#e2e8f0';this.style.background='#ffffff';this.style.transform='translateY(0)';this.style.boxShadow='0 1px 3px rgba(0,0,0,0.03)';">
+                        onmouseover="if(this.dataset.disabled!=='true'){this.style.borderColor='#6366f1';this.style.background='#fcfaff';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 16px -4px rgba(99,102,241,0.12)';}"
+                        onmouseout="if(this.dataset.disabled!=='true'){this.style.borderColor='#e2e8f0';this.style.background='#ffffff';this.style.transform='translateY(0)';this.style.boxShadow='0 1px 3px rgba(0,0,0,0.03)';}">
                         <div>
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
                                 <div style="width:42px;height:42px;border-radius:10px;background:#e0e7ff;color:#4f46e5;display:flex;align-items:center;justify-content:center;">
                                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                 </div>
-                                <span style="font-size:0.72rem;font-weight:700;color:#4338ca;background:#e0e7ff;padding:3px 9px;border-radius:20px;letter-spacing:0.02em;">Schedule & Svc</span>
+                                <span class="edit-card-badge" style="font-size:0.72rem;font-weight:700;color:#4338ca;background:#e0e7ff;padding:3px 9px;border-radius:20px;letter-spacing:0.02em;">Schedule & Svc</span>
                             </div>
                             <h3 style="font-size:1.02rem;font-weight:700;color:#0f172a;margin:0 0 6px 0;">Edit Booking</h3>
-                            <p style="font-size:0.82rem;color:#64748b;margin:0;line-height:1.45;">Modify appointment date, time, services, assigned staff, or pricing.</p>
+                            <p class="edit-card-note" style="font-size:0.82rem;color:#64748b;margin:0;line-height:1.45;">Modify appointment date, time, services, assigned staff, or pricing.</p>
                         </div>
-                        <div style="margin-top:18px;display:flex;align-items:center;gap:6px;font-size:0.84rem;font-weight:700;color:#4f46e5;">
+                        <div class="edit-card-action" style="margin-top:18px;display:flex;align-items:center;gap:6px;font-size:0.84rem;font-weight:700;color:#4f46e5;">
                             Open Editor
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </div>
