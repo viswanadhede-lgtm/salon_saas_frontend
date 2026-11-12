@@ -104,11 +104,6 @@ BEGIN
         RAISE EXCEPTION 'Customer not found. Please select or register a customer first.';
     END IF;
 
-    -- Update last_visit date on the customer profile
-    UPDATE app.customers
-    SET last_visit = v_booking_date, updated_at = NOW()
-    WHERE customer_id = v_customer_rec.customer_id;
-
     -- 2.2 Table 1: Insert Line Items into app.bookings
     FOR v_service IN SELECT value FROM jsonb_array_elements(p_services)
     LOOP
