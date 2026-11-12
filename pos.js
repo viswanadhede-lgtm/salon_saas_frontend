@@ -541,11 +541,10 @@ function setupEventListeners() {
                 if (contextStr) {
                     const ctx = JSON.parse(contextStr);
                     staffId = ctx?.user?.user_id || ctx?.user?.id || localStorage.getItem('user_id') || null;
-                    if (ctx?.user?.first_name) {
-                        staffName = ctx.user.first_name;
-                    } else if (ctx?.user?.name) {
-                        staffName = ctx.user.name.split(' ')[0];
-                    }
+                    staffName = ctx?.user?.name || ctx?.user?.full_name || ctx?.user?.first_name || 'System';
+                }
+                if (!staffId) {
+                    staffId = localStorage.getItem('user_id') || null;
                 }
             } catch (e) {
                 console.warn('Could not parse appContext for staff details:', e);

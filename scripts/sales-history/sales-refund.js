@@ -476,9 +476,15 @@ export async function processRefund() {
         let staffId = null;
         let staffName = 'System';
         try {
-            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-            staffId = ctx.staff?.id || ctx.user?.id || null;
-            staffName = ctx.staff?.name || ctx.user?.name || ctx.staff?.full_name || ctx.user?.full_name || 'System';
+            const contextStr = localStorage.getItem('appContext');
+            if (contextStr) {
+                const ctx = JSON.parse(contextStr);
+                staffId = ctx?.user?.user_id || ctx?.user?.id || ctx?.staff?.staff_id || ctx?.staff?.id || null;
+                staffName = ctx?.user?.name || ctx?.user?.full_name || ctx?.staff?.staff_name || ctx?.staff?.name || 'System';
+            }
+            if (!staffId) {
+                staffId = localStorage.getItem('user_id') || null;
+            }
         } catch (_) {}
 
         // ── Build item payload for the RPC ─────────────────────────────────
