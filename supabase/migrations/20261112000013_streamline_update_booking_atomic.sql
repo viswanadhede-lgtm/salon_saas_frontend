@@ -266,3 +266,4 @@ GRANT EXECUTE ON FUNCTION app.update_booking_atomic(uuid, uuid, uuid, date, time
 GRANT EXECUTE ON FUNCTION public.update_booking_atomic(uuid, uuid, uuid, date, time without time zone, text, text, jsonb) TO authenticated, anon, service_role;
 
 NOTIFY pgrst, 'reload schema';
+
