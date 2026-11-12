@@ -130,17 +130,27 @@ export async function calculateAndRenderRevenue() {
         const unifiedRows = [];
 
         // 2a. SERVICES (completed bookings)
-        const { data: bookingsData, error: bookingsError } = await supabase.schema('app')
+        let bookingsQuery = supabase.schema('app')
             .from('bookings_for_business_transaction')
             .select('*')
-            .eq('branch_id', branchId)
             .eq('booking_date', localISOTime)
-            .eq('status', 'completed');
+            .in('booking_status', ['completed', 'Completed']);
+
+        if (companyId) bookingsQuery = bookingsQuery.eq('company_id', companyId);
+        if (branchId && branchId !== 'all' && branchId !== 'branch_1' && branchId !== 'branch_2') {
+            bookingsQuery = bookingsQuery.eq('branch_id', branchId);
+        }
+
+        const { data: bookingsData, error: bookingsError } = await bookingsQuery;
 
         if (bookingsError) throw bookingsError;
         todaysBookingsData = bookingsData || [];
         window.todaysBookingsData = todaysBookingsData;
         todaysBookingsData.forEach(b => {
+            const amt = Number(b.final_amount != null ? b.final_amount : (b.total_price != null ? b.total_price : (b.price || 0))) || 0;
+            const staffName = b.staff_name || 'Unassigned';
+            staffRevenue[staffName] = (staffRevenue[staffName] || 0) + amt;
+
             unifiedRows.push({
                 type: 'Service',
                 customer_id: b.customer_id,
@@ -148,49 +158,61 @@ export async function calculateAndRenderRevenue() {
                 items: Array.isArray(b.service_names) && b.service_names.length > 0
                     ? b.service_names
                     : (b.service_name ? b.service_name.split(',').map(s => s.trim()) : ['N/A']),
-                staff: b.staff_name || 'Unassigned',
-                amount: b.total_price || 0
+                staff: staffName,
+                amount: amt
             });
         });
 
         // 2b. PRODUCTS (paid POS sales)
-        const { data: salesData, error: salesError } = await supabase.schema('app')
+        let salesQuery = supabase.schema('app')
             .from('sales_for_business_transactions')
             .select('*')
-            .eq('branch_id', branchId)
             .eq('payment_status', 'paid')
             .gte('created_at', `${localISOTime}T00:00:00`)
             .lte('created_at', `${localISOTime}T23:59:59`);
 
+        if (companyId) salesQuery = salesQuery.eq('company_id', companyId);
+        if (branchId && branchId !== 'all' && branchId !== 'branch_1' && branchId !== 'branch_2') {
+            salesQuery = salesQuery.eq('branch_id', branchId);
+        }
+
+        const { data: salesData, error: salesError } = await salesQuery;
         if (salesError) throw salesError;
         (salesData || []).forEach(s => {
+            const amt = Number(s.final_amount || s.total_price || 0) || 0;
             unifiedRows.push({
                 type: 'Product',
                 customer_id: s.customer_id,
                 customer: s.customer_name || 'Walk-in Customer',
                 items: s.product_names || [],
                 staff: s.staff_name || 'Unassigned',
-                amount: s.final_amount || s.total_price || 0
+                amount: amt
             });
         });
 
         // 2c. MEMBERSHIPS (paid today)
-        const { data: memberData, error: memberError } = await supabase.schema('app')
+        let memberQuery = supabase.schema('app')
             .from('membership_purchases')
             .select('*')
-            .eq('branch_id', branchId)
             .eq('payment_status', 'paid')
             .eq('purchase_date', localISOTime);
 
+        if (companyId) memberQuery = memberQuery.eq('company_id', companyId);
+        if (branchId && branchId !== 'all' && branchId !== 'branch_1' && branchId !== 'branch_2') {
+            memberQuery = memberQuery.eq('branch_id', branchId);
+        }
+
+        const { data: memberData, error: memberError } = await memberQuery;
         if (memberError) throw memberError;
         (memberData || []).forEach(m => {
+            const amt = Number(m.final_amount || m.price || 0) || 0;
             unifiedRows.push({
                 type: 'Membership',
                 customer_id: m.customer_id,
                 customer: m.customer_name || 'Walk-in Customer',
                 items: [m.plan_name || 'Membership Plan'],
                 staff: m.assigned_by_user_name || 'Unassigned',
-                amount: m.final_amount || m.price || 0
+                amount: amt
             });
         });
 
@@ -334,3 +356,22 @@ if (document.readyState === 'loading') {
 } else {
     init();
 }
+
+// Live update listeners
+window.addEventListener('branch:changed', () => {
+    calculateAndRenderRevenue();
+});
+
+window.addEventListener('payment-recorded', () => {
+    calculateAndRenderRevenue();
+});
+
+window.addEventListener('booking-created', () => {
+    calculateAndRenderRevenue();
+});
+
+window.addEventListener('storage', (e) => {
+    if (e.key === 'app_payment_sync') {
+        calculateAndRenderRevenue();
+    }
+});
