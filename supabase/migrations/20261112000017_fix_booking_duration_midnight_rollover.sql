@@ -484,3 +484,4 @@ SET total_duration = (
 WHERE booking_id = '0216ebff-7037-4fed-92d2-099a62f63226';
 
 NOTIFY pgrst, 'reload schema';
+
