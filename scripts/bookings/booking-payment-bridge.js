@@ -426,9 +426,9 @@ export async function processBookingPaymentCallback(payload, row, options = {}) 
             discountType = 'offer'; 
             discountName = d.offerName; 
             discountId = d.offerId || null;
-        } else if (d.membershipName) { 
+        } else if (d.membershipId || d.membershipName) { 
             discountType = 'membership'; 
-            discountName = d.membershipName; 
+            discountName = d.membershipName || 'Membership Perk'; 
             discountId = d.membershipId || null;
         } else if (d.manualValue > 0) { 
             discountType = 'manual'; 
