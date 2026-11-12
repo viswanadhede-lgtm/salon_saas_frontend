@@ -437,3 +437,4 @@ GRANT EXECUTE ON FUNCTION app.validate_discount TO authenticated, service_role, 
 GRANT EXECUTE ON FUNCTION public.validate_discount TO authenticated, service_role, anon;
 GRANT EXECUTE ON FUNCTION app.get_available_discounts TO authenticated, service_role, anon;
 GRANT EXECUTE ON FUNCTION public.get_available_discounts TO authenticated, service_role, anon;
+

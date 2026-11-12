@@ -180,3 +180,4 @@ export const DiscountsManager = {
 if (typeof window !== 'undefined') {
     window.DiscountsManager = DiscountsManager;
 }
+
