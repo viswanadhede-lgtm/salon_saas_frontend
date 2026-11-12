@@ -1162,46 +1162,35 @@ export function calculateFinalDue() {
 
     let memDiscount = 0;
     let coupDiscount = 0;
-    let manDiscount = 0;
-
-    // 1. Membership Discount
-    if (paymentState.appliedMembership && paymentState.appliedMembership.value > 0) {
-        if (paymentState.appliedMembership.type === 'percentage') {
-            memDiscount = runningAmount * (paymentState.appliedMembership.value / 100);
-        } else {
-            memDiscount = Number(paymentState.appliedMembership.value);
-        }
-        if (memDiscount > runningAmount) memDiscount = runningAmount;
-        totalDiscount += memDiscount;
-        runningAmount -= memDiscount;
-    }
-
-    // 2. Coupon Discount
-    if (paymentState.appliedCoupon && paymentState.appliedCoupon.value > 0) {
-        if (paymentState.appliedCoupon.type === 'percentage') {
-            coupDiscount = runningAmount * (paymentState.appliedCoupon.value / 100);
-        } else {
-            coupDiscount = Number(paymentState.appliedCoupon.value);
-        }
-        if (coupDiscount > runningAmount) coupDiscount = runningAmount;
-        totalDiscount += coupDiscount;
-        runningAmount -= coupDiscount;
-    }
-
-
-
-    // 3. Offer Discount
     let offerDiscount = 0;
-    if (paymentState.appliedOffer && paymentState.appliedOffer.value > 0) {
-        if (paymentState.appliedOffer.type === 'percentage') {
-            offerDiscount = runningAmount * (paymentState.appliedOffer.value / 100);
-        } else {
-            offerDiscount = Number(paymentState.appliedOffer.value);
-        }
-        if (offerDiscount > runningAmount) offerDiscount = runningAmount;
-        totalDiscount += offerDiscount;
-        runningAmount -= offerDiscount;
+
+    // Mutually Exclusive: Exactly 1 discount applies (Coupon OR Offer OR Membership)
+    if (paymentState.appliedCoupon && paymentState.appliedCoupon.value > 0) {
+        coupDiscount = paymentState.appliedCoupon.amount != null
+            ? Number(paymentState.appliedCoupon.amount)
+            : (paymentState.appliedCoupon.type === 'percentage'
+                ? Math.round(baseAmount * (paymentState.appliedCoupon.value / 100))
+                : Number(paymentState.appliedCoupon.value));
+        if (coupDiscount > baseAmount) coupDiscount = baseAmount;
+        totalDiscount = coupDiscount;
+    } else if (paymentState.appliedOffer && paymentState.appliedOffer.value > 0) {
+        offerDiscount = paymentState.appliedOffer.amount != null
+            ? Number(paymentState.appliedOffer.amount)
+            : (paymentState.appliedOffer.type === 'percentage'
+                ? Math.round(baseAmount * (paymentState.appliedOffer.value / 100))
+                : Number(paymentState.appliedOffer.value));
+        if (offerDiscount > baseAmount) offerDiscount = baseAmount;
+        totalDiscount = offerDiscount;
+    } else if (paymentState.appliedMembership && paymentState.appliedMembership.value > 0) {
+        memDiscount = paymentState.appliedMembership.amount != null
+            ? Number(paymentState.appliedMembership.amount)
+            : (paymentState.appliedMembership.type === 'percentage'
+                ? Math.round(baseAmount * (paymentState.appliedMembership.value / 100))
+                : Number(paymentState.appliedMembership.value));
+        if (memDiscount > baseAmount) memDiscount = baseAmount;
+        totalDiscount = memDiscount;
     }
+
     paymentState.offerDiscount = offerDiscount;
 
     const finalDue = Math.max(0, Math.round(baseAmount - totalDiscount));

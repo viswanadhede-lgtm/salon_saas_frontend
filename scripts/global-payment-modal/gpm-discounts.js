@@ -1,76 +1,81 @@
 // scripts/global-payment-modal/gpm-discounts.js
 import { gpmState, setLiveOffersDB } from './gpm-state.js';
 import { gpmFormatCurrency, calculateFinalDue } from './gpm-ui.js';
+import { DiscountsManager } from '../discounts.js';
 
+function resolveApplicableType(config) {
+    const rawType = (config?.type || '').toLowerCase();
+    if (rawType === 'pos') return 'product';
+    if (rawType.includes('membership')) return 'membership';
+    return 'service'; // default bookings/appointments
+}
+
+// ── 1. Fetch & Apply Customer Membership Perk ──────────────────────────────
 export async function fetchCustomerMembership(customerId) {
-    const { paymentState } = gpmState;
+    const { globalPaymentConfig, paymentState } = gpmState;
     const resultEl = document.getElementById('gpmMembershipResult');
     const subtitleEl = document.getElementById('gpmMembershipSubtitle');
     if (!resultEl) return false;
+
+    if (!customerId) {
+        paymentState.appliedMembership = null;
+        document.getElementById('gpmMembershipSection')?.classList.remove('applied');
+        resultEl.style.display = 'none';
+        calculateFinalDue();
+        return false;
+    }
 
     resultEl.className = 'gpm-membership-result';
     resultEl.textContent = 'Checking active membership...';
     resultEl.style.display = 'block';
 
     try {
-        const { supabase } = await import('../../lib/supabase.js');
-        const today = new Date().toISOString().split('T')[0];
+        const baseAmount = Number(globalPaymentConfig?.totalAmount || 0);
+        const applicableType = resolveApplicableType(globalPaymentConfig);
 
-        const { data: purchases, error: pErr } = await supabase.schema('app')
-            .from('membership_purchases')
-            .select('membership_id, plan_name, expiry_date')
-            .eq('customer_id', customerId)
-            .eq('status', 'active')
-            .gte('expiry_date', today)
-            .limit(1);
+        const res = await DiscountsManager.validateMembership('', {
+            customerId,
+            billAmount: baseAmount,
+            applicableType
+        });
 
-        if (pErr || !purchases || purchases.length === 0) {
+        if (!res.valid) {
             paymentState.appliedMembership = null;
             document.getElementById('gpmMembershipSection')?.classList.remove('applied');
             resultEl.className = 'gpm-membership-result not-found';
-            resultEl.textContent = 'No active membership found.';
+            resultEl.textContent = res.reason || 'No active membership discount.';
             if (subtitleEl) subtitleEl.textContent = 'No active membership';
             calculateFinalDue();
             return false;
         }
 
-        const purchase = purchases[0];
-
-        const { data: membership, error: mErr } = await supabase.schema('app')
-            .from('memberships')
-            .select('plan_name, discount_type, discount_value')
-            .eq('membership_id', purchase.membership_id)
-            .single();
-
-        if (mErr || !membership || !membership.discount_value) {
-            paymentState.appliedMembership = null;
-            document.getElementById('gpmMembershipSection')?.classList.remove('applied');
-            resultEl.className = 'gpm-membership-result not-found';
-            resultEl.textContent = 'Active membership has no discount.';
-            calculateFinalDue();
-            return false;
-        }
+        // Mutual Exclusivity: Clear coupon and offer when membership is applied
+        paymentState.appliedCoupon = null;
+        paymentState.appliedOffer = null;
+        resetCouponUi();
+        resetOfferUi();
 
         paymentState.appliedMembership = {
-            id: purchase.membership_id,
-            name: membership.plan_name || purchase.plan_name,
-            type: membership.discount_type,
-            value: Number(membership.discount_value)
+            id: res.discount_id,
+            name: res.discount_name,
+            type: res.discount_calc_type,
+            value: Number(res.discount_value),
+            amount: Number(res.discount_amount)
         };
 
-        const valStr = membership.discount_type === 'percentage'
-            ? `${membership.discount_value}% OFF`
-            : gpmFormatCurrency(membership.discount_value) + ' OFF';
+        const valStr = res.discount_calc_type === 'percentage'
+            ? `${res.discount_value}% OFF`
+            : gpmFormatCurrency(res.discount_value) + ' OFF';
 
         resultEl.className = 'gpm-membership-result found';
-        resultEl.textContent = `✓ ${paymentState.appliedMembership.name} (${valStr}) applied!`;
-        if (subtitleEl) subtitleEl.textContent = `${paymentState.appliedMembership.name} active`;
+        resultEl.textContent = `✓ ${res.discount_name} (${valStr}) applied!`;
+        if (subtitleEl) subtitleEl.textContent = `${res.discount_name} active`;
         document.getElementById('gpmMembershipSection')?.classList.add('applied');
 
         calculateFinalDue();
         return true;
     } catch (err) {
-        console.error('Error checking customer membership:', err);
+        console.error('[PaymentModal] Error checking customer membership:', err);
         paymentState.appliedMembership = null;
         document.getElementById('gpmMembershipSection')?.classList.remove('applied');
         resultEl.className = 'gpm-membership-result not-found';
@@ -80,6 +85,7 @@ export async function fetchCustomerMembership(customerId) {
     }
 }
 
+// ── 2. Apply Coupon Code ───────────────────────────────────────────────────
 export async function applyCouponCode() {
     const { globalPaymentConfig, paymentState } = gpmState;
     const codeInput = document.getElementById('gpmCouponInput');
@@ -92,12 +98,7 @@ export async function applyCouponCode() {
     if (paymentState.appliedCoupon) {
         // Toggle to Remove
         paymentState.appliedCoupon = null;
-        document.getElementById('gpmCouponSection')?.classList.remove('applied');
-        codeInput.value = '';
-        codeInput.disabled = false;
-        btnApply.textContent = 'Apply';
-        btnApply.style.background = '#1e293b';
-        msgEl.style.display = 'none';
+        resetCouponUi();
         calculateFinalDue();
         return;
     }
@@ -108,60 +109,38 @@ export async function applyCouponCode() {
         btnApply.textContent = '...';
         btnApply.disabled = true;
 
-        const { supabase } = await import('../../lib/supabase.js');
+        const customerId = globalPaymentConfig?.customerId || gpmState.selectedCustomer?.id || null;
+        const baseAmount = Number(globalPaymentConfig?.totalAmount || 0);
+        const applicableType = resolveApplicableType(globalPaymentConfig);
 
-        let companyId;
-        try {
-            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-            companyId = ctx.company?.id || localStorage.getItem('company_id') || null;
-        } catch {
-            companyId = localStorage.getItem('company_id') || null;
+        const res = await DiscountsManager.validateCoupon(code, {
+            customerId,
+            billAmount: baseAmount,
+            applicableType
+        });
+
+        if (!res.valid) {
+            throw new Error(res.reason || 'Invalid coupon code.');
         }
 
-        const branchId = localStorage.getItem('active_branch_id')
-            || document.getElementById('branchSelect')?.value
-            || null;
-
-        let query = supabase.schema('app')
-            .from('coupons')
-            .select('*')
-            .eq('coupon_code', code)
-            .eq('status', 'active');
-
-        if (companyId) query = query.eq('company_id', companyId);
-        if (branchId) query = query.eq('branch_id', branchId);
-
-        const { data: rows, error } = await query;
-
-        if (error || !rows || rows.length === 0) {
-            throw new Error('Invalid or inactive coupon code.');
-        }
-
-        const serviceIds = globalPaymentConfig?.serviceIds || [];
-        let couponData = null;
-
-        if (serviceIds.length > 0) {
-            couponData = rows.find(r => r.service_id && serviceIds.includes(r.service_id)) || null;
-            if (!couponData) couponData = rows.find(r => !r.service_id) || null;
-            if (!couponData) throw new Error('Coupon is not applicable to the selected service(s).');
-        } else {
-            couponData = rows.find(r => !r.service_id) || rows[0];
-        }
-
-        const now = new Date();
-        if (couponData.valid_from && new Date(couponData.valid_from) > now) throw new Error('Coupon not active yet.');
-        if (couponData.valid_to && new Date(couponData.valid_to) < now) throw new Error('Coupon expired.');
+        // Mutual Exclusivity: Clear offer and membership when coupon is applied
+        paymentState.appliedOffer = null;
+        paymentState.appliedMembership = null;
+        resetOfferUi();
+        resetMembershipUi();
 
         paymentState.appliedCoupon = {
-            id: couponData.coupon_id,
-            code: couponData.coupon_code,
-            type: couponData.discount_type,
-            value: Number(couponData.discount_value)
+            id: res.discount_id,
+            code: res.discount_name,
+            name: res.discount_name,
+            type: res.discount_calc_type,
+            value: Number(res.discount_value),
+            amount: Number(res.discount_amount)
         };
 
-        const valStr = couponData.discount_type === 'percentage'
-            ? `${couponData.discount_value}% OFF`
-            : gpmFormatCurrency(couponData.discount_value) + ' OFF';
+        const valStr = res.discount_calc_type === 'percentage'
+            ? `${res.discount_value}% OFF`
+            : gpmFormatCurrency(res.discount_value) + ' OFF';
 
         msgEl.textContent = `✓ ${valStr} applied!`;
         msgEl.style.color = '#10b981';
@@ -175,16 +154,20 @@ export async function applyCouponCode() {
 
         calculateFinalDue();
     } catch (err) {
-        console.error('Coupon validation error:', err);
+        console.error('[PaymentModal] Coupon validation error:', err);
+        paymentState.appliedCoupon = null;
         document.getElementById('gpmCouponSection')?.classList.remove('applied');
         msgEl.textContent = err.message || 'Failed to apply coupon.';
         msgEl.style.color = '#ef4444';
         msgEl.style.display = 'block';
         btnApply.disabled = false;
         btnApply.textContent = 'Apply';
+        btnApply.style.background = '#1e293b';
+        calculateFinalDue();
     }
 }
 
+// ── 3. Load Available Promotional Offers ───────────────────────────────────
 export async function loadAvailableOffers() {
     const { globalPaymentConfig } = gpmState;
     const offerSelect = document.getElementById('gpmOfferSelect');
@@ -198,88 +181,26 @@ export async function loadAvailableOffers() {
     if (btnClear) btnClear.style.display = 'none';
 
     try {
-        let companyId;
-        try {
-            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-            companyId = ctx.company?.company_id || ctx.company?.id || localStorage.getItem('company_id') || null;
-        } catch {
-            companyId = localStorage.getItem('company_id') || null;
-        }
+        const customerId = globalPaymentConfig?.customerId || gpmState.selectedCustomer?.id || null;
+        const baseAmount = Number(globalPaymentConfig?.totalAmount || 0);
+        const applicableType = resolveApplicableType(globalPaymentConfig);
 
-        const branchId = localStorage.getItem('active_branch_id')
-            || localStorage.getItem('branch_id')
-            || document.getElementById('branchSelect')?.value
-            || null;
-
-        const { supabase } = await import('../../lib/supabase.js');
-
-        // Select * so we never fail if optional columns (like service_id, usage_limit) are missing from the table
-        let query = supabase.schema('app')
-            .from('offers')
-            .select('*')
-            .neq('status', 'deleted');
-
-        if (companyId) {
-            query = query.or(`company_id.eq.${companyId},company_id.is.null`);
-        }
-        if (branchId) {
-            query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
-        }
-
-        const { data, error } = await query;
-        if (error) {
-            console.error('[PaymentModal] Error fetching offers:', error);
-            throw error;
-        }
-
-        const seen = new Map();
-        const todayStr = new Date().toISOString().split('T')[0];
-        const checkoutType = (globalPaymentConfig?.type || '').toLowerCase(); // 'booking', 'pos', 'membership'
-
-        (data || []).forEach(o => {
-            // Check status is active
-            if (o.status && o.status !== 'active') return;
-
-            // Check validity period
-            if (o.valid_from && o.valid_from > todayStr) return;
-            if (o.valid_to && o.valid_to < todayStr) return;
-
-            // Check overall usage limit if column exists
-            if (o.total_usage_limit && Number(o.current_usage_count || 0) >= Number(o.total_usage_limit)) return;
-
-            // Check applicability flags from offers.html (all_services, all_products, all_memberships)
-            const hasAnyFlag = (o.all_services || o.all_products || o.all_memberships);
-            if (hasAnyFlag) {
-                if (checkoutType.includes('booking') && !o.all_services) return;
-                if (checkoutType === 'pos' && !o.all_products) return;
-                if (checkoutType.includes('membership') && !o.all_memberships) return;
-            }
-
-            const offerKey = o.offer_id || o.id;
-            if (!offerKey) return;
-
-            if (!seen.has(offerKey)) {
-                seen.set(offerKey, {
-                    offer_id: offerKey,
-                    id: offerKey,
-                    offer_name: o.offer_name || 'Special Offer',
-                    discount_type: (o.discount_type || 'percentage').toLowerCase(),
-                    discount_value: Number(o.discount_value || 0),
-                    min_bill_amount: Number(o.min_bill_amount || 0)
-                });
-            }
+        const res = await DiscountsManager.getAvailableDiscounts({
+            customerId,
+            billAmount: baseAmount,
+            applicableType
         });
 
-        const liveOffersDB = Array.from(seen.values());
-        gpmState.liveOffersDB = liveOffersDB;
+        const liveOffers = res?.offers || [];
+        gpmState.liveOffersDB = liveOffers;
 
-        if (liveOffersDB.length === 0) {
+        if (liveOffers.length === 0) {
             offerSelect.innerHTML = '<option value="">No active offers available</option>';
             offerSelect.disabled = true;
         } else {
             offerSelect.disabled = false;
             let optionsHtml = '<option value="">Select an offer...</option>';
-            liveOffersDB.forEach(o => {
+            liveOffers.forEach(o => {
                 const badge = o.discount_type === 'percentage' ? `${o.discount_value}% OFF` : `₹${o.discount_value} OFF`;
                 const minStr = o.min_bill_amount > 0 ? ` (Min ₹${o.min_bill_amount})` : '';
                 optionsHtml += `<option value="${o.offer_id}">${o.offer_name} — ${badge}${minStr}</option>`;
@@ -287,13 +208,14 @@ export async function loadAvailableOffers() {
             offerSelect.innerHTML = optionsHtml;
         }
     } catch (err) {
-        console.warn('Failed to fetch offers in payment modal:', err);
+        console.warn('[PaymentModal] Failed to fetch offers:', err);
         offerSelect.innerHTML = '<option value="">No offers available</option>';
         offerSelect.disabled = true;
     }
 }
 
-export function applySelectedOffer(offerId) {
+// ── 4. Apply Selected Promotional Offer ────────────────────────────────────
+export async function applySelectedOffer(offerId) {
     const { globalPaymentConfig, paymentState, liveOffersDB } = gpmState;
     const offerSelect = document.getElementById('gpmOfferSelect');
     const btnClear = document.getElementById('gpmBtnClearOffer');
@@ -301,53 +223,105 @@ export function applySelectedOffer(offerId) {
 
     if (!offerId) {
         paymentState.appliedOffer = null;
-        document.getElementById('gpmOffersSection')?.classList.remove('applied');
-        if (msgEl) msgEl.style.display = 'none';
-        if (btnClear) btnClear.style.display = 'none';
+        resetOfferUi();
         calculateFinalDue();
         return;
     }
 
-    const found = liveOffersDB.find(x => (x.offer_id === offerId || x.id === offerId));
-    if (!found) {
-        paymentState.appliedOffer = null;
-        document.getElementById('gpmOffersSection')?.classList.remove('applied');
-        if (msgEl) msgEl.style.display = 'none';
-        if (btnClear) btnClear.style.display = 'none';
-        calculateFinalDue();
-        return;
-    }
+    try {
+        const customerId = globalPaymentConfig?.customerId || gpmState.selectedCustomer?.id || null;
+        const baseAmount = Number(globalPaymentConfig?.totalAmount || 0);
+        const applicableType = resolveApplicableType(globalPaymentConfig);
 
-    const baseAmount = Number(globalPaymentConfig?.totalAmount || 0);
-    if (found.min_bill_amount && baseAmount < found.min_bill_amount) {
-        paymentState.appliedOffer = null;
-        document.getElementById('gpmOffersSection')?.classList.remove('applied');
-        if (offerSelect) offerSelect.value = '';
-        if (btnClear) btnClear.style.display = 'none';
+        const res = await DiscountsManager.validateOffer(offerId, {
+            customerId,
+            billAmount: baseAmount,
+            applicableType
+        });
+
+        if (!res.valid) {
+            paymentState.appliedOffer = null;
+            resetOfferUi();
+            if (msgEl) {
+                msgEl.textContent = res.reason || 'Offer not valid for this transaction.';
+                msgEl.style.color = '#ef4444';
+                msgEl.style.display = 'block';
+            }
+            calculateFinalDue();
+            return;
+        }
+
+        // Mutual Exclusivity: Clear coupon and membership when offer is applied
+        paymentState.appliedCoupon = null;
+        paymentState.appliedMembership = null;
+        resetCouponUi();
+        resetMembershipUi();
+
+        paymentState.appliedOffer = {
+            id: res.discount_id,
+            name: res.discount_name,
+            type: res.discount_calc_type,
+            value: Number(res.discount_value),
+            amount: Number(res.discount_amount)
+        };
+
+        if (btnClear) btnClear.style.display = 'inline-flex';
         if (msgEl) {
-            msgEl.textContent = `Offer requires a minimum bill of ₹${found.min_bill_amount}.`;
+            const valStr = res.discount_calc_type === 'percentage'
+                ? `${res.discount_value}% OFF`
+                : `₹${res.discount_value} OFF`;
+            msgEl.textContent = `✓ Offer applied: ${res.discount_name} (${valStr})`;
+            msgEl.style.color = '#10b981';
+            msgEl.style.display = 'block';
+        }
+        document.getElementById('gpmOffersSection')?.classList.add('applied');
+
+        calculateFinalDue();
+    } catch (err) {
+        console.error('[PaymentModal] Error applying offer:', err);
+        paymentState.appliedOffer = null;
+        resetOfferUi();
+        if (msgEl) {
+            msgEl.textContent = err.message || 'Failed to apply offer.';
             msgEl.style.color = '#ef4444';
             msgEl.style.display = 'block';
         }
         calculateFinalDue();
-        return;
     }
+}
 
-    paymentState.appliedOffer = {
-        id: found.offer_id || found.id,
-        name: found.offer_name || found.name,
-        type: found.discount_type,
-        value: found.discount_value
-    };
-
-    if (btnClear) btnClear.style.display = 'inline-flex';
-    if (msgEl) {
-        const valStr = found.discount_type === 'percentage' ? `${found.discount_value}% OFF` : `₹${found.discount_value} OFF`;
-        msgEl.textContent = `✓ Offer applied: ${found.offer_name} (${valStr})`;
-        msgEl.style.color = '#10b981';
-        msgEl.style.display = 'block';
+// ── UI Reset Helpers for Mutual Exclusivity ────────────────────────────────
+function resetCouponUi() {
+    const codeInput = document.getElementById('gpmCouponInput');
+    const msgEl = document.getElementById('gpmCouponMsg');
+    const btnApply = document.getElementById('gpmBtnApplyCoupon');
+    if (codeInput) {
+        codeInput.value = '';
+        codeInput.disabled = false;
     }
-    document.getElementById('gpmOffersSection')?.classList.add('applied');
+    if (btnApply) {
+        btnApply.textContent = 'Apply';
+        btnApply.style.background = '#1e293b';
+        btnApply.disabled = false;
+    }
+    if (msgEl) msgEl.style.display = 'none';
+    document.getElementById('gpmCouponSection')?.classList.remove('applied');
+}
 
-    calculateFinalDue();
+function resetOfferUi() {
+    const offerSelect = document.getElementById('gpmOfferSelect');
+    const btnClear = document.getElementById('gpmBtnClearOffer');
+    const msgEl = document.getElementById('gpmOfferMsg');
+    if (offerSelect) offerSelect.value = '';
+    if (btnClear) btnClear.style.display = 'none';
+    if (msgEl) msgEl.style.display = 'none';
+    document.getElementById('gpmOffersSection')?.classList.remove('applied');
+}
+
+function resetMembershipUi() {
+    document.getElementById('gpmMembershipSection')?.classList.remove('applied');
+    const resultEl = document.getElementById('gpmMembershipResult');
+    if (resultEl) resultEl.style.display = 'none';
+    const subtitleEl = document.getElementById('gpmMembershipSubtitle');
+    if (subtitleEl) subtitleEl.textContent = 'Membership Perks';
 }
