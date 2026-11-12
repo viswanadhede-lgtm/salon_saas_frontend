@@ -230,3 +230,4 @@ REVOKE ALL ON FUNCTION public.process_booking_refund_atomic(uuid, text, text, te
 GRANT EXECUTE ON FUNCTION public.process_booking_refund_atomic(uuid, text, text, text, uuid, uuid, numeric) TO authenticated, anon, service_role;
 
 NOTIFY pgrst, 'reload schema';
+

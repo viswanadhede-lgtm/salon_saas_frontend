@@ -2087,6 +2087,7 @@ export function initGlobalBookingModal() {
                             staff_name:   item.staffName || '',
                             start_time:   startTimeStr,
                             end_time:     endTimeStr,
+                            duration:     dur,
                             price:        Number(item.price) || 0,
                             status:       currentStatus
                         });
@@ -2105,6 +2106,7 @@ export function initGlobalBookingModal() {
                                 staff_name:   svc.staffName || '',
                                 start_time:   startTimeStr,
                                 end_time:     endTimeStr,
+                                duration:     dur,
                                 price:        Number(svc.price) || 0,
                                 status:       currentStatus
                             });

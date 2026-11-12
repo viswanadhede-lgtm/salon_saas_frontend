@@ -494,6 +494,7 @@ export function attachEditModalListeners() {
                     staff_id:     staffSel?.value || null,
                     staff_name:   staffSel?.options[staffSel.selectedIndex]?.text || '',
                     price:        Number(priceInput?.value || 0),
+                    duration:     Number(opt?.dataset.duration || row.dataset.duration || 30),
                     start_time:   time,
                     end_time:     null,
                     status:       status
