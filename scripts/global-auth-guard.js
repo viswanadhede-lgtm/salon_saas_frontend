@@ -180,24 +180,12 @@ let heartbeatTimer    = null;
  * Silently refreshes Supabase auth token using the stored refresh_token.
  */
 async function silentTokenRefresh() {
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (!refreshToken) return false;
-
     try {
-        const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
-            method: 'POST',
-            headers: { 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refresh_token: refreshToken })
-        });
-
-        const data = await res.json().catch(() => null);
-        if (!res.ok || !data?.access_token) {
-            console.warn('[Auth Guard] Silent token refresh failed.');
+        const { data, error } = await supabase.auth.refreshSession();
+        if (error || !data?.session?.access_token) {
+            console.warn('[Auth Guard] Silent token refresh failed:', error?.message);
             return false;
         }
-
-        localStorage.setItem('token', data.access_token);
-        if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
         console.log('[Auth Guard] Token silently refreshed ✓');
         return true;
     } catch (e) {
@@ -207,7 +195,7 @@ async function silentTokenRefresh() {
 }
 
 /**
- * Sets up background proactive token refresh timer.
+ * Sets up background proactive token refresh timer and tab wake-up listeners.
  */
 function setupTokenRefresh() {
     if (tokenRefreshTimer) return;
@@ -215,6 +203,27 @@ function setupTokenRefresh() {
         console.log('[Auth Guard] Running scheduled proactive token refresh...');
         silentTokenRefresh();
     }, TOKEN_REFRESH_FREQ);
+
+    // Auto-refresh when tab gains focus or wakes up from sleep
+    const checkOnWake = () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const expiresAt = (payload.exp || 0) * 1000;
+            if (expiresAt - Date.now() < 5 * 60 * 1000) {
+                console.log('[Auth Guard] Tab woke up with token near or past expiry → refreshing silently');
+                silentTokenRefresh();
+            }
+        } catch (_) {}
+    };
+
+    if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') checkOnWake();
+        });
+        window.addEventListener('focus', checkOnWake);
+    }
 }
 
 
@@ -455,6 +464,15 @@ export async function runGlobalAuthGuard() {
             initSubFeatures();
             applySubFeatureGates();
             removeAuthSpinner();
+
+            // Proactive refresh on hot nav if token is near/past expiry
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                if (((payload.exp || 0) * 1000) - Date.now() < 5 * 60 * 1000) {
+                    console.log('[Auth Guard] Hot nav detected token near/past expiry → silent refresh');
+                    silentTokenRefresh();
+                }
+            } catch (_) {}
 
             // Ensure background services are running
             setupTokenRefresh();
