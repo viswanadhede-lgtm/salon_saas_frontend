@@ -161,3 +161,4 @@ BEGIN
         PERFORM app.recalculate_customer_stats(r.customer_id);
     END LOOP;
 END $$;
+
