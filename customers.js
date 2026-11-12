@@ -183,8 +183,11 @@ async function fetchCustomers() {
 async function refreshCustomerStatCards() {
     try {
         const companyId = getCompanyId();
-        const branchId  = getBranchId();
-        if (!companyId || !branchId) return;
+        let branchId  = getBranchId();
+        if (branchId === 'all' || branchId === 'branch_1' || branchId === 'branch_2') {
+            branchId = null;
+        }
+        if (!companyId) return;
 
         const { data: statsData, error: statsError } = await supabase.rpc('customers_page__four_statcards', {
             p_company_id: companyId,
@@ -192,6 +195,8 @@ async function refreshCustomerStatCards() {
         });
         if (statsError) {
             console.error('Stat cards error:', statsError);
+            const elTotal = document.getElementById('statTotalCustomers');
+            if (elTotal) elTotal.textContent = totalRecords || 0;
             return;
         }
         const stats = Array.isArray(statsData) ? statsData[0] : statsData;
