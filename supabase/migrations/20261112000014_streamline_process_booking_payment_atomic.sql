@@ -2,11 +2,11 @@
 -- Description:
 --   Streamline RPC #3 (process_booking_payment_atomic) to strict 2-Section architecture:
 --   Section 1: Security & Auth Gates (Tenant verify + 3 Gates: Subscription, Permission, Plan Feature).
---   Section 2: Hardened Bank-Grade Payment Settlement (The 4 Steps):
---     - Strict coupon validation with concurrency locks (FOR UPDATE); zero fallback to client amounts.
---     - Strict customer membership purchase verification (checks app.membership_purchases for customer_id, paid status & expiry).
---     - Payment method normalization and whitelisting ('cash', 'upi', 'card' with NULLIF empty string protection).
---     - Cap discount to bill total; validate client p_final_amount against server-calculated amount.
+--   Section 2: Core Payment Settlement with Centralized Discount Delegation:
+--     - Delegates coupon, membership, and offer validation directly to app.validate_discount().
+--     - Rejects invalid discounts with explicit rejection reasons (zero fallback to client amounts).
+--     - Normalizes payment method ('cash', 'upi', 'card' with NULLIF empty string protection).
+--     - Caps discount to bill total; validates client p_final_amount against server-calculated amount.
 --     - Step 1: app.bookings — update payment_status = 'paid' with ROW_COUNT verification.
 --     - Step 2: app.bookings_for_business_transaction — update payment_status = 'paid' + conditional discount metadata.
 --     - Step 3: app.business_transactions — transition status 'created' -> 'paid', record paid_at, payment_method, final_amount.
@@ -42,6 +42,7 @@ DECLARE
     v_branch_id         uuid;
     v_payment_id        uuid;
     v_discount_id       uuid    := p_discount_id;
+    v_discount_name     text    := p_discount_name;
     v_verified_discount numeric := 0;
     v_staff_id_text     text;
     v_staff_id_uuid     uuid;
@@ -49,9 +50,7 @@ DECLARE
     v_booking_status    text;
     v_payment_status    text;
     v_clean_method      text;
-    v_coupon            record;
-    v_membership        record;
-    v_usage_count       integer;
+    v_disc_result       jsonb;
     v_rows_updated      integer;
 BEGIN
     -- =========================================================================
@@ -90,7 +89,7 @@ BEGIN
         RAISE EXCEPTION 'Cannot process payment for a cancelled booking.';
     END IF;
 
-    -- Normalize and validate payment method (Issue 7 & 8)
+    -- Normalize and validate payment method (cash, upi, card only)
     v_clean_method := LOWER(COALESCE(NULLIF(TRIM(p_payment_method), ''), 'cash'));
     IF v_clean_method NOT IN ('cash', 'upi', 'card') THEN
         RAISE EXCEPTION 'Invalid payment method: "%". Accepted methods are cash, upi, card.', v_clean_method;
@@ -107,96 +106,46 @@ BEGIN
     -- SECTION 2: CORE PAYMENT SETTLEMENT (The 4 Steps)
     -- =========================================================================
 
-    -- Discount Verification & Calculation (Issues 2, 3, 4, 5, 6)
+    -- Centralized Discount Delegation to app.validate_discount
     IF p_discount_type IS NOT NULL AND LOWER(TRIM(p_discount_type)) NOT IN ('', 'none') THEN
-        IF LOWER(p_discount_type) = 'coupon' THEN
-            -- Concurrency-safe coupon row lock (Issue 5)
-            SELECT * INTO v_coupon
-            FROM app.coupons
-            WHERE company_id = v_company_id
-              AND (coupon_id = v_discount_id OR LOWER(coupon_code) = LOWER(TRIM(p_discount_name)))
-              AND LOWER(status) = 'active'
-            FOR UPDATE;
+        IF LOWER(TRIM(p_discount_type)) IN ('coupon', 'membership', 'offer') THEN
+            -- Call Centralized Validator
+            v_disc_result := app.validate_discount(
+                p_company_id      => v_company_id,
+                p_branch_id       => v_branch_id,
+                p_discount_type   => LOWER(TRIM(p_discount_type)),
+                p_code_or_id      => COALESCE(v_discount_name, v_discount_id::text),
+                p_bill_amount     => v_total_price,
+                p_customer_id     => v_customer_id,
+                p_applicable_type => 'service'
+            );
 
-            -- Reject invalid coupons without fallback (Issue 2)
-            IF NOT FOUND THEN
-                RAISE EXCEPTION 'Coupon "%" not found or inactive.', COALESCE(p_discount_name, v_discount_id::text);
+            IF NOT (v_disc_result->>'valid')::boolean THEN
+                RAISE EXCEPTION 'Discount rejected: %', v_disc_result->>'reason';
             END IF;
 
-            v_discount_id := v_coupon.coupon_id;
+            v_verified_discount := COALESCE((v_disc_result->>'discount_amount')::numeric, 0);
+            v_discount_id       := NULLIF(v_disc_result->>'discount_id', '')::uuid;
+            v_discount_name     := COALESCE(v_disc_result->>'discount_name', v_discount_name);
 
-            IF v_coupon.valid_until IS NOT NULL AND v_coupon.valid_until < CURRENT_DATE THEN
-                RAISE EXCEPTION 'Coupon "%" expired on %.', v_coupon.coupon_code, v_coupon.valid_until;
-            END IF;
-            IF v_coupon.valid_from IS NOT NULL AND v_coupon.valid_from > CURRENT_DATE THEN
-                RAISE EXCEPTION 'Coupon "%" is not active yet (valid from %).', v_coupon.coupon_code, v_coupon.valid_from;
-            END IF;
-            IF v_coupon.min_bill_amount IS NOT NULL AND v_total_price < v_coupon.min_bill_amount THEN
-                RAISE EXCEPTION 'Order total ₹% is below the minimum requirement of ₹% for coupon "%".',
-                    v_total_price, v_coupon.min_bill_amount, v_coupon.coupon_code;
-            END IF;
-            IF v_coupon.usage_per_customer IS NOT NULL AND v_coupon.usage_per_customer > 0 THEN
-                SELECT COUNT(*) INTO v_usage_count
-                FROM app.discount_usages
-                WHERE customer_id = v_customer_id
-                  AND discount_id = v_coupon.coupon_id
-                  AND status      = 'applied';
-                IF v_usage_count >= v_coupon.usage_per_customer THEN
-                    RAISE EXCEPTION 'Customer has reached the redemption limit (%) for coupon "%".',
-                        v_coupon.usage_per_customer, v_coupon.coupon_code;
-                END IF;
-            END IF;
-
-            IF LOWER(COALESCE(v_coupon.discount_type, 'percentage')) = 'percentage' THEN
-                v_verified_discount := ROUND((v_total_price * v_coupon.discount_value / 100.0), 2);
-            ELSE
-                v_verified_discount := v_coupon.discount_value;
-            END IF;
-
-        ELSIF LOWER(p_discount_type) = 'membership' THEN
-            -- Verify customer actually purchased and holds an active membership (Issue 6)
-            SELECT mp.membership_id, mp.plan_name, m.discount_type, m.discount_value
-            INTO v_membership
-            FROM app.membership_purchases mp
-            JOIN app.memberships m ON m.membership_id = mp.membership_id
-            WHERE mp.customer_id = v_customer_id
-              AND mp.company_id  = v_company_id
-              AND (mp.membership_id = v_discount_id OR LOWER(mp.plan_name) = LOWER(TRIM(p_discount_name)))
-              AND LOWER(COALESCE(mp.status, '')) = 'active'
-              AND LOWER(COALESCE(mp.payment_status, '')) = 'paid'
-              AND (mp.expiry_date IS NULL OR mp.expiry_date >= CURRENT_DATE)
-            LIMIT 1;
-
-            -- Reject invalid memberships without fallback (Issue 3)
-            IF NOT FOUND THEN
-                RAISE EXCEPTION 'Customer does not hold an active, valid membership for "%".', COALESCE(p_discount_name, v_discount_id::text);
-            END IF;
-
-            v_discount_id := v_membership.membership_id;
-            IF LOWER(COALESCE(v_membership.discount_type, 'percentage')) = 'percentage' THEN
-                v_verified_discount := ROUND((v_total_price * v_membership.discount_value / 100.0), 2);
-            ELSE
-                v_verified_discount := v_membership.discount_value;
-            END IF;
-
-        ELSIF LOWER(p_discount_type) IN ('manual', 'offer', 'custom') THEN
-            -- Manual discount entered by authorized staff
+        ELSIF LOWER(TRIM(p_discount_type)) IN ('manual', 'custom') THEN
+            -- Staff manual override (capped to total price)
             v_verified_discount := COALESCE(p_discount_amount, 0);
         ELSE
             RAISE EXCEPTION 'Unknown or unsupported discount type: "%".', p_discount_type;
         END IF;
     END IF;
 
-    -- Ensure discount is clamped between 0 and bill total (Issue 4)
+    -- Clamp discount between 0 and bill total
     v_verified_discount := LEAST(v_total_price, GREATEST(0, v_verified_discount));
     v_final := v_total_price - v_verified_discount;
 
-    -- Validate client final amount matches server calculation (Issue 1)
+    -- Validate client final amount matches server calculation
     IF p_final_amount IS NOT NULL AND ABS(p_final_amount - v_final) > 0.01 THEN
         RAISE EXCEPTION 'Payment amount mismatch: server calculated ₹%, client received ₹%.', v_final, p_final_amount;
     END IF;
 
-    -- Step 1: Update app.bookings with row count check (Issue 9)
+    -- Step 1: Update app.bookings with row count check
     UPDATE app.bookings
     SET payment_status = 'paid',
         updated_at     = NOW()
@@ -207,11 +156,11 @@ BEGIN
         RAISE EXCEPTION 'Failed to update booking line items for booking %.', p_booking_id;
     END IF;
 
-    -- Step 2: Update app.bookings_for_business_transaction with row count check (Issue 9)
+    -- Step 2: Update app.bookings_for_business_transaction with row count check
     UPDATE app.bookings_for_business_transaction
     SET payment_status  = 'paid',
         discount_type   = CASE WHEN v_verified_discount > 0 THEN p_discount_type ELSE NULL END,
-        discount_name   = CASE WHEN v_verified_discount > 0 THEN p_discount_name ELSE NULL END,
+        discount_name   = CASE WHEN v_verified_discount > 0 THEN v_discount_name ELSE NULL END,
         discount_amount = CASE WHEN v_verified_discount > 0 THEN v_verified_discount ELSE 0 END,
         final_amount    = v_final,
         updated_at      = NOW()
@@ -229,7 +178,7 @@ BEGIN
         paid_at         = NOW(),
         amount          = v_total_price,
         discount_type   = CASE WHEN v_verified_discount > 0 THEN p_discount_type ELSE NULL END,
-        discount_name   = CASE WHEN v_verified_discount > 0 THEN p_discount_name ELSE NULL END,
+        discount_name   = CASE WHEN v_verified_discount > 0 THEN v_discount_name ELSE NULL END,
         discount_amount = CASE WHEN v_verified_discount > 0 THEN v_verified_discount ELSE 0 END,
         final_amount    = v_final,
         notes           = COALESCE(p_notes, notes),
@@ -255,7 +204,7 @@ BEGIN
             'booking', p_booking_id, v_payment_id,
             p_discount_type, v_discount_id,
             CASE WHEN LOWER(p_discount_type) = 'membership' THEN v_discount_id ELSE NULL END,
-            p_discount_name, v_verified_discount,
+            v_discount_name, v_verified_discount,
             'applied', NOW(), NOW(), NOW()
         );
     END IF;
