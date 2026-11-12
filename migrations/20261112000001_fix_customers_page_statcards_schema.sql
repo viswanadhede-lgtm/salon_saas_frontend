@@ -205,3 +205,4 @@ GRANT EXECUTE ON FUNCTION public.customers_page__four_statcard_trendelements(uui
 GRANT EXECUTE ON FUNCTION app.customers_page__four_statcard_trendelements(uuid, uuid) TO anon, authenticated, service_role;
 
 NOTIFY pgrst, 'reload schema';
+
