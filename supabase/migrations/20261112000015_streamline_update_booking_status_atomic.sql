@@ -183,3 +183,4 @@ REVOKE ALL ON FUNCTION public.update_booking_status_atomic(uuid, uuid, uuid, tex
 GRANT EXECUTE ON FUNCTION public.update_booking_status_atomic(uuid, uuid, uuid, text, text) TO authenticated, anon, service_role;
 
 NOTIFY pgrst, 'reload schema';
+
