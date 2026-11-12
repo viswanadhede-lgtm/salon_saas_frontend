@@ -1,4 +1,4 @@
-﻿import { supabase } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase.js';
 
 // Automatically inject the customer profile modal into the document
 if (!document.getElementById('customerProfileBookingModal')) {
@@ -61,10 +61,15 @@ window.viewCustomerProfile = async function(customerId, customerName) {
 
     try {
         const companyId = localStorage.getItem('company_id') || null;
-        const branchId  = localStorage.getItem('active_branch_id') || null;
+        let branchId  = localStorage.getItem('active_branch_id') || localStorage.getItem('branch_id') || null;
 
-        if (!companyId || !branchId) {
-            throw new Error('Active company or branch not found. Please log in again.');
+        if (!companyId) {
+            throw new Error('Active company not found. Please log in again.');
+        }
+
+        // Sanitize branchId so 'all' or placeholder strings don't cause UUID parse errors
+        if (branchId === 'all' || branchId === 'branch_1' || branchId === 'branch_2' || branchId === 'null' || branchId === 'undefined') {
+            branchId = null;
         }
 
         // ── 1. Execute BOTH RPCs in parallel (exactly 2 network requests)
