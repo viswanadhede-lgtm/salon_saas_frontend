@@ -72,7 +72,7 @@ export async function initPage() {
                 service: b.service_name || 'N/A',
                 staff: b.staff_name || 'Unassigned',
                 status: (b.booking_status || 'completed').toLowerCase().trim(),
-                amount: '₹' + (b.total_price || 0).toLocaleString('en-IN'),
+                amount: '₹' + (b.final_amount ?? b.total_price ?? 0).toLocaleString('en-IN'),
                 payment: (b.payment_status || 'pending').toLowerCase()
             };
         });
