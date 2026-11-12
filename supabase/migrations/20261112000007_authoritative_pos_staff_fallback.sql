@@ -947,3 +947,4 @@ GRANT EXECUTE ON FUNCTION app.create_pos_sale_atomic TO authenticated, service_r
 GRANT EXECUTE ON FUNCTION app.process_pos_refund_atomic TO authenticated, service_role, anon;
 GRANT EXECUTE ON FUNCTION public.create_pos_sale_atomic TO authenticated, service_role, anon;
 GRANT EXECUTE ON FUNCTION public.process_pos_refund_atomic TO authenticated, service_role, anon;
+
