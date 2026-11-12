@@ -1948,6 +1948,7 @@ export function initGlobalBookingModal() {
                 staff_name:   p.staff_name,
                 start_time:   p.start_time,
                 end_time:     p.end_time || null,
+                duration:     p.duration || 30,
                 price:        Number(p.price) || 0,
                 booking_status: p.booking_status || 'booked'
             }));
