@@ -538,6 +538,7 @@ export async function processBookingPaymentCallback(payload, row, options = {}) 
                 amountCollected: amount,
                 customerName:    row.customer_name || window.globalPaymentConfig?.customerName || 'Customer',
                 bookingRef:      bookingRef,
+                bookingId:       bookingId,
                 onMarkComplete:  handleMarkComplete,
                 onExit:          handleExit
             });

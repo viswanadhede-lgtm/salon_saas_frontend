@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase.js';
+import { openBookingInvoiceModal } from './bookings/booking-invoice-engine.js';
 
 let todaysBookingsData = [];
 let currentActionData = null;
@@ -193,36 +194,12 @@ export function renderTable() {
 export function showViewModal(idx) {
     const b = todaysBookingsData[idx];
     if (!b) return;
-    currentActionData = { action: 'view', idx, booking: b };
-    const actionLabel = document.getElementById('actionSummaryActionLabel');
-    if (actionLabel) actionLabel.textContent = 'View Booking';
-    const titleEl = document.getElementById('actionSummaryTitle');
-    if (titleEl) titleEl.textContent = 'Booking Details';
-    const iconEl = document.getElementById('actionSummaryIcon');
-    if (iconEl) {
-        iconEl.style.background = '#eff6ff';
-        iconEl.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    // Delegate to the shared invoice engine — opens #viewBookingInvoiceModal with live DB data
+    if (b.raw_id) {
+        openBookingInvoiceModal(b.raw_id);
+    } else {
+        console.warn('[CompletedAppts] showViewModal: booking has no raw_id', b);
     }
-    const messageEl = document.getElementById('actionSummaryMessage');
-    if (messageEl) messageEl.textContent = 'Completed booking details are shown below.';
-    const detailsEl = document.getElementById('actionSummaryDetails');
-    if (detailsEl) {
-        detailsEl.innerHTML = `
-            <div><p style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px;">Customer</p><p style="font-size:0.875rem;font-weight:600;color:#1e293b;margin:0;">${b.customer}</p></div>
-            <div><p style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px;">Time</p><p style="font-size:0.875rem;font-weight:600;color:#1e293b;margin:0;">${b.time}</p></div>
-            <div><p style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px;">Service</p><p style="font-size:0.875rem;font-weight:500;color:#374151;margin:0;">${b.service}</p></div>
-            <div><p style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px;">Staff</p><p style="font-size:0.875rem;font-weight:500;color:#374151;margin:0;">${b.staff}</p></div>
-            <div><p style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px;">Amount</p><p style="font-size:0.875rem;font-weight:700;color:#1e293b;margin:0;">${b.amount}</p></div>
-            <div><p style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 3px;">Payment</p><p style="font-size:0.875rem;font-weight:500;color:#374151;margin:0;text-transform:capitalize;">${b.payment}</p></div>`;
-    }
-    const confirmBtn = document.getElementById('actionSummaryConfirm');
-    if (confirmBtn) {
-        confirmBtn.textContent = 'Close';
-        confirmBtn.style.background = '#3b82f6';
-        confirmBtn.onclick = closeActionSummary;
-    }
-    const overlay = document.getElementById('actionSummaryOverlay');
-    if (overlay) overlay.style.display = 'flex';
 }
 
 export function closeActionSummary() {

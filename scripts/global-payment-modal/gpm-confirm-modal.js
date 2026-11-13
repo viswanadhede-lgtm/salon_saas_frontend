@@ -1,5 +1,6 @@
-﻿// scripts/global-payment-modal/gpm-confirm-modal.js
+// scripts/global-payment-modal/gpm-confirm-modal.js
 import { gpmFormatCurrency } from './gpm-ui.js';
+import { printBookingInvoice } from '../bookings/booking-invoice-engine.js';
 
 export function injectBookingConfirmModalHTML() {
     if (document.getElementById('gpmConfirmOverlay')) return;
@@ -21,12 +22,12 @@ export function injectBookingConfirmModalHTML() {
 
             <!-- Action Cards -->
             <div class="gpm-confirm-actions">
-                <button class="gpm-confirm-card print" id="gpmConfirmPrintBtn" disabled title="Coming soon">
+                <button class="gpm-confirm-card print" id="gpmConfirmPrintBtn">
                     <div class="gpm-confirm-card-icon">
                         <i data-feather="printer" style="width:24px;height:24px;"></i>
                     </div>
                     <div class="gpm-confirm-card-label">Print Invoice</div>
-                    <div class="gpm-confirm-card-sub">Coming soon</div>
+                    <div class="gpm-confirm-card-sub">Receipt &amp; invoice</div>
                 </button>
                 <button class="gpm-confirm-card complete" id="gpmConfirmCompleteBtn">
                     <div class="gpm-confirm-card-icon">
@@ -75,6 +76,17 @@ export function openBookingConfirmModal(opts) {
 
     const newCompleteBtn = rebind('gpmConfirmCompleteBtn');
     const newExitBtn     = rebind('gpmConfirmExitBtn');
+    const newPrintBtn    = rebind('gpmConfirmPrintBtn');
+
+    // "Print Invoice" handler — uses shared engine with the full booking UUID
+    newPrintBtn?.addEventListener('click', () => {
+        const bId = opts.bookingId;
+        if (bId) {
+            printBookingInvoice(bId);
+        } else {
+            console.warn('[GPMConfirm] Print clicked but opts.bookingId not set');
+        }
+    });
 
     // "Mark as Completed" handler
     newCompleteBtn?.addEventListener('click', async () => {

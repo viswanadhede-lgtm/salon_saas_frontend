@@ -1,4 +1,5 @@
 import { supabase } from './lib/supabase.js';
+import { printBookingInvoice } from './scripts/bookings/booking-invoice-engine.js';
 
 /**
  * Payments History JavaScript
@@ -11,10 +12,10 @@ import { supabase } from './lib/supabase.js';
  */
 
 // Global State
-let allPayments = [];
-let filteredPayments = [];
+let allPayments = [];\nlet filteredPayments = [];
 let phCurrentSort = { column: 'paid_at', order: 'desc' };
 let currentFilterDateRange = { type: 'all', from: null, to: null };
+let phCurrentOpenPayment = null; // tracks the payment record currently open in the drawer
 
 // ─── CONTEXT HELPERS ────────────────────────────────────────────────────────
 function getCompanyId() {
@@ -356,6 +357,9 @@ window.phOpenDrawer = function(paymentId) {
     const p = allPayments.find(x => x.payment_id === paymentId);
     if (!p) return;
 
+    // Stash for phPrintReceipt
+    phCurrentOpenPayment = p;
+
     const displayId = (p.payment_id || '').substring(0, 8).toUpperCase();
     const refVal = (p.reference_id || p.booking_id || p.payment_id || '').substring(0, 8).toUpperCase();
     const displayDate = p.paid_at ? new Date(p.paid_at).toLocaleString('en-IN') : '-';
@@ -440,6 +444,15 @@ window.phCloseDrawer = function() {
 
 // ─── PRINT RECEIPT ──────────────────────────────────────────────────────────
 window.phPrintReceipt = function() {
+    const p = phCurrentOpenPayment;
+
+    // For Service bookings: use the shared invoice engine (live DB data, professional format)
+    if (p && p.type === 'Service' && p.reference_id) {
+        printBookingInvoice(p.reference_id);
+        return;
+    }
+
+    // Fallback for non-booking payments (Products, Memberships): print drawer content
     const payId      = document.getElementById('drawerPayId')?.textContent      || '';
     const date       = document.getElementById('drawerDate')?.textContent       || '';
     const customer   = document.getElementById('drawerCustomer')?.textContent   || '';
@@ -456,6 +469,7 @@ window.phPrintReceipt = function() {
                         || 'Salon';
 
     const win = window.open('', '_blank', 'width=480,height=700');
+    if (!win) { alert('Please allow popups to print the receipt.'); return; }
     win.document.write(`<!DOCTYPE html>
 <html>
 <head>
