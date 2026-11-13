@@ -83,12 +83,29 @@ export async function insertProductPayment(txnData) {
 }
 
 /**
+ * Validates a prospective POS refund and calculates price-weighted discount reversals.
+ * Read-only validation RPC.
+ *
+ * @param {Object} params
+ * @param {string} params.p_company_id
+ * @param {string} params.p_branch_id
+ * @param {string} params.p_original_sale_id
+ * @param {Array}  params.p_items - [{ item_id, product_id, return_qty }]
+ */
+export async function validatePosRefund(params) {
+    return await supabase.rpc('validate_pos_refund', params);
+}
+
+/**
  * Atomic POS refund RPC.
- * Executes in a single DB transaction:
- *   1. Increments product stock (stock_quantity + returned_qty)
- *   2. Inserts 1 new sales row per returned product (status = 'refunded')
- *   3. Inserts 1 consolidated summary row in sales_for_business_transactions (payment_status = 'refunded')
- *   4. DB trigger trg_pos_sale_business_transaction auto-writes business_transactions
+ * Executes in a single DB transaction adhering to 2-Section Architecture:
+ *   Section 1: Security, tenant access, and authorization gates.
+ *   Section 2:
+ *     Step 1: Validates Refund via validate_pos_refund RPC.
+ *     Step 2: Inserts 1 new sales row per returned product (status = 'refunded').
+ *     Step 3: Inserts 1 consolidated summary row in sales_for_business_transactions (payment_status = 'refunded').
+ *     Step 4: Inserts 1 financial ledger row in business_transactions (status = 'refunded').
+ *     Step 5: Updates discount_usages if any discount is reversed.
  *
  * @param {Object} params
  * @param {string}   params.p_original_sale_id  - Parent sale UUID (the PAID sale being refunded against)
