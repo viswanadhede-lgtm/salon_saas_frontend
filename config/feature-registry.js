@@ -145,7 +145,7 @@ export const MODULES_META = [
     { key: FEATURES.MARKETING_OFFERS,                label: 'Offers',                          icon: 'tag'           },
     { key: FEATURES.MARKETING_COUPONS,               label: 'Coupons',                         icon: 'percent'       },
     { key: FEATURES.MARKETING_MEMBERSHIPS,           label: 'Memberships',                     icon: 'award'         },
-    { key: FEATURES.INTEGRATIONS_WEBSITE_BOOKING,    label: 'Website Booking',                 icon: 'calendar'      },
+    { key: FEATURES.INTEGRATIONS_WEBSITE_BOOKING,    label: 'Website Integration',             icon: 'calendar'      },
     { key: FEATURES.INTEGRATIONS_WHATSAPP,           label: 'WhatsApp Integration',            icon: 'message-circle'},
     { key: FEATURES.ANALYTICS_OVERVIEW,              label: 'Overview',                        icon: 'pie-chart'     },
     { key: FEATURES.REPORTS_ACCESS,                  label: 'Reports',                         icon: 'bar-chart-2'   },
