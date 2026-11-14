@@ -102,6 +102,8 @@ const ROUTE_MAP = {
     '/offers.html':                     FEATURES.MARKETING_OFFERS,                 // 12. offers.html
     '/coupons.html':                    FEATURES.MARKETING_COUPONS,                // 13. coupons.html
     '/memberships.html':                FEATURES.MARKETING_MEMBERSHIPS,            // 14. memberships.html
+    '/integrations-website-booking.html': FEATURES.INTEGRATIONS_WEBSITE_BOOKING,
+    '/integrations-whatsapp.html':        FEATURES.INTEGRATIONS_WHATSAPP,
 
     '/overview.html':                   FEATURES.ANALYTICS_OVERVIEW,               // 16. overview.html
     '/reports.html':                    FEATURES.REPORTS_ACCESS,                   // 17. reports.html

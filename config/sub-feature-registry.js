@@ -362,7 +362,11 @@ export const SUB_FEATURES_MAP = {
         { key: SUB_FEATURES.EXPORT_MEMBERSHIP_USAGE, label: 'Export Usage' }
     ],
 
+    // Integrations: Website Booking (integrations-website-booking.html)
+    [FEATURES.INTEGRATIONS_WEBSITE_BOOKING]: [],
 
+    // Integrations: WhatsApp Integration (integrations-whatsapp.html)
+    [FEATURES.INTEGRATIONS_WHATSAPP]: [],
 
     // 16. Analytics Overview (overview.html)
     [FEATURES.ANALYTICS_OVERVIEW]: [],

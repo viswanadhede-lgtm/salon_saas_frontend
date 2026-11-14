@@ -41,7 +41,9 @@ export const ROUTE_NAV_MAP = {
     'coupons.html':                 { route: 'marketing', subroute: 'coupons' },
     'memberships.html':             { route: 'marketing', subroute: 'memberships' },
 
-
+    // Integrations section
+    'integrations-website-booking.html': { route: 'integrations', subroute: 'website-booking' },
+    'integrations-whatsapp.html':        { route: 'integrations', subroute: 'whatsapp' },
 
     // Analytics section
     'overview.html':                { route: 'analytics', subroute: 'overview' },
