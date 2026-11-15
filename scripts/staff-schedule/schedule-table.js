@@ -220,12 +220,11 @@ export async function renderTable() {
         <tr class="tb-row" style="border-bottom:1px solid #e2e8f0; transition:background 0.2s;">
             <td style="padding:14px 16px 14px 24px; vertical-align:middle;">
                 <button type="button" onclick="window.viewStaffProfile && window.viewStaffProfile('${s.staff_id}')"
-                        style="background:none; border:none; padding:0; text-align:left; font-weight:600; color:#4f46e5; font-size:1rem; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px;"
+                        style="background:none; border:none; padding:0; text-align:left; font-weight:600; color:#4f46e5; font-size:1rem; cursor:pointer; text-decoration:none;"
                         onmouseover="this.style.textDecoration='underline'"
                         onmouseout="this.style.textDecoration='none'"
                         title="View 360° Staff Profile">
-                    <span>${s.staff_name}</span>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.6;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    ${s.staff_name}
                 </button>
                 <div style="font-size:0.85rem; color:#64748b; margin-top:2px;">${s.staff_role}</div>
             </td>
