@@ -34,6 +34,13 @@ function injectModalShell() {
                     Loading staff profile...
                 </div>
             </div>
+
+            <!-- Modal Footer -->
+            <div style="padding: 14px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; align-items: center; background: #ffffff;">
+                <button type="button" id="btnFooterCloseStaffProfile" style="padding: 8px 22px; font-size: 0.875rem; font-weight: 600; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                    Close
+                </button>
+            </div>
         </div>
     </div>
     <style>
@@ -69,6 +76,11 @@ function injectModalShell() {
             color: #3730a3;
             margin: 2px;
         }
+        #btnFooterCloseStaffProfile:hover {
+            background: #f8fafc !important;
+            border-color: #94a3b8 !important;
+            color: #1e293b !important;
+        }
     </style>
     `;
 
@@ -77,6 +89,7 @@ function injectModalShell() {
     const overlay = document.getElementById('staffProfileModalOverlay');
     const container = document.getElementById('staffProfileModalContainer');
     const btnClose = document.getElementById('btnCloseStaffProfileModal');
+    const btnFooterClose = document.getElementById('btnFooterCloseStaffProfile');
 
     function closeModal() {
         if (overlay) {
@@ -86,6 +99,7 @@ function injectModalShell() {
     }
 
     if (btnClose) btnClose.addEventListener('click', closeModal);
+    if (btnFooterClose) btnFooterClose.addEventListener('click', closeModal);
 
     // Light dismiss: click outside container closes modal
     if (overlay) {
