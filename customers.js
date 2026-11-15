@@ -179,7 +179,7 @@ async function fetchCustomers() {
     }
 }
 
-// -- STAT CARDS (RPC: customers_page__four_statcards) --
+// -- STAT CARDS (Unified Single RPC: customers_page__four_statcards) --
 async function refreshCustomerStatCards() {
     try {
         const companyId = getCompanyId();
@@ -189,6 +189,7 @@ async function refreshCustomerStatCards() {
         }
         if (!companyId) return;
 
+        // Single atomic RPC call returning all 8 metrics (4 counts + 4 trends)
         const { data: statsData, error: statsError } = await supabase.rpc('customers_page__four_statcards', {
             p_company_id: companyId,
             p_branch_id:  branchId
@@ -200,7 +201,12 @@ async function refreshCustomerStatCards() {
             return;
         }
         const stats = Array.isArray(statsData) ? statsData[0] : statsData;
-        const { total_customers, new_this_month, vip_customers, inactive_customers } = stats || {};
+        const {
+            total_customers,
+            new_this_month,
+            vip_customers,
+            inactive_customers
+        } = stats || {};
 
         const elTotal    = document.getElementById('statTotalCustomers');
         const elNew      = document.getElementById('statNewThisMonth');
@@ -211,26 +217,9 @@ async function refreshCustomerStatCards() {
         if (elVip)      elVip.textContent      = vip_customers      ?? 0;
         if (elInactive) elInactive.textContent = inactive_customers ?? 0;
 
-        // Secondary/trend values via dedicated RPC (customers_page__four_statcard_trendelements)
-        try {
-            const { data: trendData, error: trendError } = await supabase.rpc(
-                'customers_page__four_statcard_trendelements',
-                {
-                    p_company_id: companyId,
-                    p_branch_id:  branchId
-                }
-            );
-
-            if (trendError) {
-                console.error('Trend elements RPC error:', trendError);
-            } else {
-                const trendRow = Array.isArray(trendData) ? trendData[0] : trendData;
-                if (trendRow) {
-                    renderStatCardTrends(trendRow);
-                }
-            }
-        } catch (trendErr) {
-            console.error('Error fetching trend elements:', trendErr);
+        // Render secondary/trend badge elements directly from the unified payload
+        if (stats) {
+            renderStatCardTrends(stats);
         }
     } catch (err) {
         console.error('Error refreshing stat cards:', err);

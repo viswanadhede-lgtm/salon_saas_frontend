@@ -3,6 +3,7 @@ import { FEATURES } from './config/feature-registry.js';
 import { SUB_FEATURES } from './config/sub-feature-registry.js';
 import { applySubFeatureGates } from './scripts/sub-features/sub-feature-gate.js';
 import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './config/plan-limits-manager.js';
+import './scripts/global-staff-profile-modal.js';
 
 let liveStaffData = [];
 
@@ -12,32 +13,38 @@ window.fetchStaff = async function() {
         const branch_id = getBranchId();
         if (!company_id || !branch_id) return;
 
-        const { data, error } = await supabase.schema('app')
-            .from('staff')
-            .select('*')
-            .eq('company_id', company_id)
-            .eq('branch_id', branch_id)
-            .neq('status', 'deleted')
-            .order('staff_name', { ascending: true });
+        // Fetch Staff Directory and Authoritative Statcards in parallel
+        const [staffRes, statsRes] = await Promise.all([
+            supabase.schema('app')
+                .from('staff')
+                .select('*')
+                .eq('company_id', company_id)
+                .eq('branch_id', branch_id)
+                .neq('status', 'deleted')
+                .order('staff_name', { ascending: true }),
+            supabase.rpc('staff_page_four_statcards', {
+                p_company_id: company_id,
+                p_branch_id: branch_id
+            })
+        ]);
         
-        if (error) throw new Error(error.message);
+        if (staffRes.error) throw new Error(staffRes.error.message);
         
-        let staffArray = data || [];
+        let staffArray = staffRes.data || [];
 
-        // Update Stat Cards dynamically
+        // Update Stat Cards authoritatively
         const statTotal = document.getElementById('statTotalStaff');
         const statActive = document.getElementById('statActiveStaff');
         const statOnLeave = document.getElementById('statOnLeave');
         const statOnDuty = document.getElementById('statOnDuty');
 
         if (statTotal && statActive && statOnLeave && statOnDuty) {
-            const statsObj = Array.isArray(data) ? data[0]?.stats : data?.stats;
-            
-            if (statsObj) {
-                statTotal.innerText = statsObj.total_staff !== undefined ? statsObj.total_staff : staffArray.length;
-                statActive.innerText = statsObj.active_staff !== undefined ? statsObj.active_staff : staffArray.filter(s => String(s.status).toLowerCase().includes('active')).length;
-                statOnLeave.innerText = statsObj.on_leave_today !== undefined ? statsObj.on_leave_today : staffArray.filter(s => String(s.status).toLowerCase().includes('leave')).length;
-                statOnDuty.innerText = statsObj.on_duty_today !== undefined ? statsObj.on_duty_today : staffArray.filter(s => String(s.status).toLowerCase().includes('active')).length;
+            const stats = statsRes?.data;
+            if (stats && stats.success) {
+                statTotal.innerText = stats.total_staff ?? staffArray.length;
+                statActive.innerText = stats.active_staff ?? 0;
+                statOnLeave.innerText = stats.on_leave_today ?? 0;
+                statOnDuty.innerText = stats.on_duty_today ?? 0;
             } else {
                 statTotal.innerText = staffArray.length;
                 statActive.innerText = staffArray.filter(s => String(s.status).toLowerCase().includes('active')).length;
@@ -261,10 +268,7 @@ function renderStaffTable(data) {
 
 // The dropdown menu logic has been removed as we now use inline action buttons.
 
-window.viewStaffProfile = function(id) {
-    if (staffActiveMenu) { staffActiveMenu.remove(); staffActiveMenu = null; }
-    alert('Staff profile for: ' + id + '\n(Coming soon — tabs: Overview, Services, Schedule, Bookings, Revenue)');
-};
+// window.viewStaffProfile is powered globally by ./scripts/global-staff-profile-modal.js
 
 window.editStaff = function(id) {
     if (staffActiveMenu) { staffActiveMenu.remove(); staffActiveMenu = null; }
