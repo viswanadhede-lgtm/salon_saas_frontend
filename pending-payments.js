@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             let query = supabase.schema('app')
                 .from('bookings_for_business_transaction')
                 .select('*')
-                .eq('payment_status', 'pending')
+                .in('payment_status', ['pending', 'unpaid', 'partial'])
                 .in('booking_status', ['booked', 'confirmed'])
                 .order('booking_date', { ascending: false });
 
@@ -213,7 +213,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const bookingIdAttr = row.booking_id || row.id;
 
             tr.innerHTML = `
-                <td style="padding:14px 16px 14px 24px; color:#475569; font-weight:600; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.customer_name || 'Guest'}</td>
+                <td style="padding:14px 16px 14px 24px; color:#475569; font-weight:600; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    <button onclick="window.ppOpenCustomerProfile('${row.customer_id || ''}', '${(row.customer_name || '').replace(/'/g, "\\'")}', '${row.customer_phone || ''}')"
+                        style="background:none; border:none; padding:0; font-family:inherit; font-size:inherit; font-weight:600; color:#4f46e5; cursor:pointer; text-align:left; text-decoration:none;"
+                        onmouseover="this.style.textDecoration='underline'"
+                        onmouseout="this.style.textDecoration='none'">
+                        ${row.customer_name || 'Guest'}
+                    </button>
+                </td>
                 <td style="padding:14px 16px; color:#475569; font-size:0.875rem;">${serviceHtml}</td>
                 <td style="padding:14px 16px; color:#475569;">${staffHtml}</td>
                 <td style="padding:14px 16px; color:#475569; font-size:0.83rem;">${dateStr}</td>
@@ -292,7 +299,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         let from = null;
         let to = null;
 
-        if (range === 'today') {
+        if (range === 'all') {
+            if (label) label.textContent = 'All Time';
+        } else if (range === 'today') {
             from = new Date(now);
             to = new Date(now);
             to.setHours(23, 59, 59, 999);
@@ -332,11 +341,64 @@ document.addEventListener('DOMContentLoaded', async () => {
         applyAllFilters();
     };
 
-    // Close dropdowns on outside click
+    // Close dropdowns on outside click or Escape key
     document.addEventListener('click', (e) => {
         const dm = document.getElementById('ppDateMenu');
         if (dm && !e.target.closest('#ppDateMenu') && !e.target.closest('button[onclick*="ppDateMenu"]')) dm.style.display = 'none';
     });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const dm = document.getElementById('ppDateMenu');
+            if (dm && dm.style.display === 'block') dm.style.display = 'none';
+        }
+    });
+
+    // ─── CUSTOMER PROFILE MODAL HELPER ──────────────────────────────────────
+    window.ppOpenCustomerProfile = async function(customerId, customerName, customerPhone) {
+        if (!window.viewCustomerProfile) {
+            console.warn('[PendingPayments] window.viewCustomerProfile is not loaded yet.');
+            return;
+        }
+
+        const compId = getCompanyId();
+        const brId = getBranchId();
+        if (compId && !localStorage.getItem('company_id')) localStorage.setItem('company_id', compId);
+        if (brId && !localStorage.getItem('active_branch_id')) localStorage.setItem('active_branch_id', brId);
+
+        if (customerId) {
+            window.viewCustomerProfile(customerId, customerName);
+            return;
+        }
+
+        if (!customerName || customerName === 'Guest') {
+            window.viewCustomerProfile('', customerName);
+            return;
+        }
+
+        try {
+            let query = supabase.schema('app')
+                .from('customers')
+                .select('customer_id, customer_name, customer_phone');
+
+            if (compId) query = query.eq('company_id', compId);
+
+            if (customerPhone && customerPhone.trim()) {
+                query = query.eq('customer_phone', customerPhone.trim());
+            } else {
+                query = query.ilike('customer_name', customerName.trim());
+            }
+
+            const { data } = await query.limit(1);
+            if (data && data.length > 0 && data[0].customer_id) {
+                window.viewCustomerProfile(data[0].customer_id, data[0].customer_name || customerName);
+                return;
+            }
+        } catch (e) {
+            console.warn('[PendingPayments] Customer lookup error:', e);
+        }
+
+        window.viewCustomerProfile('', customerName);
+    };
 
     // ─── COLLECT PAYMENT (Invokes Shared Hardened Booking Payment Bridge) ────
     window.ppOpenCollect = function(bookingId) {
