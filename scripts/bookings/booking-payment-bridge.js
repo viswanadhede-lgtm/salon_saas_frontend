@@ -543,8 +543,8 @@ export async function processBookingPaymentCallback(payload, row, options = {}) 
                 onExit:          handleExit
             });
         } else {
-            // Fallback if modal is not available in current window
-            await handleMarkComplete();
+            // Fallback if modal is not available in current window: save payment cleanly without forcing status completion
+            await handleExit();
         }
 
     } catch (err) {
