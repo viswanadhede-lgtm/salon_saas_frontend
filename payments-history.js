@@ -12,7 +12,8 @@ import { printBookingInvoice } from './scripts/bookings/booking-invoice-engine.j
  */
 
 // Global State
-let allPayments = [];\nlet filteredPayments = [];
+let allPayments = [];
+let filteredPayments = [];
 let phCurrentSort = { column: 'paid_at', order: 'desc' };
 let currentFilterDateRange = { type: 'all', from: null, to: null };
 let phCurrentOpenPayment = null; // tracks the payment record currently open in the drawer
@@ -165,10 +166,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    // Global Escape key listener to close modal
+    // Global Escape key listener to close modal and dropdowns
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             phCloseDrawer();
+            const menus = ['phFilterMenu', 'phDateMenu', 'phExportMenu'];
+            menus.forEach(id => {
+                const menu = document.getElementById(id);
+                if (menu) menu.style.display = 'none';
+            });
         }
     });
 });
@@ -187,7 +193,7 @@ async function fetchPaymentHistory() {
         }
 
         let query = supabase.schema('app')
-            .from('business_transactions')
+            .from('payment_history_view')
             .select('*')
             .eq('company_id', companyId);
 
@@ -259,8 +265,9 @@ function phRenderTable(data) {
         const customerName = item.customer_name || 'Guest';
         const custSafeName = (customerName || '').replace(/'/g, "\\'");
         const custId = item.customer_id || '';
+        const custPhone = (item.customer_phone || '').replace(/'/g, "\\'");
         const customerHtml = customerName !== 'Guest'
-            ? `<span class="customer-link" style="color:#4f46e5; font-weight:600; font-size:0.87rem; cursor:pointer;" onclick="event.stopPropagation(); window.phOpenCustomerProfile('${custId}', '${custSafeName}')">${customerName}</span>`
+            ? `<button type="button" class="customer-link" style="background:none; border:none; padding:0; font-weight:600; color:#4f46e5; cursor:pointer; text-decoration:none; font-size:0.875rem; text-align:left;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" onclick="event.stopPropagation(); window.phOpenCustomerProfile('${custId}', '${custSafeName}', '${custPhone}')">${customerName}</button>`
             : `<span style="color:#64748b; font-weight:500; font-size:0.85rem;">Guest</span>`;
 
         // 3. Type Badge (Service = blue, Product = amber/yellow, Membership = purple)
@@ -385,7 +392,19 @@ window.phOpenDrawer = function(paymentId) {
 
     document.getElementById('drawerDate').textContent = displayDate;
     document.getElementById('drawerStaff').textContent = p.staff_name || '-';
-    document.getElementById('drawerCustomer').textContent = p.customer_name || 'Guest';
+    
+    const drawerCustEl = document.getElementById('drawerCustomer');
+    if (drawerCustEl) {
+        if (p.customer_name && p.customer_name !== 'Guest') {
+            const custSafe = (p.customer_name || '').replace(/'/g, "\\'");
+            const custId = p.customer_id || '';
+            const custPhone = (p.customer_phone || '').replace(/'/g, "\\'");
+            drawerCustEl.innerHTML = `<button type="button" style="background:none; border:none; padding:0; font-weight:600; color:#4f46e5; cursor:pointer; text-decoration:none; font-size:0.95rem; text-align:left;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" onclick="event.stopPropagation(); window.phOpenCustomerProfile('${custId}', '${custSafe}', '${custPhone}')">${p.customer_name}</button>`;
+        } else {
+            drawerCustEl.textContent = 'Guest';
+        }
+    }
+    
     document.getElementById('drawerService').textContent = p.item_name || '-';
     
     const drawerAmountEl = document.getElementById('drawerAmount');
