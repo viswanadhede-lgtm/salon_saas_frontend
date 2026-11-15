@@ -251,11 +251,11 @@ export async function deleteScheduleByMonth(staffId, targetMonth, companyId, bra
     return data;
 }
 
-export async function saveScheduleRecords(insertPayload, staffId, year, month, companyId, branchId) {
+export async function createScheduleRecords(insertPayload, staffId, year, month, companyId, branchId) {
     // Note: month from caller is 0-indexed (0 = Jan, 10 = Nov); our RPC expects 1-indexed (1 to 12)
     const rpcMonth = Number(month) + 1;
 
-    const { data, error } = await supabase.rpc('save_staff_schedule_atomic', {
+    const { data, error } = await supabase.rpc('create_staff_schedule_atomic', {
         p_company_id: companyId,
         p_branch_id: branchId,
         p_staff_id: staffId,
@@ -266,7 +266,35 @@ export async function saveScheduleRecords(insertPayload, staffId, year, month, c
 
     if (error) throw error;
     if (data && data.success === false) {
-        throw new Error(data.error || 'Failed to save schedule');
+        throw new Error(data.error || 'Failed to create schedule');
     }
     return data;
+}
+
+export async function updateScheduleRecords(insertPayload, staffId, year, month, companyId, branchId) {
+    // Note: month from caller is 0-indexed (0 = Jan, 10 = Nov); our RPC expects 1-indexed (1 to 12)
+    const rpcMonth = Number(month) + 1;
+
+    const { data, error } = await supabase.rpc('update_staff_schedule_atomic', {
+        p_company_id: companyId,
+        p_branch_id: branchId,
+        p_staff_id: staffId,
+        p_year: Number(year),
+        p_month: rpcMonth,
+        p_schedule_entries: insertPayload || []
+    });
+
+    if (error) throw error;
+    if (data && data.success === false) {
+        throw new Error(data.error || 'Failed to update schedule');
+    }
+    return data;
+}
+
+export async function saveScheduleRecords(insertPayload, staffId, year, month, companyId, branchId, isEdit = false) {
+    if (isEdit) {
+        return updateScheduleRecords(insertPayload, staffId, year, month, companyId, branchId);
+    } else {
+        return createScheduleRecords(insertPayload, staffId, year, month, companyId, branchId);
+    }
 }

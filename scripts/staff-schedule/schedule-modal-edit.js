@@ -2,7 +2,7 @@
 
 import { DOM, scheduleState, WEEK_DAYS_FULL, WEEK_DAYS_SHORT } from './schedule-state.js';
 import { generateMonthWeeks, getAllWeekdayDatesInMonth, toISODate, formatDateOnly, formatDayOnly, parseModalMonth, showToast } from './schedule-helpers.js';
-import { fetchSchedules, saveScheduleRecords, getCompanyId, getBranchId } from './schedule-api.js';
+import { fetchSchedules, createScheduleRecords, updateScheduleRecords, getCompanyId, getBranchId } from './schedule-api.js';
 import { renderTable } from './schedule-table.js';
 
 export function initializeMonthBuilder(year, month) {
@@ -550,13 +550,14 @@ export async function handleFormSubmit(e) {
     }));
 
     try {
-        // ALWAYS Purge existing data for this staff_id and month, and overwrite directly
-        await saveScheduleRecords(insertPayload, payload.staff_id, year, month, companyId, branchId);
-        await fetchSchedules();
-
-        if (DOM.toast) {
-            showToast('Schedule saved successfully');
+        if (isEdit) {
+            await updateScheduleRecords(insertPayload, payload.staff_id, year, month, companyId, branchId);
+            showToast('Schedule updated successfully');
+        } else {
+            await createScheduleRecords(insertPayload, payload.staff_id, year, month, companyId, branchId);
+            showToast('Schedule created successfully');
         }
+        await fetchSchedules();
     } catch (err) {
         console.error('API sync failed:', err);
         showToast(err.message || 'Error saving the schedule', true);
