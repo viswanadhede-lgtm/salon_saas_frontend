@@ -17,9 +17,14 @@ const getCompanyId = () => {
         return ctx.company?.id || localStorage.getItem('company_id') || null;
     } catch { return localStorage.getItem('company_id') || null; }
 };
-const getBranchId = () =>
-    localStorage.getItem('active_branch_id') ||
-    document.getElementById('branchSelect')?.value || null;
+const getBranchId = () => {
+    const fromDom = document.getElementById('branchSelect')?.value;
+    const fromStorage = localStorage.getItem('branch_id') || localStorage.getItem('active_branch_id');
+    const bId = (fromDom && fromDom !== 'branch_1' && fromDom !== 'branch_2' && fromDom !== 'all')
+        ? fromDom
+        : (fromStorage && fromStorage !== 'branch_1' && fromStorage !== 'branch_2' && fromStorage !== 'all' ? fromStorage : null);
+    return bId || null;
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // APPLICABLE-TO VISUAL FEEDBACK
@@ -49,6 +54,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Branch change -> reload
     document.getElementById('branchSelect')?.addEventListener('change', loadOffers);
+    document.addEventListener('branchChanged', loadOffers);
+    document.addEventListener('branch:changed', loadOffers);
+    window.addEventListener('branch:changed', loadOffers);
+
+    // Global Escape key listener to close modal & filter panel
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+            const filterPanel = document.getElementById('offersFilterPanel');
+            if (filterPanel) filterPanel.style.display = 'none';
+            document.getElementById('deleteOfferConfirmOverlay')?.classList.remove('active');
+        }
+    });
 
     // -- Filter panel -----------------------------------------------------------
     const filterPanel = document.getElementById('offersFilterPanel');
@@ -145,19 +163,24 @@ async function loadOffers() {
         const companyId = getCompanyId();
         const branchId  = getBranchId();
 
-        if (!companyId || !branchId) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b;">No company or branch selected.</td></tr>`;
+        if (!companyId) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b;">No company selected.</td></tr>`;
             return;
         }
 
-        const { data, error } = await supabase.schema('app')
+        let query = supabase.schema('app')
             .from('offers')
             .select('*')
             .eq('company_id', companyId)
-            .eq('branch_id', branchId)
-            .neq('status', 'deleted')
-            .order('created_at', { ascending: false });
+            .neq('status', 'deleted');
 
+        if (branchId) {
+            query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
+        }
+
+        query = query.order('created_at', { ascending: false });
+
+        const { data, error } = await query;
         if (error) throw error;
 
         currentOffers = data || [];
@@ -195,7 +218,7 @@ function renderOffers() {
     const q = (document.getElementById('offersSearchInput')?.value || '').toLowerCase().trim();
     const activeTypes = Array.from(
         document.querySelectorAll('input[name="filterDiscountType"]:checked')
-    ).map(cb => cb.value);
+    ).map(cb => cb.value.toLowerCase());
 
     let list = currentOffers;
 
@@ -203,7 +226,13 @@ function renderOffers() {
         list = list.filter(o => (o.offer_name || '').toLowerCase().includes(q));
     }
     if (activeTypes.length > 0) {
-        list = list.filter(o => activeTypes.includes(o.discount_type));
+        list = list.filter(o => {
+            const oType = (o.discount_type || '').toLowerCase();
+            const isOFlat = (oType === 'fixed' || oType === 'flat');
+            if (activeTypes.includes('flat') && isOFlat) return true;
+            if (activeTypes.includes('percentage') && oType === 'percentage') return true;
+            return activeTypes.includes(oType);
+        });
     }
 
     if (list.length === 0) {
@@ -213,13 +242,15 @@ function renderOffers() {
 
     tbody.innerHTML = list.map(offer => {
         const offerId         = offer.id || offer.offer_id;
-        const isFlat          = offer.discount_type === 'flat';
+        const oType           = (offer.discount_type || '').toLowerCase();
+        const isFlat          = (oType === 'flat' || oType === 'fixed');
         const discountDisplay = isFlat
             ? `\u20B9${offer.discount_value} OFF`
             : `${offer.discount_value}% OFF`;
         const badgeColor = isFlat
             ? 'color:#15803d;background:#dcfce7;'
             : 'color:#0284c7;background:#e0f2fe;';
+        const typeLabel = isFlat ? 'Flat' : 'Percentage';
 
         let validityText = 'Always Active';
         if (offer.valid_from || offer.valid_to) {
@@ -232,7 +263,7 @@ function renderOffers() {
             <tr style="border-bottom:1px solid #e2e8f0;">
                 <td style="padding:16px 20px;"><span style="font-weight:600;color:#1e293b;">${offer.offer_name || 'N/A'}</span></td>
                 <td style="padding:16px 20px;"><span style="font-weight:700;${badgeColor}padding:4px 8px;border-radius:6px;font-size:0.85rem;">${discountDisplay}</span></td>
-                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;text-transform:capitalize;">${offer.discount_type || '-'}</td>
+                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;text-transform:capitalize;">${typeLabel}</td>
                 <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">${buildApplicableToDisplay(offer)}</td>
                 <td style="padding:16px 20px;font-size:0.9rem;color:#64748b;text-align:center;">${validityText}</td>
                 <td style="padding:14px 16px; vertical-align:middle;">
@@ -299,10 +330,13 @@ window.editOffer = function(id) {
     isEditing     = true;
     currentEditId = offer.id || offer.offer_id;
 
+    const oType = (offer.discount_type || '').toLowerCase();
+    const normalizedType = (oType === 'fixed' || oType === 'flat') ? 'flat' : 'percentage';
+
     document.getElementById('offerName').value          = offer.offer_name || '';
-    document.getElementById('offerDiscountType').value  = offer.discount_type || 'percentage';
+    document.getElementById('offerDiscountType').value  = normalizedType;
     document.getElementById('offerDiscountValue').value = offer.discount_value != null ? offer.discount_value : '';
-    document.getElementById('offerDiscountValue').placeholder = (offer.discount_type === 'flat') ? 'e.g., 200' : 'e.g., 20';
+    document.getElementById('offerDiscountValue').placeholder = (normalizedType === 'flat') ? 'e.g., 200' : 'e.g., 20';
     document.getElementById('offerMinBillAmount').value = offer.min_bill_amount != null ? offer.min_bill_amount : '';
     document.getElementById('offerStartDate').value     = offer.valid_from ? offer.valid_from.split('T')[0] : '';
     document.getElementById('offerEndDate').value       = offer.valid_to   ? offer.valid_to.split('T')[0]   : '';
@@ -378,19 +412,57 @@ async function handleSaveOffer() {
     const btnSave  = document.getElementById('btnSaveOffer');
     const origText = btnSave?.textContent || 'Save';
 
-    const offer_name     = document.getElementById('offerName').value.trim();
-    const discount_type  = document.getElementById('offerDiscountType').value;
-    const discount_value = document.getElementById('offerDiscountValue').value;
+    const offer_name         = document.getElementById('offerName').value.trim();
+    const discount_type      = document.getElementById('offerDiscountType').value;
+    const discount_value_raw = document.getElementById('offerDiscountValue').value;
 
-    if (!offer_name || !discount_type || !discount_value) {
+    if (!offer_name || !discount_type || discount_value_raw === '') {
         showToast('Please fill all required fields (Name, Type, Value).');
         return;
     }
 
-    // Duplicate check on create
+    const valNum = parseFloat(discount_value_raw);
+    if (isNaN(valNum) || valNum <= 0) {
+        showToast('Discount value must be greater than 0.');
+        return;
+    }
+
+    if (discount_type === 'percentage' && valNum > 100) {
+        showToast('Percentage discount cannot exceed 100%.');
+        return;
+    }
+
+    const minBillRaw = document.getElementById('offerMinBillAmount')?.value?.trim();
+    const min_bill_amount = (minBillRaw !== undefined && minBillRaw !== '' && !isNaN(minBillRaw))
+        ? parseFloat(minBillRaw)
+        : null;
+
+    if (min_bill_amount !== null && min_bill_amount < 0) {
+        showToast('Minimum bill amount cannot be negative.');
+        return;
+    }
+
+    const startDateVal = document.getElementById('offerStartDate')?.value || null;
+    const endDateVal   = document.getElementById('offerEndDate')?.value   || null;
+
+    if (startDateVal && endDateVal && new Date(startDateVal) > new Date(endDateVal)) {
+        showToast('Valid From date cannot be after Valid To date.');
+        return;
+    }
+
+    // Duplicate check
     if (!isEditing) {
         const isDuplicate = currentOffers.some(
             o => (o.offer_name || '').toLowerCase() === offer_name.toLowerCase()
+        );
+        if (isDuplicate) {
+            showToast('An offer with this name already exists.');
+            return;
+        }
+    } else {
+        const isDuplicate = currentOffers.some(
+            o => (o.id !== currentEditId && o.offer_id !== currentEditId) &&
+                 (o.offer_name || '').toLowerCase() === offer_name.toLowerCase()
         );
         if (isDuplicate) {
             showToast('An offer with this name already exists.');
@@ -404,24 +476,6 @@ async function handleSaveOffer() {
     const all_products    = !!(document.getElementById('offerAppToProducts')?.checked);
     const all_memberships = !!(document.getElementById('offerAppToMemberships')?.checked);
 
-    const payload = {
-        company_id:      getCompanyId(),
-        branch_id:       getBranchId(),
-        offer_name,
-        discount_type,
-        discount_value:  parseFloat(discount_value),
-        status:          'active',
-        min_bill_amount: document.getElementById('offerMinBillAmount').value
-            ? parseFloat(document.getElementById('offerMinBillAmount').value)
-            : null,
-        valid_from:      document.getElementById('offerStartDate').value || null,
-        valid_to:        document.getElementById('offerEndDate').value   || null,
-        all_services,
-        all_products,
-        all_memberships,
-        updated_at:      new Date().toISOString()
-    };
-
     try {
         if (isEditing) {
             const { error } = await supabase.rpc('update_offer_atomic', {
@@ -430,10 +484,10 @@ async function handleSaveOffer() {
                 p_offer_id:        currentEditId,
                 p_offer_name:      offer_name,
                 p_discount_type:   discount_type,
-                p_discount_value:  parseFloat(discount_value),
-                p_min_bill_amount: document.getElementById('offerMinBillAmount')?.value ? parseFloat(document.getElementById('offerMinBillAmount').value) : null,
-                p_valid_from:      document.getElementById('offerStartDate')?.value || null,
-                p_valid_to:        document.getElementById('offerEndDate')?.value   || null,
+                p_discount_value:  valNum,
+                p_min_bill_amount: min_bill_amount,
+                p_valid_from:      startDateVal,
+                p_valid_to:        endDateVal,
                 p_status:          'active',
                 p_all_services:    all_services,
                 p_all_products:    all_products,
@@ -447,10 +501,10 @@ async function handleSaveOffer() {
                 p_branch_id:       getBranchId(),
                 p_offer_name:      offer_name,
                 p_discount_type:   discount_type,
-                p_discount_value:  parseFloat(discount_value),
-                p_min_bill_amount: document.getElementById('offerMinBillAmount')?.value ? parseFloat(document.getElementById('offerMinBillAmount').value) : null,
-                p_valid_from:      document.getElementById('offerStartDate')?.value || null,
-                p_valid_to:        document.getElementById('offerEndDate')?.value   || null,
+                p_discount_value:  valNum,
+                p_min_bill_amount: min_bill_amount,
+                p_valid_from:      startDateVal,
+                p_valid_to:        endDateVal,
                 p_all_services:    all_services,
                 p_all_products:    all_products,
                 p_all_memberships: all_memberships
