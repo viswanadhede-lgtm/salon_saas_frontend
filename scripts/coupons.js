@@ -17,9 +17,14 @@ const getCompanyId = () => {
         return ctx.company?.id || localStorage.getItem('company_id') || null;
     } catch { return localStorage.getItem('company_id') || null; }
 };
-const getBranchId = () =>
-    localStorage.getItem('active_branch_id') ||
-    document.getElementById('branchSelect')?.value || null;
+const getBranchId = () => {
+    const fromDom = document.getElementById('branchSelect')?.value;
+    const fromStorage = localStorage.getItem('branch_id') || localStorage.getItem('active_branch_id');
+    const bId = (fromDom && fromDom !== 'branch_1' && fromDom !== 'branch_2' && fromDom !== 'all')
+        ? fromDom
+        : (fromStorage && fromStorage !== 'branch_1' && fromStorage !== 'branch_2' && fromStorage !== 'all' ? fromStorage : null);
+    return bId || null;
+};
 
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // APPLICABLE-TO VISUAL FEEDBACK  (mirrors memberships pattern)
@@ -49,6 +54,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Branch change -> reload
     document.getElementById('branchSelect')?.addEventListener('change', loadCoupons);
+    document.addEventListener('branchChanged', loadCoupons);
+    document.addEventListener('branch:changed', loadCoupons);
+    window.addEventListener('branch:changed', loadCoupons);
+
+    // Global Escape key listener to close modal & filter panel
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+            const filterPanel = document.getElementById('cpnFilterPanel');
+            if (filterPanel) filterPanel.style.display = 'none';
+            document.getElementById('deleteCouponConfirmOverlay')?.classList.remove('active');
+        }
+    });
 
     // -- Filter panel -----------------------------------------------------------
     const filterPanel = document.getElementById('cpnFilterPanel');
@@ -150,14 +168,27 @@ async function loadCoupons() {
     if (window.feather) feather.replace();
 
     try {
-        const { data, error } = await supabase.schema('app')
+        const companyId = getCompanyId();
+        const branchId  = getBranchId();
+
+        if (!companyId) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b;">No company selected.</td></tr>`;
+            return;
+        }
+
+        let query = supabase.schema('app')
             .from('coupons')
             .select('*')
-            .eq('company_id', getCompanyId())
-            .eq('branch_id', getBranchId())
-            .neq('status', 'deleted')
-            .order('created_at', { ascending: false });
+            .eq('company_id', companyId)
+            .neq('status', 'deleted');
 
+        if (branchId) {
+            query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
+        }
+
+        query = query.order('created_at', { ascending: false });
+
+        const { data, error } = await query;
         if (error) throw error;
 
         currentCoupons = data || [];
@@ -203,7 +234,13 @@ function renderCoupons() {
         list = list.filter(c => (c.coupon_code || '').toLowerCase().includes(q));
     }
     if (activeTypes.length > 0) {
-        list = list.filter(c => activeTypes.includes(c.discount_type));
+        list = list.filter(c => {
+            const cType = (c.discount_type || '').toLowerCase();
+            const isCFlat = (cType === 'fixed' || cType === 'flat');
+            if (activeTypes.includes('flat') && isCFlat) return true;
+            if (activeTypes.includes('percentage') && cType === 'percentage') return true;
+            return activeTypes.includes(cType);
+        });
     }
 
     if (list.length === 0) {
@@ -213,13 +250,15 @@ function renderCoupons() {
 
     tbody.innerHTML = list.map(coupon => {
         const couponId        = coupon.coupon_id || coupon.id;
-        const isFlat          = coupon.discount_type === 'flat';
+        const cType           = (coupon.discount_type || '').toLowerCase();
+        const isFlat          = (cType === 'flat' || cType === 'fixed');
         const discountDisplay = isFlat
             ? `\u20B9${coupon.discount_value} OFF`
             : `${coupon.discount_value}% OFF`;
         const badgeColor = isFlat
             ? 'color:#15803d;background:#dcfce7;'
             : 'color:#0284c7;background:#e0f2fe;';
+        const typeLabel = isFlat ? 'Flat' : 'Percentage';
 
         let validityText = 'Always Active';
         if (coupon.valid_from || coupon.valid_to) {
@@ -232,7 +271,7 @@ function renderCoupons() {
             <tr style="border-bottom:1px solid #e2e8f0;">
                 <td style="padding:16px 20px;"><span class="cpn-code-badge">${coupon.coupon_code || 'N/A'}</span></td>
                 <td style="padding:16px 20px;"><span style="font-weight:700;${badgeColor}padding:4px 8px;border-radius:6px;font-size:0.85rem;">${discountDisplay}</span></td>
-                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;text-transform:capitalize;">${coupon.discount_type || '-'}</td>
+                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;text-transform:capitalize;">${typeLabel}</td>
                 <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">${buildApplicableToDisplay(coupon)}</td>
                 <td style="padding:16px 20px;font-size:0.9rem;color:#64748b;text-align:center;">${validityText}</td>
                 <td style="padding:14px 16px; vertical-align:middle;">
@@ -302,9 +341,13 @@ window.editCoupon = function(id) {
     isEditing     = true;
     currentEditId = id;
 
+    const cType = (coupon.discount_type || '').toLowerCase();
+    const normalizedType = (cType === 'fixed' || cType === 'flat') ? 'flat' : 'percentage';
+
     document.getElementById('cpnCode').value          = coupon.coupon_code    || '';
-    document.getElementById('cpnDiscountType').value  = coupon.discount_type  || 'percentage';
+    document.getElementById('cpnDiscountType').value  = normalizedType;
     document.getElementById('cpnDiscountValue').value = coupon.discount_value != null ? coupon.discount_value : '';
+    document.getElementById('cpnDiscountValue').placeholder = (normalizedType === 'flat') ? 'e.g. 100' : 'e.g. 10';
     document.getElementById('cpnMinBooking').value    = coupon.min_bill_amount != null ? coupon.min_bill_amount : '';
     document.getElementById('cpnStartDate').value     = coupon.valid_from ? coupon.valid_from.split('T')[0] : '';
     document.getElementById('cpnEndDate').value       = coupon.valid_to   ? coupon.valid_to.split('T')[0]   : '';
@@ -384,19 +427,57 @@ async function handleSaveCoupon() {
     const btnSave  = document.getElementById('btnSaveCoupon');
     const origText = btnSave?.textContent || 'Save';
 
-    const coupon_code    = document.getElementById('cpnCode').value.trim();
-    const discount_type  = document.getElementById('cpnDiscountType').value;
-    const discount_value = document.getElementById('cpnDiscountValue').value;
+    const coupon_code        = document.getElementById('cpnCode').value.trim();
+    const discount_type      = document.getElementById('cpnDiscountType').value;
+    const discount_value_raw = document.getElementById('cpnDiscountValue').value;
 
-    if (!coupon_code || !discount_type || !discount_value) {
+    if (!coupon_code || !discount_type || discount_value_raw === '') {
         showToast('Please fill all required fields (Code, Type, Value).');
         return;
     }
 
-    // Duplicate check on create
+    const valNum = parseFloat(discount_value_raw);
+    if (isNaN(valNum) || valNum <= 0) {
+        showToast('Discount value must be greater than 0.');
+        return;
+    }
+
+    if (discount_type === 'percentage' && valNum > 100) {
+        showToast('Percentage discount cannot exceed 100%.');
+        return;
+    }
+
+    const minBillRaw = document.getElementById('cpnMinBooking')?.value?.trim();
+    const min_bill_amount = (minBillRaw !== undefined && minBillRaw !== '' && !isNaN(minBillRaw))
+        ? parseFloat(minBillRaw)
+        : null;
+
+    if (min_bill_amount !== null && min_bill_amount < 0) {
+        showToast('Minimum bill amount cannot be negative.');
+        return;
+    }
+
+    const startDateVal = document.getElementById('cpnStartDate')?.value || null;
+    const endDateVal   = document.getElementById('cpnEndDate')?.value   || null;
+
+    if (startDateVal && endDateVal && new Date(startDateVal) > new Date(endDateVal)) {
+        showToast('Valid From date cannot be after Valid To date.');
+        return;
+    }
+
+    // Duplicate check
     if (!isEditing) {
         const isDuplicate = currentCoupons.some(
             c => (c.coupon_code || '').toUpperCase() === coupon_code.toUpperCase()
+        );
+        if (isDuplicate) {
+            showToast('A coupon with this code already exists.');
+            return;
+        }
+    } else {
+        const isDuplicate = currentCoupons.some(
+            c => ((c.coupon_id || c.id) !== currentEditId) &&
+                 (c.coupon_code || '').toUpperCase() === coupon_code.toUpperCase()
         );
         if (isDuplicate) {
             showToast('A coupon with this code already exists.');
@@ -411,24 +492,6 @@ async function handleSaveCoupon() {
     const all_products    = !!(document.getElementById('cpnAppToProducts')?.checked);
     const all_memberships = !!(document.getElementById('cpnAppToMemberships')?.checked);
 
-    const payload = {
-        company_id:      getCompanyId(),
-        branch_id:       getBranchId(),
-        coupon_code,
-        discount_type,
-        discount_value:  parseFloat(discount_value),
-        status:          'active',
-        min_bill_amount: document.getElementById('cpnMinBooking').value
-            ? parseFloat(document.getElementById('cpnMinBooking').value)
-            : null,
-        valid_from:      document.getElementById('cpnStartDate').value || null,
-        valid_to:        document.getElementById('cpnEndDate').value   || null,
-        all_services,
-        all_products,
-        all_memberships,
-        updated_at:      new Date().toISOString()
-    };
-
     try {
         if (isEditing) {
             const { error } = await supabase.rpc('update_coupon_atomic', {
@@ -437,10 +500,10 @@ async function handleSaveCoupon() {
                 p_coupon_id:          currentEditId,
                 p_coupon_code:        coupon_code,
                 p_discount_type:      discount_type,
-                p_discount_value:     parseFloat(discount_value),
-                p_min_bill_amount:    document.getElementById('cpnMinBooking')?.value ? parseFloat(document.getElementById('cpnMinBooking').value) : null,
-                p_valid_from:         document.getElementById('cpnStartDate')?.value || null,
-                p_valid_to:           document.getElementById('cpnEndDate')?.value   || null,
+                p_discount_value:     valNum,
+                p_min_bill_amount:    min_bill_amount,
+                p_valid_from:         startDateVal,
+                p_valid_to:           endDateVal,
                 p_status:             'active',
                 p_all_services:       all_services,
                 p_all_products:       all_products,
@@ -454,10 +517,10 @@ async function handleSaveCoupon() {
                 p_branch_id:          getBranchId(),
                 p_coupon_code:        coupon_code,
                 p_discount_type:      discount_type,
-                p_discount_value:     parseFloat(discount_value),
-                p_min_bill_amount:    document.getElementById('cpnMinBooking')?.value ? parseFloat(document.getElementById('cpnMinBooking').value) : null,
-                p_valid_from:         document.getElementById('cpnStartDate')?.value || null,
-                p_valid_to:           document.getElementById('cpnEndDate')?.value   || null,
+                p_discount_value:     valNum,
+                p_min_bill_amount:    min_bill_amount,
+                p_valid_from:         startDateVal,
+                p_valid_to:           endDateVal,
                 p_all_services:       all_services,
                 p_all_products:       all_products,
                 p_all_memberships:    all_memberships
