@@ -20,9 +20,11 @@ const getCompanyId = () => {
 const getBranchId = () => {
     try {
         const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-        return localStorage.getItem('active_branch_id') || ctx.current_branch_id || document.getElementById('branchSelect')?.value || null;
+        const raw = localStorage.getItem('active_branch_id') || ctx.current_branch_id || document.getElementById('branchSelect')?.value || null;
+        if (!raw || raw === 'all' || !/^[0-9a-f-]{36}$/i.test(raw)) return null;
+        return raw;
     } catch {
-        return localStorage.getItem('active_branch_id') || null;
+        return null;
     }
 };
 
@@ -264,8 +266,7 @@ window.submitExpense = async () => {
         return;
     }
 
-    const rawBranch = getBranchId();
-    const branchId = rawBranch && rawBranch !== 'all' ? rawBranch : null;
+    const branchId = getBranchId();
 
     const btn = document.querySelector('#addExpenseModal .btn-primary');
     const originalText = btn ? btn.innerHTML : 'Save';
@@ -385,8 +386,7 @@ async function performDeleteExpense() {
     
     try {
         const companyId = getCompanyId();
-        const rawBranch = getBranchId();
-        const branchId = rawBranch && rawBranch !== 'all' ? rawBranch : null;
+        const branchId = getBranchId();
 
         const { error } = await supabase.rpc('delete_expense_atomic', {
             p_company_id: companyId,
@@ -410,8 +410,7 @@ async function fetchExpenseStatCards() {
         const companyId = getCompanyId();
         if (!companyId) return;
 
-        const rawBranchId = getBranchId();
-        const branchId = rawBranchId && rawBranchId !== 'all' ? rawBranchId : null;
+        const branchId = getBranchId();
 
         const { data, error } = await supabase.rpc('get_expenses_stat_cards', {
             p_company_id: companyId,
@@ -605,8 +604,7 @@ async function fetchExpenses() {
             return;
         }
 
-        const rawBranchId = getBranchId();
-        const branchId = rawBranchId && rawBranchId !== 'all' ? rawBranchId : null;
+        const branchId = getBranchId();
 
         let query = supabase.schema('app')
             .from('expenses')
@@ -895,6 +893,17 @@ function setupExpensesEvents() {
         if (e.target.id === 'addExpenseModal') window.closeAddExpenseModal();
     });
 
+    // Global Escape key handler for all modals and date dropdown
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            window.closeAddExpenseModal();
+            window.closeExpenseNotesModal();
+            closeDeleteModal();
+            const menu = document.getElementById('exDateMenu');
+            if (menu) menu.style.display = 'none';
+        }
+    });
+
     // Branch switch detection across the app
     document.addEventListener('change', (e) => {
         if (e.target && e.target.id === 'branchSelect') {
@@ -908,6 +917,11 @@ function setupExpensesEvents() {
         currentPage = 1;
         loadAllExpenseData();
     });
+
+    window.addEventListener('branchChanged', () => {
+        currentPage = 1;
+        loadAllExpenseData();
+    });
 }
 
 // ─── Module Initialization ────────────────────────────────────────────────────
@@ -916,11 +930,6 @@ function initExpensesModule() {
     setupExpensesEvents();
     window.setExpensesDateFilter('this_month');
     loadAllExpenseData();
-
-    // In case auth guard is still finalizing localStorage tokens / appContext
-    setTimeout(loadAllExpenseData, 300);
-    setTimeout(loadAllExpenseData, 800);
-    setTimeout(loadAllExpenseData, 1500);
 
     if (window.feather) feather.replace();
 }
