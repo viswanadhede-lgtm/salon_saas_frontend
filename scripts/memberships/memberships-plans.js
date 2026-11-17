@@ -2,6 +2,8 @@
 import {
     getCompanyId,
     getBranchId,
+    getUserId,
+    getUserName,
     getCurrentPlans,
     setCurrentPlans,
     getIsEditing,
@@ -249,9 +251,11 @@ export function deletePlan(id) {
 export async function executeDeletePlan(id) {
     try {
         const { data, error } = await deleteMembershipPlanRpcApi({
-            p_company_id: getCompanyId(),
-            p_branch_id: getBranchId(),
-            p_membership_id: id
+            p_company_id:    getCompanyId(),
+            p_branch_id:     getBranchId(),
+            p_membership_id: id,
+            p_staff_id:      getUserId(),
+            p_staff_name:    getUserName()
         });
         if (error) throw error;
         if (data && !data.success) {
@@ -339,7 +343,9 @@ export async function handleSavePlan() {
                 p_all_services:    all_services,
                 p_all_products:    all_products,
                 p_all_memberships: all_memberships,
-                p_status:          'active'
+                p_status:          'active',
+                p_staff_id:        getUserId(),
+                p_staff_name:      getUserName()
             });
             if (error) throw error;
             if (data && !data.success) throw new Error(data.error || 'Failed to update plan');
@@ -354,7 +360,9 @@ export async function handleSavePlan() {
                 p_discount_value:  parseFloat(discount_value),
                 p_all_services:    all_services,
                 p_all_products:    all_products,
-                p_all_memberships: all_memberships
+                p_all_memberships: all_memberships,
+                p_staff_id:        getUserId(),
+                p_staff_name:      getUserName()
             });
             if (error) throw error;
             if (data && !data.success) throw new Error(data.error || 'Failed to create plan');
@@ -401,6 +409,14 @@ export function initPlanListeners() {
     document.getElementById('btnSavePlan')?.addEventListener('click', handleSavePlan);
 
     // Delete confirm modal
+    const deleteOverlay = document.getElementById('deletePlanConfirmOverlay');
+    deleteOverlay?.addEventListener('click', e => {
+        if (e.target === deleteOverlay) {
+            deleteOverlay.classList.remove('active');
+            setPlanToDelete(null);
+        }
+    });
+
     document.getElementById('btnCancelDeletePlan')?.addEventListener('click', () => {
         document.getElementById('deletePlanConfirmOverlay')?.classList.remove('active');
         setPlanToDelete(null);
@@ -411,5 +427,20 @@ export function initPlanListeners() {
         document.getElementById('deletePlanConfirmOverlay')?.classList.remove('active');
         await executeDeletePlan(planToDelete);
         setPlanToDelete(null);
+    });
+
+    // Global Escape key dismiss for plan & delete overlays
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            const planOverlay = document.getElementById('planModalOverlay');
+            if (planOverlay && planOverlay.classList.contains('active')) {
+                closePlanModal();
+            }
+            const delOverlay = document.getElementById('deletePlanConfirmOverlay');
+            if (delOverlay && delOverlay.classList.contains('active')) {
+                delOverlay.classList.remove('active');
+                setPlanToDelete(null);
+            }
+        }
     });
 }
