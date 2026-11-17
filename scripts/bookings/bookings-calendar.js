@@ -1,6 +1,6 @@
 // scripts/bookings/bookings-calendar.js
 import { supabase } from '../../lib/supabase.js';
-import { getLiveBookings, getBranchId, calendarState } from './bookings-state.js';
+import { getLiveBookings, getBranchId, getCompanyId, calendarState } from './bookings-state.js';
 import { statusBadge, toggleSvcExtra } from './bookings-table.js?v=2.4.0';
 
 if (typeof window !== 'undefined' && !window.toggleSvcExtra) {
@@ -15,17 +15,19 @@ let calendarSummaryCache = [];  // rows from RPC: { booking_date, total_bookings
  * Returns lightweight per-day counts instead of pulling full booking records.
  */
 async function fetchCalendarSummary(year, month) {
-    const branchId = getBranchId();
-    if (!branchId) {
+    const companyId = getCompanyId();
+    const branchId  = getBranchId();
+    if (!companyId) {
         calendarSummaryCache = [];
         return;
     }
 
     try {
         const { data, error } = await supabase.rpc('get_calendar_month_bookings_summary', {
-            p_branch_id: branchId,
-            p_year:      year,
-            p_month:     month + 1  // JS month is 0-indexed, SQL expects 1-indexed
+            p_company_id: companyId,
+            p_branch_id:  branchId,
+            p_year:       year,
+            p_month:      month + 1  // JS month is 0-indexed, SQL expects 1-indexed
         });
 
         if (error) {

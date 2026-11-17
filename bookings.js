@@ -126,6 +126,33 @@ export async function initBookings() {
         await fetchBookings();
     });
 
+    window.addEventListener('branchChanged', async () => {
+        console.log('[Bookings] Legacy branchChanged event received');
+        await fetchBookings();
+    });
+
+    // Global Escape key handler for all modals, calendar detail, and filter menu
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const calModal = document.getElementById('calDayModalOverlay');
+            if (calModal && calModal.classList.contains('active')) {
+                calModal.classList.remove('active');
+            }
+            const filterMenu = document.getElementById('filterDropdownMenu');
+            if (filterMenu && filterMenu.classList.contains('active')) {
+                filterMenu.classList.remove('active');
+            }
+            document.querySelectorAll('.modal-overlay.active, .modal-backdrop.active, .bb-modal-overlay.active').forEach(m => {
+                m.classList.remove('active');
+            });
+            const globalModal = document.getElementById('globalBookingModal');
+            if (globalModal && globalModal.style.display !== 'none') {
+                if (window.closeGlobalBookingModal) window.closeGlobalBookingModal();
+                else globalModal.style.display = 'none';
+            }
+        }
+    });
+
     await fetchBookings();
 
     // Catch any delayed branch or auth context population
