@@ -107,28 +107,34 @@ window.refreshAllData = function(branchId) {
             // Wire appointment tabs
             initAppointmentTabs();
 
-            // Wire cross-tab / cross-modal sync
+            // Wire cross-tab / cross-modal sync & reactive branch switching
             document.addEventListener('payment-recorded', () => {
                 const bId = getBranchId();
-                if (bId && typeof window.refreshAllData === 'function') window.refreshAllData(bId);
+                if (typeof window.refreshAllData === 'function') window.refreshAllData(bId);
             });
             window.addEventListener('storage', (e) => {
                 if (e.key === 'app_payment_sync' || e.key === 'branch_id') {
                     const bId = getBranchId();
-                    if (bId && typeof window.refreshAllData === 'function') window.refreshAllData(bId);
+                    if (typeof window.refreshAllData === 'function') window.refreshAllData(bId);
                 }
             });
+            window.addEventListener('branch:changed', (e) => {
+                const bId = e.detail?.branchId || getBranchId();
+                if (typeof window.refreshAllData === 'function') window.refreshAllData(bId);
+            });
+            window.addEventListener('branchChanged', (e) => {
+                const bId = e.detail?.branchId || getBranchId();
+                if (typeof window.refreshAllData === 'function') window.refreshAllData(bId);
+            });
 
-            // Initial fetch if branch is resolved
+            // Initial fetch
             const branchId = getBranchId();
-            if (branchId) {
-                fetchAndRenderDashboardKPIs(branchId);
-                fetchAndRenderProductSales(branchId);
-                fetchAndRenderAppointments(branchId);
-                fetchAndRenderTopServicesToday(branchId);
-                fetchAndRenderWeeklyRevenue(branchId);
-                fetchAndRenderTopServicesWeekly(branchId);
-            }
+            fetchAndRenderDashboardKPIs(branchId);
+            fetchAndRenderProductSales(branchId);
+            fetchAndRenderAppointments(branchId);
+            fetchAndRenderTopServicesToday(branchId);
+            fetchAndRenderWeeklyRevenue(branchId);
+            fetchAndRenderTopServicesWeekly(branchId);
         }
 
         if (document.readyState === 'loading') {

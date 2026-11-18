@@ -23,22 +23,35 @@ export async function fetchAndRenderAppointments(currentBranchId) {
     const upcomingList = document.getElementById('tabUpcomingList');
     const completedList = document.getElementById('tabCompletedList');
     const noshowList = document.getElementById('tabNoshowList');
-    if (!upcomingList || !completedList || !currentBranchId) return;
+    if (!upcomingList || !completedList) return;
 
     try {
         const companyId = getCompanyId();
+        if (!companyId) {
+            const emptyHtml = '<div class="centered-placeholder" style="padding: 30px; text-align: center; color: #94a3b8;">No company session found. Please log in.</div>';
+            if (upcomingList) upcomingList.innerHTML = emptyHtml;
+            if (completedList) completedList.innerHTML = emptyHtml;
+            if (noshowList) noshowList.innerHTML = emptyHtml;
+            return;
+        }
+
         const now = new Date();
         const today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+        // Sanitize branch UUID (if invalid or 'all', leave null to query company-wide)
+        const validBranchId = (currentBranchId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentBranchId))
+            ? currentBranchId
+            : null;
 
         let query = supabase.schema('app')
             .from('bookings_for_business_transaction')
             .select('*')
-            .eq('branch_id', currentBranchId)
+            .eq('company_id', companyId)
             .eq('booking_date', today)
             .order('start_time', { ascending: true });
 
-        if (companyId) {
-            query = query.eq('company_id', companyId);
+        if (validBranchId) {
+            query = query.eq('branch_id', validBranchId);
         }
 
         const { data: bookings, error } = await query;
@@ -69,9 +82,14 @@ export async function fetchAndRenderAppointments(currentBranchId) {
         const completedData = completedFull.slice(0, 3);
         const noshowData = noshowFull.slice(0, 3);
 
-        const renderList = (container, list, emptyMsg) => {
+        const renderList = (container, list, emptyMsg, emptyIcon = 'calendar') => {
             if (list.length === 0) {
-                container.innerHTML = `<div class="centered-placeholder">${emptyMsg}</div>`;
+                container.innerHTML = `
+                    <div class="centered-placeholder" style="padding: 30px 20px; text-align: center; color: #94a3b8;">
+                        <i data-feather="${emptyIcon}" style="width: 28px; height: 28px; margin-bottom: 8px; opacity: 0.6;"></i>
+                        <p style="margin: 0; font-size: 0.88rem;">${emptyMsg}</p>
+                    </div>
+                `;
                 return;
             }
 
@@ -148,7 +166,7 @@ export async function fetchAndRenderAppointments(currentBranchId) {
                 }
 
                 return `
-                    <div class="appointment-item" style="cursor: pointer;" ondblclick="navigateToBooking('${b.status || ''}', '${b.booking_id || ''}')">
+                    <div class="appointment-item" style="cursor: pointer;" title="Click to view details" onclick="if(event.target.closest('.customer-link') || (event.target.tagName === 'SPAN' && event.target.getAttribute('onclick'))) return; window.navigateToBooking('${b.status || ''}', '${b.booking_id || ''}')">
                         <div class="time-block">
                             <span class="time">${formattedTime}</span>
                             <span class="duration">${durationStr}</span>
@@ -173,9 +191,9 @@ export async function fetchAndRenderAppointments(currentBranchId) {
             }).join('');
         };
 
-        renderList(upcomingList, upcomingData, "No upcoming appointments for today.");
-        renderList(completedList, completedData, "No completed bookings yet today.");
-        if (noshowList) renderList(noshowList, noshowData, "No no-shows or cancellations recorded today.");
+        renderList(upcomingList, upcomingData, "No upcoming appointments for today.", "calendar");
+        renderList(completedList, completedData, "No completed bookings yet today.", "check-circle");
+        if (noshowList) renderList(noshowList, noshowData, "No no-shows or cancellations recorded today.", "x-circle");
 
         if (window.feather) feather.replace();
 

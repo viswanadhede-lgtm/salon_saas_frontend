@@ -1,22 +1,33 @@
 // scripts/dashboard/dashboard-services.js
 // Handles fetching and rendering top services for today and the past 7 days.
+// Powered by RPC 4: dashboard_top_services.
 
 import { supabase } from '../../lib/supabase.js';
 import { getCompanyId } from './dashboard-state.js';
 
 export async function fetchAndRenderTopServicesToday(currentBranchId) {
     const listContainer = document.getElementById('topServicesTodayList');
-    if (!listContainer || !currentBranchId) return;
+    if (!listContainer) return;
 
     try {
         const companyId = getCompanyId();
+        if (!companyId) {
+            listContainer.innerHTML = '<li class="centered-placeholder" style="color:#94a3b8;">No company session found.</li>';
+            return;
+        }
+
         const now = new Date();
         const today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
+        // Sanitize branch UUID (if invalid or 'all', leave null to query company-wide)
+        const validBranchId = (currentBranchId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentBranchId))
+            ? currentBranchId
+            : null;
+
         // Call RPC: dashboard_top_services for today
         const { data: services, error } = await supabase.rpc('dashboard_top_services', {
-            p_branch_id:  currentBranchId,
-            p_company_id: companyId || null,
+            p_branch_id:  validBranchId,
+            p_company_id: companyId,
             p_period:     'today',
             p_today:      today
         });
@@ -59,17 +70,27 @@ export async function fetchAndRenderTopServicesToday(currentBranchId) {
 
 export async function fetchAndRenderTopServicesWeekly(currentBranchId) {
     const listContainer = document.getElementById('topServicesWeeklyList');
-    if (!listContainer || !currentBranchId) return;
+    if (!listContainer) return;
 
     try {
         const companyId = getCompanyId();
+        if (!companyId) {
+            listContainer.innerHTML = '<li class="centered-placeholder" style="color:#94a3b8; min-height: 180px;">No company session found.</li>';
+            return;
+        }
+
         const now = new Date();
         const today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
+        // Sanitize branch UUID (if invalid or 'all', leave null to query company-wide)
+        const validBranchId = (currentBranchId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentBranchId))
+            ? currentBranchId
+            : null;
+
         // Call RPC: dashboard_top_services for week
         const { data: services, error } = await supabase.rpc('dashboard_top_services', {
-            p_branch_id:  currentBranchId,
-            p_company_id: companyId || null,
+            p_branch_id:  validBranchId,
+            p_company_id: companyId,
             p_period:     'week',
             p_today:      today
         });

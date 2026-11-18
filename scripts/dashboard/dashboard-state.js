@@ -2,6 +2,8 @@
 // Shared dashboard context and helper utilities.
 // Single source of truth for dashboard context resolution.
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function getCompanyId() {
     let companyId = localStorage.getItem('company_id');
     if (!companyId) {
@@ -16,11 +18,13 @@ export function getCompanyId() {
             companyId = ctx.company?.company_id || ctx.company?.id;
         } catch (_) {}
     }
-    return companyId || null;
+    return (companyId && UUID_REGEX.test(companyId)) ? companyId : null;
 }
 
 export function getBranchId() {
-    return localStorage.getItem('branch_id') || localStorage.getItem('active_branch_id') || null;
+    const raw = localStorage.getItem('branch_id') || localStorage.getItem('active_branch_id');
+    if (!raw || raw === 'all' || raw === 'undefined' || raw === 'null') return null;
+    return UUID_REGEX.test(raw) ? raw : null;
 }
 
 export function getSelectedPlan() {

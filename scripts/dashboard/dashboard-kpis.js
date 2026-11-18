@@ -6,17 +6,19 @@ import { supabase } from '../../lib/supabase.js';
 import { getCompanyId } from './dashboard-state.js';
 
 export async function fetchAndRenderDashboardKPIs(currentBranchId) {
-    if (!currentBranchId) return;
-
     const companyId = getCompanyId();
     if (!companyId) {
-        console.warn('fetchAndRenderDashboardKPIs: company_id not found in localStorage.');
+        console.warn('fetchAndRenderDashboardKPIs: company_id not found.');
         return;
     }
 
+    const validBranchId = (currentBranchId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentBranchId))
+        ? currentBranchId
+        : null;
+
     try {
         const { data, error } = await supabase.rpc('dashboard_statcards_four', {
-            p_branch_id:  currentBranchId,
+            p_branch_id:  validBranchId,
             p_company_id: companyId
         });
 
