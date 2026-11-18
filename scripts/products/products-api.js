@@ -114,7 +114,9 @@ export async function insertProduct(payload) {
         p_stock_quantity:    payload.stock_quantity ?? 0,
         p_status:            payload.status || 'active',
         p_description:       payload.description || null,
-        p_product_image_url: payload.product_image_url || null
+        p_product_image_url: payload.product_image_url || null,
+        p_staff_id:          getUserId(),
+        p_staff_name:        getUserName()
     });
 }
 
@@ -130,7 +132,9 @@ export async function updateProduct(productId, payload) {
         p_stock_quantity:    payload.stock_quantity,
         p_status:            payload.status || 'active',
         p_description:       payload.description || null,
-        p_product_image_url: payload.product_image_url || null
+        p_product_image_url: payload.product_image_url || null,
+        p_staff_id:          getUserId(),
+        p_staff_name:        getUserName()
     });
 }
 
@@ -139,7 +143,9 @@ export async function deleteProduct(productId) {
     return supabase.rpc('delete_product_atomic', {
         p_company_id:  getCompanyId(),
         p_branch_id:   getBranchId(),
-        p_product_id: productId
+        p_product_id:  productId,
+        p_staff_id:    getUserId(),
+        p_staff_name:  getUserName()
     });
 }
 
