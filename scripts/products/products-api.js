@@ -3,7 +3,7 @@
 // CHANGES: updated_at on all writes; Storage SDK replaces raw REST; cascadeRenameCategoryOnProducts added.
 
 import { supabase } from '../../lib/supabase.js';
-import { productsState, getCompanyId, getBranchId } from './products-state.js';
+import { productsState, getCompanyId, getBranchId, getUserId, getUserName } from './products-state.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // READS
@@ -71,18 +71,24 @@ export async function insertCategory(payload) {
         p_company_id:    payload.company_id || getCompanyId(),
         p_branch_id:     payload.branch_id || getBranchId(),
         p_category_name: payload.category_name,
-        p_description:   payload.description || null
+        p_description:   payload.description || null,
+        p_status:        payload.status || 'active',
+        p_staff_id:      getUserId(),
+        p_staff_name:    getUserName()
     });
 }
 
 // product_categories UPDATE (atomic cascade to products.category_name in PostgreSQL)
-export async function updateCategory(catId, name, description = null) {
+export async function updateCategory(catId, name, description = null, status = 'active') {
     return supabase.rpc('update_product_category_atomic', {
         p_company_id:    getCompanyId(),
         p_branch_id:     getBranchId(),
         p_category_id:   catId,
         p_category_name: name,
-        p_description:   description
+        p_description:   description,
+        p_status:        status,
+        p_staff_id:      getUserId(),
+        p_staff_name:    getUserName()
     });
 }
 
@@ -91,7 +97,9 @@ export async function deleteCategory(catId) {
     return supabase.rpc('delete_product_category_atomic', {
         p_company_id:  getCompanyId(),
         p_branch_id:   getBranchId(),
-        p_category_id: catId
+        p_category_id: catId,
+        p_staff_id:    getUserId(),
+        p_staff_name:  getUserName()
     });
 }
 

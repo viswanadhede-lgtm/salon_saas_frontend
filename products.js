@@ -220,6 +220,30 @@ document.addEventListener('DOMContentLoaded', function () {
     setupInjectedModals();
     attachGlobalEventListeners();
 
+    // Global Escape key dismissal
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            const overlays = [
+                'addCategoryModalOverlay',
+                'editCategoryModalOverlay',
+                'catProductsModal',
+                'deleteConfirmOverlay',
+                'addProductModalOverlay',
+                'editProductModalOverlay'
+            ];
+            overlays.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.classList.contains('active')) {
+                    el.classList.remove('active');
+                }
+            });
+            const filterMenu = document.getElementById('filterMenu');
+            if (filterMenu && filterMenu.classList.contains('active')) {
+                filterMenu.classList.remove('active');
+            }
+        }
+    });
+
     // Initial load
     fetchProductCategories().then(() => {
         fetchProducts();

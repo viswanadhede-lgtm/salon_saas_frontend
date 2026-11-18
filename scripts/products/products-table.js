@@ -161,6 +161,11 @@ export function renderCategoriesTable() {
         filtered = filtered.filter(c => (c.category_name || '').toLowerCase().includes(searchStr));
     }
 
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:36px;color:#64748b;font-weight:500;">No categories found${searchStr ? ' matching your search' : ''}.</td></tr>`;
+        return;
+    }
+
     filtered.forEach(c => {
         const tr = document.createElement('tr');
         const pCount = productsState.products.filter(p => String(p.category_id) === String(c.category_id || c.id)).length;

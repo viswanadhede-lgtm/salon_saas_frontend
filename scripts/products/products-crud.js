@@ -143,15 +143,7 @@ export function attachGlobalEventListeners() {
                 const { error } = await updateCategory(catId, name);
                 if (error) throw error;
 
-                // CHANGE 1: cascade rename to all products in this category
-                const { error: cascadeError } = await cascadeRenameCategoryOnProducts(catId, name);
-                if (cascadeError) {
-                    console.warn('Category renamed but product cascade failed:', cascadeError);
-                    showToast('Category renamed, but some products may still show the old name.', true);
-                } else {
-                    showToast('Category updated');
-                }
-
+                showToast('Category updated successfully');
                 closeAllModals();
                 // Refresh both so product count and filter options stay accurate
                 await fetchProducts();
