@@ -2,28 +2,29 @@ import { supabase } from '../lib/supabase.js';
 
 let todaysBookingsData = [];
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function getBranchId() {
     let b = localStorage.getItem('branch_id') || localStorage.getItem('active_branch_id');
-    if (b === 'null' || b === 'undefined') b = null;
-    if (!b) {
+    if (!b || b === 'all' || b === 'null' || b === 'undefined') return null;
+    if (!UUID_REGEX.test(b)) {
         try {
             const ctx = JSON.parse(localStorage.getItem('active_company_context') || localStorage.getItem('appContext') || '{}');
             b = ctx.branch?.branch_id || ctx.branch?.id || ctx.activeBranch?.id || ctx.activeBranch?.branch_id;
         } catch (_) {}
     }
-    return b || null;
+    return (b && UUID_REGEX.test(b)) ? b : null;
 }
 
 function getCompanyId() {
     let companyId = localStorage.getItem('company_id');
-    if (companyId === 'null' || companyId === 'undefined') companyId = null;
-    if (!companyId) {
+    if (!companyId || companyId === 'null' || companyId === 'undefined') {
         try {
             const ctx = JSON.parse(localStorage.getItem('active_company_context') || localStorage.getItem('appContext') || '{}');
             companyId = ctx.company?.company_id || ctx.company?.id;
         } catch (_) {}
     }
-    return companyId || null;
+    return (companyId && UUID_REGEX.test(companyId)) ? companyId : null;
 }
 
 export async function calculateAndRenderRevenue() {
@@ -36,23 +37,24 @@ export async function calculateAndRenderRevenue() {
     }
 
     try {
-        const branchId = getBranchId();
-        if (!branchId) throw new Error("No branch selected (branch_id / active_branch_id missing).");
+        const companyId = getCompanyId();
+        if (!companyId) {
+            if (tableBody) {
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:24px; color:#94a3b8;">No company session found. Please log in.</td></tr>';
+            }
+            return;
+        }
 
+        const branchId = getBranchId();
         const now = new Date();
         const localISOTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
         // --- 1. KPI & SNAPSHOT LOGIC via RPC (dashboard_todays_revenue_kpis) ---
-        const companyId = getCompanyId();
-        const rpcParams = {
+        const { data: rpcData, error: rpcError } = await supabase.rpc('dashboard_todays_revenue_kpis', {
             p_branch_id:  branchId,
+            p_company_id: companyId,
             p_today:      localISOTime
-        };
-        if (companyId) {
-            rpcParams.p_company_id = companyId;
-        }
-
-        const { data: rpcData, error: rpcError } = await supabase.rpc('dashboard_todays_revenue_kpis', rpcParams);
+        });
 
         if (rpcError) {
             console.error('[TodaysRevenue] dashboard_todays_revenue_kpis RPC error:', rpcError);
@@ -137,9 +139,7 @@ export async function calculateAndRenderRevenue() {
             .in('booking_status', ['completed', 'Completed']);
 
         if (companyId) bookingsQuery = bookingsQuery.eq('company_id', companyId);
-        if (branchId && branchId !== 'all' && branchId !== 'branch_1' && branchId !== 'branch_2') {
-            bookingsQuery = bookingsQuery.eq('branch_id', branchId);
-        }
+        if (branchId) bookingsQuery = bookingsQuery.eq('branch_id', branchId);
 
         const { data: bookingsData, error: bookingsError } = await bookingsQuery;
 
@@ -172,9 +172,7 @@ export async function calculateAndRenderRevenue() {
             .lte('created_at', `${localISOTime}T23:59:59`);
 
         if (companyId) salesQuery = salesQuery.eq('company_id', companyId);
-        if (branchId && branchId !== 'all' && branchId !== 'branch_1' && branchId !== 'branch_2') {
-            salesQuery = salesQuery.eq('branch_id', branchId);
-        }
+        if (branchId) salesQuery = salesQuery.eq('branch_id', branchId);
 
         const { data: salesData, error: salesError } = await salesQuery;
         if (salesError) throw salesError;
@@ -198,9 +196,7 @@ export async function calculateAndRenderRevenue() {
             .eq('purchase_date', localISOTime);
 
         if (companyId) memberQuery = memberQuery.eq('company_id', companyId);
-        if (branchId && branchId !== 'all' && branchId !== 'branch_1' && branchId !== 'branch_2') {
-            memberQuery = memberQuery.eq('branch_id', branchId);
-        }
+        if (branchId) memberQuery = memberQuery.eq('branch_id', branchId);
 
         const { data: memberData, error: memberError } = await memberQuery;
         if (memberError) throw memberError;
@@ -359,6 +355,12 @@ if (document.readyState === 'loading') {
 
 // Live update listeners
 window.addEventListener('branch:changed', () => {
+    calculateAndRenderRevenue();
+});
+window.addEventListener('branchChanged', () => {
+    calculateAndRenderRevenue();
+});
+window.addEventListener('refresh-all-data', () => {
     calculateAndRenderRevenue();
 });
 
