@@ -12,12 +12,16 @@ import { supabase } from '../../lib/supabase.js';
 // ─────────────────────────────────────────────────────────────
 
 export async function fetchSalesHistoryFromDb(companyId, branchId) {
-    return await supabase.schema('app')
+    let query = supabase.schema('app')
         .from('sales_for_business_transactions')
         .select('*')
-        .eq('company_id', companyId)
-        .eq('branch_id', branchId)
-        .order('created_at', { ascending: false });
+        .eq('company_id', companyId);
+
+    if (branchId) {
+        query = query.eq('branch_id', branchId);
+    }
+
+    return await query.order('created_at', { ascending: false });
 }
 
 export async function fetchCustomerById(customerId) {

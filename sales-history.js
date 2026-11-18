@@ -25,12 +25,14 @@ import {
 } from './scripts/sales-history/sales-actions.js';
 import { 
     openSaleDetails, 
+    closeSaleModal,
     setupSaleDetailsEventListeners, 
     setDetailsRefundHandler 
 } from './scripts/sales-history/sales-details-modal.js';
 import { openCollectPaymentModal } from './scripts/sales-history/sales-payment.js';
 import { 
     openRefundModal, 
+    closeRefundModal,
     setupRefundEventListeners, 
     registerRefundCompleteCallback 
 } from './scripts/sales-history/sales-refund.js';
@@ -64,6 +66,8 @@ window.runSalePrint = runSalePrint;
 window.runSaleRefund = runSaleRefund;
 
 window.openRefundModal = openRefundModal;
+window.closeRefundModal = closeRefundModal;
+window.closeSaleModal = closeSaleModal;
 window.openSaleActionPicker = openSaleActionPicker;
 window.closeSaleActionPicker = closeSaleActionPicker;
 
@@ -93,7 +97,18 @@ async function fetchSalesHistory() {
         const companyId = getCompanyId();
         const branchId = getBranchId();
 
-        if (!companyId) return;
+        if (!companyId) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align:center; padding: 40px; color: #64748b;">
+                        <i data-feather="alert-circle" style="width: 32px; height: 32px; margin-bottom: 12px; opacity: 0.5;"></i>
+                        <p>No active company session found. Please log in.</p>
+                    </td>
+                </tr>
+            `;
+            if (typeof feather !== 'undefined') feather.replace();
+            return;
+        }
 
         // Fetch pre-grouped data directly from the consolidated table
         const { data: salesList, error: salesError } = await fetchSalesHistoryFromDb(companyId, branchId);
@@ -205,6 +220,27 @@ function setupEventListeners() {
     const exportExcelBtn = document.getElementById('exportExcelBtn');
     if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { exportData('csv'); });
     if (exportExcelBtn) exportExcelBtn.addEventListener('click', () => { exportData('excel'); });
+
+    // Listen for branch changes from global app shell
+    window.addEventListener('branch:changed', () => {
+        fetchSalesHistory();
+    });
+    window.addEventListener('branchChanged', () => {
+        fetchSalesHistory();
+    });
+
+    // Global keyboard Escape handler for all modals and menus
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeOpenActionMenu();
+            if (dateMenu) dateMenu.style.display = 'none';
+            if (filterMenu) filterMenu.style.display = 'none';
+            if (exportMenu) exportMenu.style.display = 'none';
+            closeSaleActionPicker();
+            closeSaleModal();
+            closeRefundModal();
+        }
+    });
 }
 
 async function initPage() {

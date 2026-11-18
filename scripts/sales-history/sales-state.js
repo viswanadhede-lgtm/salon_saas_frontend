@@ -13,15 +13,21 @@ export const salesState = {
     currentRefundItems: []
 };
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function getCompanyId() {
     try {
         const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-        return ctx.company?.id || localStorage.getItem('company_id') || null;
+        const raw = ctx.company?.id || localStorage.getItem('company_id') || null;
+        return (raw && UUID_REGEX.test(raw)) ? raw : null;
     } catch {
-        return localStorage.getItem('company_id') || null;
+        const raw = localStorage.getItem('company_id') || null;
+        return (raw && UUID_REGEX.test(raw)) ? raw : null;
     }
 }
 
 export function getBranchId() {
-    return localStorage.getItem('active_branch_id') || null;
+    const raw = localStorage.getItem('active_branch_id');
+    if (!raw || raw === 'all' || raw === 'undefined' || raw === 'null') return null;
+    return UUID_REGEX.test(raw) ? raw : null;
 }
