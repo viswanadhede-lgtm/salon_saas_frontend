@@ -43,18 +43,12 @@ export async function fetchAndRenderAppointments(currentBranchId) {
             ? currentBranchId
             : null;
 
-        let query = supabase.schema('app')
-            .from('bookings_for_business_transaction')
-            .select('*')
-            .eq('company_id', companyId)
-            .eq('booking_date', today)
-            .order('start_time', { ascending: true });
-
-        if (validBranchId) {
-            query = query.eq('branch_id', validBranchId);
-        }
-
-        const { data: bookings, error } = await query;
+        // Call RPC 6: dashboard_today_appointments
+        const { data: bookings, error } = await supabase.rpc('dashboard_today_appointments', {
+            p_branch_id:  validBranchId,
+            p_company_id: companyId,
+            p_today:      today
+        });
 
         if (error) throw error;
 
