@@ -8,15 +8,23 @@ let allCustomers = [];
 let selectedCustomer = null;
 
 // --- Helpers ---
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function getCompanyId() {
     try {
         const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-        return ctx.company?.id || localStorage.getItem('company_id') || null;
-    } catch { return localStorage.getItem('company_id') || null; }
+        const raw = ctx.company?.id || localStorage.getItem('company_id') || null;
+        return (raw && UUID_REGEX.test(raw)) ? raw : null;
+    } catch { 
+        const raw = localStorage.getItem('company_id') || null;
+        return (raw && UUID_REGEX.test(raw)) ? raw : null;
+    }
 }
 
 function getBranchId() {
-    return localStorage.getItem('active_branch_id') || null;
+    const raw = localStorage.getItem('active_branch_id');
+    if (!raw || raw === 'all' || raw === 'undefined' || raw === 'null') return null;
+    return UUID_REGEX.test(raw) ? raw : null;
 }
 
 function showToast(msg, isError = false) {
@@ -384,6 +392,15 @@ function setupEventListeners() {
                 }
             });
         }
+
+        // Global Escape key listener to dismiss customer suggestions
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (custSuggestions && custSuggestions.style.display !== 'none') {
+                    custSuggestions.style.display = 'none';
+                }
+            }
+        });
     }
 
     // Add Customer Button — delegates to global modal
@@ -683,16 +700,25 @@ window.addToCart = function (productId) {
     if (!product) return;
 
     const id = product.product_id || product.id;
+    const stock = Number(product.stock_quantity) || 0;
     const existingItem = cart.find(item => item.id == id);
 
     if (existingItem) {
+        if (existingItem.quantity >= stock) {
+            showToast(`Maximum available stock reached (${stock})`, true);
+            return;
+        }
         existingItem.quantity += 1;
     } else {
+        if (stock <= 0) {
+            showToast('This product is out of stock', true);
+            return;
+        }
         cart.push({
             id,
             name: product.product_name || product.name,
             price: Number(product.price) || 0,
-            stock: Number(product.stock_quantity) || 0,
+            stock: stock,
             quantity: 1,
             category_id: product.category_id || null,
             category_name: product.category_name || ''
@@ -705,8 +731,13 @@ window.addToCart = function (productId) {
 window.updateQuantity = function (productId, delta) {
     const itemIndex = cart.findIndex(item => item.id == productId);
     if (itemIndex > -1) {
-        cart[itemIndex].quantity += delta;
-        if (cart[itemIndex].quantity <= 0) {
+        const item = cart[itemIndex];
+        if (delta > 0 && item.quantity >= item.stock) {
+            showToast(`Maximum available stock reached (${item.stock})`, true);
+            return;
+        }
+        item.quantity += delta;
+        if (item.quantity <= 0) {
             cart.splice(itemIndex, 1);
         }
         updateCartUI();
