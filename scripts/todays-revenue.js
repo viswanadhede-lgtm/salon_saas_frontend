@@ -27,20 +27,27 @@ function getCompanyId() {
     return (companyId && UUID_REGEX.test(companyId)) ? companyId : null;
 }
 
+function parseStaffList(staffStr) {
+    if (!staffStr || staffStr === 'Unassigned') return ['Unassigned'];
+    const parts = staffStr.split(',').map(s => s.trim()).filter(Boolean);
+    const unique = [...new Set(parts)];
+    return unique.length > 0 ? unique : ['Unassigned'];
+}
+
 export async function calculateAndRenderRevenue() {
     let realized = 0, booked = 0, lost = 0;
     let servicesRev = 0, productsRev = 0, membershipsRev = 0, totalRev = 0;
     const staffRevenue = {};
     const tableBody = document.getElementById('revTableBody');
     if (tableBody) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:24px; color:#94a3b8;">Loading live data...</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:24px; color:#94a3b8;">Loading live data...</td></tr>';
     }
 
     try {
         const companyId = getCompanyId();
         if (!companyId) {
             if (tableBody) {
-                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:24px; color:#94a3b8;">No company session found. Please log in.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:24px; color:#94a3b8;">No company session found. Please log in.</td></tr>';
             }
             return;
         }
@@ -142,20 +149,23 @@ export async function calculateAndRenderRevenue() {
 
         const unifiedRows = (tableRows || []).map(r => {
             const amt = Number(r.amount) || 0;
-            const staffName = r.staff_name || 'Unassigned';
-            if (staffName !== 'Unassigned') {
-                if (r.payment_status === 'refunded') {
-                    staffRevenue[staffName] = (staffRevenue[staffName] || 0) - amt;
-                } else {
-                    staffRevenue[staffName] = (staffRevenue[staffName] || 0) + amt;
+            const staffList = parseStaffList(r.staff_name);
+            const isRefund = (r.payment_status || 'paid') === 'refunded';
+
+            // Attribute revenue to staff bars (split evenly among performing staff)
+            const splitAmt = staffList.length > 0 ? amt / staffList.length : amt;
+            staffList.forEach(name => {
+                if (name !== 'Unassigned') {
+                    staffRevenue[name] = (staffRevenue[name] || 0) + (isRefund ? -splitAmt : splitAmt);
                 }
-            }
+            });
+
             return {
                 type: r.row_type,
                 customer_id: r.customer_id,
                 customer: r.customer_name || 'Walk-in Customer',
                 items: Array.isArray(r.item_names) && r.item_names.length > 0 ? r.item_names : ['N/A'],
-                staff: staffName,
+                staffList: staffList,
                 amount: amt,
                 payment_status: r.payment_status || 'paid'
             };
@@ -168,7 +178,7 @@ export async function calculateAndRenderRevenue() {
         if (tableBody) {
             tableBody.innerHTML = '';
             if (unifiedRows.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:32px; color:#94a3b8;">No completed transactions found for today.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:32px; color:#94a3b8;">No completed transactions found for today.</td></tr>';
             } else {
                 const typeStyles = {
                     'Service':    { color: '#059669', bg: '#d1fae5' },
@@ -186,33 +196,46 @@ export async function calculateAndRenderRevenue() {
                         ? `<span class="rev-plus-badge" onclick="revToggleItems('${cellId}')" style="display:inline-block; background:#e0e7ff; color:#4f46e5; border-radius:20px; padding:2px 10px; font-size:0.78rem; font-weight:600; cursor:pointer; user-select:none;">+${extraCount}</span>`
                         : '';
 
+                    // Staff column with 1st name + +N clickable pill
+                    const staffCellId = `rev-staff-${rowIdx}`;
+                    const extraStaffCount = row.staffList.length - 1;
+                    const staffFirstPill = `<span style="${pillStyle}">${row.staffList[0]}</span>`;
+                    const staffPlusBadge = extraStaffCount > 0
+                        ? `<span class="rev-plus-badge" onclick="revToggleStaff('${staffCellId}')" style="display:inline-block; background:#e0e7ff; color:#4f46e5; border-radius:20px; padding:2px 10px; font-size:0.78rem; font-weight:600; cursor:pointer; user-select:none;">+${extraStaffCount}</span>`
+                        : '';
+
                     const isRefund = row.payment_status === 'refunded';
-                    const amountColor = isRefund ? '#ef4444' : '#10b981';
+                    const amountColor = isRefund ? '#dc2626' : '#10b981';
                     const amountFormatted = (isRefund ? '-₹' : '₹') + Number(row.amount).toLocaleString('en-IN');
                     const statusBadge = isRefund
-                        ? `<span style="display:inline-block; margin-left:6px; background:#fee2e2; color:#dc2626; border-radius:20px; padding:2px 8px; font-size:0.72rem; font-weight:600;">Refunded</span>`
-                        : '';
+                        ? `<span style="display:inline-block; background:#fee2e2; color:#dc2626; border-radius:20px; padding:3px 12px; font-size:0.75rem; font-weight:600; text-transform:capitalize;">Refunded</span>`
+                        : `<span style="display:inline-block; background:#dcfce7; color:#15803d; border-radius:20px; padding:3px 12px; font-size:0.75rem; font-weight:600; text-transform:capitalize;">Paid</span>`;
 
                     const tr = document.createElement('tr');
                     tr.style.borderBottom = '1px solid #f1f5f9';
                     tr.innerHTML = `
                         <td style="padding:14px 20px;">
                             <span style="display:inline-block; background:${s.bg}; color:${s.color}; border-radius:20px; padding:3px 12px; font-size:0.78rem; font-weight:600;">${row.type}</span>
-                            ${statusBadge}
                         </td>
                         <td style="padding:14px 20px;">
                             <a href="#" onclick="if(window.viewCustomerProfile) window.viewCustomerProfile('${row.customer_id || ''}', '${(row.customer||'').replace(/'/g, "\\'")}'); return false;" style="color:#4f46e5; text-decoration:none; font-weight:600;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${row.customer}</a>
                         </td>
                         <td style="padding:14px 20px;" id="${cellId}"><div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">${firstPill + plusBadge}</div></td>
-                        <td style="padding:14px 20px; color:#475569;">${row.staff}</td>
+                        <td style="padding:14px 20px;" id="${staffCellId}"><div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">${staffFirstPill + staffPlusBadge}</div></td>
+                        <td style="padding:14px 20px; text-align:center;">${statusBadge}</td>
                         <td style="padding:14px 20px; text-align:center; font-weight:700; color:${amountColor};">${amountFormatted}</td>
                     `;
-                    // Store items safely as data attribute AFTER appending innerHTML
                     tableBody.appendChild(tr);
+
                     const cellEl = document.getElementById(cellId);
                     if (cellEl) {
                         cellEl.dataset.items = JSON.stringify(row.items);
                         cellEl.dataset.expanded = 'false';
+                    }
+                    const staffEl = document.getElementById(staffCellId);
+                    if (staffEl) {
+                        staffEl.dataset.staff = JSON.stringify(row.staffList);
+                        staffEl.dataset.expanded = 'false';
                     }
                 });
             }
@@ -221,7 +244,7 @@ export async function calculateAndRenderRevenue() {
     } catch (err) {
         console.error("Failed to load revenue data:", err);
         if (tableBody) {
-            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:#ef4444; font-weight:600;">Failed to load live data: ${err.message || 'Error'}. Please refresh.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; color:#ef4444; font-weight:600;">Failed to load live data: ${err.message || 'Error'}. Please refresh.</td></tr>`;
         }
     }
 
@@ -290,9 +313,33 @@ export function revToggleItems(cellId) {
     cell.dataset.expanded = isExpanded ? 'false' : 'true';
 }
 
+export function revToggleStaff(cellId) {
+    const cell = document.getElementById(cellId);
+    if (!cell) return;
+    const staffList = JSON.parse(cell.dataset.staff || '[]');
+    const isExpanded = cell.dataset.expanded === 'true';
+    const pillStyle = 'display:inline-block; background:#f1f5f9; color:#334155; border-radius:20px; padding:2px 10px; font-size:0.78rem; font-weight:500;';
+    const wrapStyle = 'display:flex; flex-wrap:wrap; gap:4px; align-items:center;';
+
+    if (isExpanded) {
+        // Collapse back to first staff + +N
+        const extraCount = staffList.length - 1;
+        const firstPill = `<span style="${pillStyle}">${staffList[0]}</span>`;
+        const plusBadge = `<span onclick="revToggleStaff('${cellId}')" style="display:inline-block; background:#e0e7ff; color:#4f46e5; border-radius:20px; padding:2px 10px; font-size:0.78rem; font-weight:600; cursor:pointer; user-select:none;">+${extraCount}</span>`;
+        cell.innerHTML = `<div style="${wrapStyle}">${firstPill + plusBadge}</div>`;
+    } else {
+        // Expand: wrap all staff + ‹ collapse arrow
+        const allPills = staffList.map(name => `<span style="${pillStyle}">${name}</span>`).join('');
+        const collapseBtn = `<span onclick="revToggleStaff('${cellId}')" style="display:inline-flex; align-items:center; background:#e0e7ff; color:#4f46e5; border-radius:20px; padding:2px 10px; font-size:0.78rem; font-weight:700; cursor:pointer; user-select:none;">&#8249;</span>`;
+        cell.innerHTML = `<div style="${wrapStyle}">${allPills + collapseBtn}</div>`;
+    }
+    cell.dataset.expanded = isExpanded ? 'false' : 'true';
+}
+
 // Preserve required globals for external scripts and inline handlers
 window.calculateAndRenderRevenue = calculateAndRenderRevenue;
 window.revToggleItems = revToggleItems;
+window.revToggleStaff = revToggleStaff;
 window.todaysBookingsData = todaysBookingsData;
 
 // Self-initialization
