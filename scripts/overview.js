@@ -435,9 +435,24 @@ function bindRevExpAnalysis(analysis, rs) {
 // Row 4: Business Activity
 function bindBusinessActivity(ba, compLabel) {
     function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
-    set('kpiActivityBookings',    ba.total_bookings);
-    set('kpiActivityProducts',    ba.products_sold);
-    set('kpiActivityMemberships', ba.memberships_purchased);
+    set('kpiActivityBookings',    ba.total_bookings || 0);
+    set('kpiActivityProducts',    ba.products_sold || 0);
+    set('kpiActivityMemberships', ba.memberships_purchased || 0);
+
+    // Operational status breakdowns
+    var bkB = ba.bookings_breakdown || {};
+    set('bkBreakdownCompleted', bkB.completed ?? 0);
+    set('bkBreakdownCancelled', bkB.cancelled ?? 0);
+    set('bkBreakdownNoShow',    bkB.no_show ?? 0);
+    set('bkBreakdownRefunded',  bkB.refunded ?? 0);
+
+    var prB = ba.products_breakdown || {};
+    set('prBreakdownCompleted', prB.completed ?? 0);
+    set('prBreakdownRefunded',  prB.refunded ?? 0);
+
+    var mbB = ba.memberships_breakdown || {};
+    set('mbBreakdownActive',    mbB.active ?? 0);
+    set('mbBreakdownRefunded',  mbB.refunded ?? 0);
 
     var cards   = document.querySelectorAll('#businessActivitySection .ov-metric-with-bars');
     var growths = [ba.bookings_growth_pct, ba.products_growth_pct, ba.memberships_growth_pct];
@@ -503,13 +518,25 @@ function bindTopPerformers(tp) {
 // Row 7: Customer Analytics
 function bindCustomerAnalytics(ca, compLabel) {
     function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
-    set('custTotal',      ca.total_customers || 0);
-    set('custNew',        ca.new_customers || 0);
-    set('custReturning',  ca.returning_customers || 0);
-    set('custRepeatRate', Number(ca.repeat_visit_rate || 0).toFixed(1) + '%');
+    set('custTotal',   ca.total_customers || 0);
+    set('custRegular', ca.regular_customers || 0);
+    set('custVIP',     ca.vip_customers || 0);
+    set('custLoyal',   ca.loyal_customers || 0);
+
+    // Fallback bindings if older markup exists
+    set('custNew',       ca.new_customers || 0);
+    set('custReturning', ca.returning_customers || 0);
+    if (document.getElementById('custRepeatRate')) {
+        set('custRepeatRate', Number(ca.repeat_visit_rate || 0).toFixed(1) + '%');
+    }
 
     var cards   = document.querySelectorAll('#customerAnalyticsSection .ov-metric-with-bars');
-    var growths = [ca.total_growth_pct, ca.new_growth_pct, ca.returning_growth_pct, ca.repeat_growth_pct];
+    var growths = [
+        ca.total_growth_pct, 
+        ca.regular_growth_pct ?? ca.new_growth_pct, 
+        ca.vip_growth_pct ?? ca.returning_growth_pct, 
+        ca.loyal_growth_pct ?? ca.repeat_growth_pct
+    ];
     cards.forEach(function(card, i) {
         var row = card.querySelector('.ov-trend-row');
         if (row) renderTrendRow(row, growths[i], compLabel);

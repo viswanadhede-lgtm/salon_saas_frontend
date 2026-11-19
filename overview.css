@@ -459,6 +459,47 @@ body.dashboard-body {
     transition: height 0.3s ease;
 }
 
+/* Operational Status Breakdown in Activity Cards */
+.ov-breakdown-cluster {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.72rem;
+    color: #64748b;
+    border-left: 1px solid #e2e8f0;
+    padding-left: 14px;
+    min-width: 125px;
+    flex-shrink: 0;
+}
+
+.ov-breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.ov-breakdown-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #64748b;
+}
+
+.ov-breakdown-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.ov-breakdown-val {
+    font-weight: 600;
+    color: #1e293b;
+    font-variant-numeric: tabular-nums;
+}
+
 /* ── Section 4: Top 5 Performers Tables ────────────────── */
 .ov-table-card {
     background: #ffffff;
