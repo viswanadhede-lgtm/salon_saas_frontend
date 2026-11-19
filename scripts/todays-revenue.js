@@ -128,89 +128,41 @@ export async function calculateAndRenderRevenue() {
         const snapDigitalEl = document.getElementById('snapDigital');
         if (snapDigitalEl) snapDigitalEl.textContent = '₹' + digitalTotal.toLocaleString('en-IN');
 
-        // --- 2. UNIFIED TABLE: Services + Products + Memberships ---
-        const unifiedRows = [];
+        // --- 2. UNIFIED TABLE via RPC (dashboard_todays_revenue_table) ---
+        const { data: tableRows, error: tableError } = await supabase.rpc('dashboard_todays_revenue_table', {
+            p_branch_id:  branchId,
+            p_company_id: companyId,
+            p_today:      localISOTime
+        });
 
-        // 2a. SERVICES (completed bookings)
-        let bookingsQuery = supabase.schema('app')
-            .from('bookings_for_business_transaction')
-            .select('*')
-            .eq('booking_date', localISOTime)
-            .in('booking_status', ['completed', 'Completed']);
+        if (tableError) {
+            console.error('[TodaysRevenue] dashboard_todays_revenue_table RPC error:', tableError);
+            throw new Error(`RPC error: ${tableError.message || tableError.details || JSON.stringify(tableError)}`);
+        }
 
-        if (companyId) bookingsQuery = bookingsQuery.eq('company_id', companyId);
-        if (branchId) bookingsQuery = bookingsQuery.eq('branch_id', branchId);
-
-        const { data: bookingsData, error: bookingsError } = await bookingsQuery;
-
-        if (bookingsError) throw bookingsError;
-        todaysBookingsData = bookingsData || [];
-        window.todaysBookingsData = todaysBookingsData;
-        todaysBookingsData.forEach(b => {
-            const amt = Number(b.final_amount != null ? b.final_amount : (b.total_price != null ? b.total_price : (b.price || 0))) || 0;
-            const staffName = b.staff_name || 'Unassigned';
-            staffRevenue[staffName] = (staffRevenue[staffName] || 0) + amt;
-
-            unifiedRows.push({
-                type: 'Service',
-                customer_id: b.customer_id,
-                customer: b.customer_name || 'Walk-in Customer',
-                items: Array.isArray(b.service_names) && b.service_names.length > 0
-                    ? b.service_names
-                    : (b.service_name ? b.service_name.split(',').map(s => s.trim()) : ['N/A']),
+        const unifiedRows = (tableRows || []).map(r => {
+            const amt = Number(r.amount) || 0;
+            const staffName = r.staff_name || 'Unassigned';
+            if (staffName !== 'Unassigned') {
+                if (r.payment_status === 'refunded') {
+                    staffRevenue[staffName] = (staffRevenue[staffName] || 0) - amt;
+                } else {
+                    staffRevenue[staffName] = (staffRevenue[staffName] || 0) + amt;
+                }
+            }
+            return {
+                type: r.row_type,
+                customer_id: r.customer_id,
+                customer: r.customer_name || 'Walk-in Customer',
+                items: Array.isArray(r.item_names) && r.item_names.length > 0 ? r.item_names : ['N/A'],
                 staff: staffName,
-                amount: amt
-            });
+                amount: amt,
+                payment_status: r.payment_status || 'paid'
+            };
         });
 
-        // 2b. PRODUCTS (paid POS sales)
-        let salesQuery = supabase.schema('app')
-            .from('sales_for_business_transactions')
-            .select('*')
-            .eq('payment_status', 'paid')
-            .gte('created_at', `${localISOTime}T00:00:00`)
-            .lte('created_at', `${localISOTime}T23:59:59`);
-
-        if (companyId) salesQuery = salesQuery.eq('company_id', companyId);
-        if (branchId) salesQuery = salesQuery.eq('branch_id', branchId);
-
-        const { data: salesData, error: salesError } = await salesQuery;
-        if (salesError) throw salesError;
-        (salesData || []).forEach(s => {
-            const amt = Number(s.final_amount || s.total_price || 0) || 0;
-            unifiedRows.push({
-                type: 'Product',
-                customer_id: s.customer_id,
-                customer: s.customer_name || 'Walk-in Customer',
-                items: s.product_names || [],
-                staff: s.staff_name || 'Unassigned',
-                amount: amt
-            });
-        });
-
-        // 2c. MEMBERSHIPS (paid today)
-        let memberQuery = supabase.schema('app')
-            .from('membership_purchases')
-            .select('*')
-            .eq('payment_status', 'paid')
-            .eq('purchase_date', localISOTime);
-
-        if (companyId) memberQuery = memberQuery.eq('company_id', companyId);
-        if (branchId) memberQuery = memberQuery.eq('branch_id', branchId);
-
-        const { data: memberData, error: memberError } = await memberQuery;
-        if (memberError) throw memberError;
-        (memberData || []).forEach(m => {
-            const amt = Number(m.final_amount || m.price || 0) || 0;
-            unifiedRows.push({
-                type: 'Membership',
-                customer_id: m.customer_id,
-                customer: m.customer_name || 'Walk-in Customer',
-                items: [m.plan_name || 'Membership Plan'],
-                staff: m.assigned_by_user_name || 'Unassigned',
-                amount: amt
-            });
-        });
+        todaysBookingsData = unifiedRows.filter(r => r.type === 'Service');
+        window.todaysBookingsData = todaysBookingsData;
 
         // Render unified rows
         if (tableBody) {
@@ -234,18 +186,26 @@ export async function calculateAndRenderRevenue() {
                         ? `<span class="rev-plus-badge" onclick="revToggleItems('${cellId}')" style="display:inline-block; background:#e0e7ff; color:#4f46e5; border-radius:20px; padding:2px 10px; font-size:0.78rem; font-weight:600; cursor:pointer; user-select:none;">+${extraCount}</span>`
                         : '';
 
+                    const isRefund = row.payment_status === 'refunded';
+                    const amountColor = isRefund ? '#ef4444' : '#10b981';
+                    const amountFormatted = (isRefund ? '-₹' : '₹') + Number(row.amount).toLocaleString('en-IN');
+                    const statusBadge = isRefund
+                        ? `<span style="display:inline-block; margin-left:6px; background:#fee2e2; color:#dc2626; border-radius:20px; padding:2px 8px; font-size:0.72rem; font-weight:600;">Refunded</span>`
+                        : '';
+
                     const tr = document.createElement('tr');
                     tr.style.borderBottom = '1px solid #f1f5f9';
                     tr.innerHTML = `
                         <td style="padding:14px 20px;">
                             <span style="display:inline-block; background:${s.bg}; color:${s.color}; border-radius:20px; padding:3px 12px; font-size:0.78rem; font-weight:600;">${row.type}</span>
+                            ${statusBadge}
                         </td>
                         <td style="padding:14px 20px;">
                             <a href="#" onclick="if(window.viewCustomerProfile) window.viewCustomerProfile('${row.customer_id || ''}', '${(row.customer||'').replace(/'/g, "\\'")}'); return false;" style="color:#4f46e5; text-decoration:none; font-weight:600;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${row.customer}</a>
                         </td>
                         <td style="padding:14px 20px;" id="${cellId}"><div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">${firstPill + plusBadge}</div></td>
                         <td style="padding:14px 20px; color:#475569;">${row.staff}</td>
-                        <td style="padding:14px 20px; text-align:center; font-weight:700; color:#10b981;">₹${Number(row.amount).toLocaleString('en-IN')}</td>
+                        <td style="padding:14px 20px; text-align:center; font-weight:700; color:${amountColor};">${amountFormatted}</td>
                     `;
                     // Store items safely as data attribute AFTER appending innerHTML
                     tableBody.appendChild(tr);
