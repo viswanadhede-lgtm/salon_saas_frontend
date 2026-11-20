@@ -111,6 +111,11 @@ function getDateRange(selectorVal) {
         const from = new Date(today.getFullYear(), today.getMonth(), 1);
         return { start: iso(from), end: iso(today) };
     }
+    if (selectorVal === 'last_month') {
+        const firstDayPrev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastDayPrev  = new Date(today.getFullYear(), today.getMonth(), 0);
+        return { start: iso(firstDayPrev), end: iso(lastDayPrev) };
+    }
     // Default: oct1_16 test range
     return { start: '2026-10-01', end: '2026-10-16' };
 }
@@ -647,9 +652,8 @@ async function loadOverviewData() {
 
         // Read selected values from UI filters
         const dateRangeEl  = document.getElementById('overviewDateRange');
-        const branchEl     = document.getElementById('overviewBranchSelect') || document.getElementById('branchSelect');
-        const selectorVal  = dateRangeEl ? dateRangeEl.value : 'oct1_16';
-        const activeBranch = branchEl    ? branchEl.value    : (getBranchId() || null);
+        const selectorVal  = dateRangeEl ? dateRangeEl.value : 'today';
+        const activeBranch = getBranchId();
 
         const { start, end } = getDateRange(selectorVal);
 
@@ -723,21 +727,15 @@ async function loadOverviewData() {
 async function initOverviewPage() {
     if (window.feather) feather.replace();
 
-    // Init branch dropdown first, then fetch live data
-    await initBranchSelector();
+    // Fetch initial overview data
     await loadOverviewData();
 
-    // Re-fire on filter changes
+    // Re-fire on date range filter changes
     const dateRangeEl = document.getElementById('overviewDateRange');
-    const branchEl    = document.getElementById('overviewBranchSelect') || document.getElementById('branchSelect');
     if (dateRangeEl) dateRangeEl.addEventListener('change', loadOverviewData);
-    if (branchEl)    branchEl.addEventListener('change', loadOverviewData);
 
     // Listen for global header branch switch
-    window.addEventListener('branch:changed', (e) => {
-        if (branchEl && e.detail?.branchId) {
-            branchEl.value = e.detail.branchId;
-        }
+    window.addEventListener('branch:changed', () => {
         loadOverviewData();
     });
 }

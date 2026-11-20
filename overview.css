@@ -125,6 +125,80 @@ body.dashboard-body {
     pointer-events: none;
 }
 
+/* ── Modern Soft Date Range Selector Pill ────────────────── */
+.ov-date-selector-pill {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    padding: 0 16px 0 8px;
+    height: 42px;
+    box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.06), 0 1px 2px 0 rgba(15, 23, 42, 0.03);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+}
+
+.ov-date-selector-pill:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
+}
+
+.ov-date-icon-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #eff6ff;
+    margin-right: 10px;
+    flex-shrink: 0;
+    transition: background-color 0.2s ease;
+}
+
+.ov-date-selector-pill:hover .ov-date-icon-circle {
+    background: #dbeafe;
+}
+
+.ov-date-icon-circle i {
+    width: 14px;
+    height: 14px;
+    color: #2563eb;
+    stroke-width: 2.2;
+}
+
+.ov-date-selector-pill select {
+    border: none;
+    background: transparent;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #0f172a;
+    cursor: pointer;
+    outline: none;
+    padding-right: 22px;
+    appearance: none;
+    -webkit-appearance: none;
+    font-family: inherit;
+    letter-spacing: -0.01em;
+}
+
+.ov-date-selector-pill i.feather-icon-trail {
+    position: absolute;
+    right: 14px;
+    width: 14px;
+    height: 14px;
+    color: #94a3b8;
+    pointer-events: none;
+    transition: color 0.15s ease;
+}
+
+.ov-date-selector-pill:hover i.feather-icon-trail {
+    color: #64748b;
+}
+
 /* ── Section Container ─────────────────────────────────── */
 .ov-section-card {
     background: #ffffff;

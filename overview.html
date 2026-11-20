@@ -45,23 +45,18 @@
                         <p>Overview of your salon's performance for the selected period.</p>
                     </div>
                     <div class="overview-header-controls">
-                        <!-- Branch Selector Pill -->
-                        <div class="ov-filter-pill">
-                            <i data-feather="home" class="feather-icon-lead"></i>
-                            <select id="overviewBranchSelect">
-                                <option value="" selected>All Branches</option>
-                            </select>
-                            <i data-feather="chevron-down" class="feather-icon-trail"></i>
-                        </div>
-                        <!-- Date Range Selector Pill -->
-                        <div class="ov-filter-pill">
-                            <i data-feather="calendar" class="feather-icon-lead"></i>
-                            <select id="overviewDateRange">
-                                <option value="oct1_16" selected>Oct 1, 2026 - Oct 16, 2026</option>
-                                <option value="today">Today</option>
+                        <!-- Modern Soft Date Range Selector Pill -->
+                        <div class="ov-date-selector-pill">
+                            <div class="ov-date-icon-circle">
+                                <i data-feather="calendar"></i>
+                            </div>
+                            <select id="overviewDateRange" aria-label="Select Date Range">
+                                <option value="today" selected>Today</option>
                                 <option value="this_week">This Week</option>
-                                <option value="30days">Last 30 Days</option>
                                 <option value="this_month">This Month</option>
+                                <option value="last_month">Last Month</option>
+                                <option value="30days">Last 30 Days</option>
+                                <option value="oct1_16">Oct 1, 2026 - Oct 16, 2026</option>
                             </select>
                             <i data-feather="chevron-down" class="feather-icon-trail"></i>
                         </div>
