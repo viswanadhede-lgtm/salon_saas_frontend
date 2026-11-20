@@ -929,23 +929,74 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // 4.1 Wire Segmented Sub-Report Nav Strip (Active for Bookings module only for now)
+    // 4.1 Wire Segmented Sub-Report Nav Strip (Active across all report modules)
     const navStripEl = document.getElementById('subReportNavStrip');
     if (navStripEl) {
-        const isBookings = (data.backCat === 'bookings' || type.startsWith('bk-'));
-        if (isBookings) {
-            const bookingTabs = [
+        let catKey = data.backCat || (
+            type.startsWith('bk-')    ? 'bookings' :
+            type.startsWith('fin-')   ? 'financial' :
+            type.startsWith('cust-')  ? 'customers' :
+            type.startsWith('staff-') ? 'staff' :
+            type.startsWith('prod-')  ? 'products' :
+            type.startsWith('mem-')   ? 'memberships' : ''
+        );
+
+        const categoryTabsMap = {
+            bookings: [
                 { type: 'bk-total',     label: 'Total Bookings',     icon: 'calendar' },
                 { type: 'bk-completed', label: 'Completed Bookings', icon: 'check-circle' },
                 { type: 'bk-cancelled', label: 'Cancelled Bookings', icon: 'x-circle' },
                 { type: 'bk-no-shows',  label: 'No-Shows',           icon: 'user-x' },
                 { type: 'bk-refunds',   label: 'Refunded Bookings',  icon: 'rotate-ccw' }
-            ];
+            ],
+            financial: [
+                { type: 'fin-overview',     label: 'Overview',               icon: 'bar-chart-2' },
+                { type: 'fin-revenue',      label: 'Revenue Streams',        icon: 'trending-up' },
+                { type: 'fin-payments',     label: 'Payments & Collections', icon: 'credit-card' },
+                { type: 'fin-expenses',     label: 'Operating Expenses',     icon: 'shopping-cart' },
+                { type: 'fin-discounts',    label: 'Discounts',              icon: 'tag' },
+                { type: 'fin-refunds',      label: 'Refunds & Returns',      icon: 'rotate-ccw' },
+                { type: 'fin-pending-dues', label: 'Pending Dues',           icon: 'clock' }
+            ],
+            customers: [
+                { type: 'cust-metrics',  label: 'Customer Overview',      icon: 'users' },
+                { type: 'cust-insights', label: 'Customer 360° Insights', icon: 'user-check' }
+            ],
+            staff: [
+                { type: 'staff-overview', label: 'Staff Overview',      icon: 'users' },
+                { type: 'staff-insights', label: 'Staff 360° Insights', icon: 'award' }
+            ],
+            products: [
+                { type: 'prod-overview',     label: 'Sales Overview',     icon: 'bar-chart-2' },
+                { type: 'prod-wise',         label: 'Product-wise Sales', icon: 'box' },
+                { type: 'prod-category',     label: 'Sales by Category',  icon: 'grid' },
+                { type: 'prod-transactions', label: 'Transactions',       icon: 'file-text' },
+                { type: 'prod-discounts',    label: 'Discounts',          icon: 'tag' },
+                { type: 'prod-returns',      label: 'Returns & Refunds',  icon: 'rotate-ccw' },
+                { type: 'prod-payments',     label: 'Sales Payments',     icon: 'credit-card' }
+            ],
+            memberships: [
+                { type: 'mem-overview',      label: 'Overview',                  icon: 'bar-chart-2' },
+                { type: 'mem-sales',         label: 'Sales & Revenue',           icon: 'dollar-sign' },
+                { type: 'mem-members',       label: 'Active Members & Renewals', icon: 'users' },
+                { type: 'mem-usage',         label: 'Benefits & Usage',          icon: 'tag' },
+                { type: 'mem-cancellations', label: 'Cancellations & Refunds',   icon: 'rotate-ccw' }
+            ],
+            membership: [
+                { type: 'mem-overview',      label: 'Overview',                  icon: 'bar-chart-2' },
+                { type: 'mem-sales',         label: 'Sales & Revenue',           icon: 'dollar-sign' },
+                { type: 'mem-members',       label: 'Active Members & Renewals', icon: 'users' },
+                { type: 'mem-usage',         label: 'Benefits & Usage',          icon: 'tag' },
+                { type: 'mem-cancellations', label: 'Cancellations & Refunds',   icon: 'rotate-ccw' }
+            ]
+        };
 
-            navStripEl.innerHTML = bookingTabs.map(tab => {
+        const tabs = categoryTabsMap[catKey] || null;
+        if (tabs && tabs.length > 1) {
+            navStripEl.innerHTML = tabs.map(tab => {
                 const isActive = (tab.type === type);
                 return `
-                    <a href="report-detail.html?type=${tab.type}&cat=bookings" 
+                    <a href="report-detail.html?type=${tab.type}&cat=${catKey}" 
                        class="sub-report-nav-pill ${isActive ? 'active' : ''}"
                        title="${tab.label}">
                         <i data-feather="${tab.icon}"></i>
