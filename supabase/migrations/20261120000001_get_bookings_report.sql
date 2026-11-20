@@ -112,10 +112,9 @@ BEGIN
 
     -- Step 2.1: Master Booking Counts, Revenue, and Financial Impact
     SELECT
-        -- Total bookings: all statuses except refunded
+        -- Total bookings: all booking statuses except booking_status = 'refunded'
         COUNT(DISTINCT booking_id) FILTER (
             WHERE LOWER(TRIM(COALESCE(booking_status, ''))) != 'refunded'
-              AND LOWER(TRIM(COALESCE(payment_status, ''))) != 'refunded'
         ),
         -- Total bookings all: including refunded (for global refund rate denominator)
         COUNT(DISTINCT booking_id),

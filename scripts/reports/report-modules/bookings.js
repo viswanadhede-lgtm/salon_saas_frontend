@@ -307,6 +307,9 @@ function renderBkTotalPerformanceTrend(rows) {
 
     const dateMap = {};
     rows.forEach(r => {
+        const s = (r.status || '').toLowerCase().trim();
+        if (s !== 'completed') return; // Completed bookings per spec
+
         let d = r.date || 'Unknown';
         if (d.includes(',')) d = d.split(',')[0].trim();
         if (!dateMap[d]) {
@@ -344,19 +347,19 @@ function renderBkTotalPerformanceTrend(rows) {
             datasets: [
                 {
                     type: 'bar',
-                    label: 'Bookings',
+                    label: 'Completed Bookings',
                     data: bookingCounts,
                     backgroundColor: 'rgba(99, 102, 241, 0.75)',
                     hoverBackgroundColor: '#6366f1',
                     borderRadius: 6,
                     borderSkipped: false,
-                    yAxisID: 'y',
+                    yAxisID: 'y1',
                     order: 2,
                     maxBarThickness: 32
                 },
                 {
                     type: 'line',
-                    label: 'Revenue (₹)',
+                    label: 'Bookings Revenue (₹)',
                     data: revenueAmounts,
                     borderColor: '#10b981',
                     backgroundColor: 'rgba(16, 185, 129, 0.10)',
@@ -368,7 +371,7 @@ function renderBkTotalPerformanceTrend(rows) {
                     pointHoverRadius: 6,
                     fill: true,
                     tension: 0.35,
-                    yAxisID: 'y1',
+                    yAxisID: 'y',
                     order: 1
                 }
             ]
@@ -401,10 +404,10 @@ function renderBkTotalPerformanceTrend(rows) {
                     cornerRadius: 8,
                     callbacks: {
                         label: function(context) {
-                            if (context.dataset.yAxisID === 'y1') {
+                            if (context.dataset.yAxisID === 'y') {
                                 return ' Revenue: ₹' + Number(context.parsed.y || 0).toLocaleString('en-IN');
                             }
-                            return ' Bookings: ' + Number(context.parsed.y || 0).toLocaleString('en-IN');
+                            return ' Completed: ' + Number(context.parsed.y || 0).toLocaleString('en-IN');
                         }
                     }
                 }
@@ -421,12 +424,16 @@ function renderBkTotalPerformanceTrend(rows) {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Bookings',
-                        color: '#6366f1',
+                        text: 'Bookings Revenue (₹)',
+                        color: '#10b981',
                         font: { size: 11, weight: '600' }
                     },
                     grid: { color: '#f1f5f9', drawBorder: false },
-                    ticks: { precision: 0, color: '#94a3b8', font: { size: 11 } }
+                    ticks: {
+                        color: '#94a3b8',
+                        font: { size: 11 },
+                        callback: (v) => '₹' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
+                    }
                 },
                 y1: {
                     type: 'linear',
@@ -435,16 +442,12 @@ function renderBkTotalPerformanceTrend(rows) {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Revenue (₹)',
-                        color: '#10b981',
+                        text: 'Completed Bookings',
+                        color: '#6366f1',
                         font: { size: 11, weight: '600' }
                     },
                     grid: { drawOnChartArea: false },
-                    ticks: {
-                        color: '#94a3b8',
-                        font: { size: 11 },
-                        callback: (v) => '₹' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
-                    }
+                    ticks: { precision: 0, color: '#94a3b8', font: { size: 11 } }
                 }
             }
         }
@@ -463,9 +466,10 @@ function renderBkTotalStatusDonut(k, rows, revs = {}) {
     const completed = Number(k.completed || 0);
     const cancelled = Number(k.cancelled || 0);
     const noShows   = Number(k.no_shows || 0);
-    const refunded  = Number(k.refunded || k.refunded_bookings || 0);
-    const total     = Number(k.total_bookings || (completed + cancelled + noShows) || 0);
-    const other     = Math.max(0, total - (completed + cancelled + noShows));
+    // Booking status = refunded (mutually exclusive with cancelled/completed)
+    const refunded  = (rows || []).filter(r => (r.status || '').toLowerCase().trim() === 'refunded').length;
+    const total     = Number(k.total_bookings || (completed + cancelled + noShows + refunded) || 0);
+    const other     = Math.max(0, total - (completed + cancelled + noShows + refunded));
 
     const labels   = ['Completed Bookings', 'Cancelled Bookings', 'No-Shows'];
     const dataVals = [completed, cancelled, noShows];
@@ -535,7 +539,7 @@ function renderBkTotalStatusDonut(k, rows, revs = {}) {
         if (s === 'completed' && p === 'paid') fallbackCompletedRev += amt;
         else if (s === 'cancelled') fallbackCancelRev += amt;
         else if (s === 'no-show' || s === 'noshow') fallbackNoShowRev += amt;
-        if (p === 'refunded' || s === 'refunded') fallbackRefundRev += amt;
+        else if (s === 'refunded') fallbackRefundRev += amt;
     });
 
     const finalCompletedRev = (revs.realizedRev !== undefined && revs.realizedRev !== 0) ? revs.realizedRev : fallbackCompletedRev;
@@ -1060,13 +1064,13 @@ function renderBkCompletedPerformanceTrend(rows) {
                     hoverBackgroundColor: '#6366f1',
                     borderRadius: 6,
                     borderSkipped: false,
-                    yAxisID: 'y',
+                    yAxisID: 'y1',
                     order: 2,
                     maxBarThickness: 32
                 },
                 {
                     type: 'line',
-                    label: 'Realized Revenue (₹)',
+                    label: 'Bookings Revenue (₹)',
                     data: revenueAmounts,
                     borderColor: '#10b981',
                     backgroundColor: 'rgba(16, 185, 129, 0.10)',
@@ -1078,7 +1082,7 @@ function renderBkCompletedPerformanceTrend(rows) {
                     pointHoverRadius: 6,
                     fill: true,
                     tension: 0.35,
-                    yAxisID: 'y1',
+                    yAxisID: 'y',
                     order: 1
                 }
             ]
@@ -1111,7 +1115,7 @@ function renderBkCompletedPerformanceTrend(rows) {
                     cornerRadius: 8,
                     callbacks: {
                         label: function(context) {
-                            if (context.dataset.yAxisID === 'y1') {
+                            if (context.dataset.yAxisID === 'y') {
                                 return ` Revenue: ₹${Number(context.parsed.y || 0).toLocaleString('en-IN')}`;
                             }
                             return ` Completed: ${context.parsed.y} booking${context.parsed.y === 1 ? '' : 's'}`;
@@ -1131,15 +1135,15 @@ function renderBkCompletedPerformanceTrend(rows) {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Bookings',
-                        color: '#6366f1',
+                        text: 'Bookings Revenue (₹)',
+                        color: '#10b981',
                         font: { size: 11, weight: '600' }
                     },
                     grid: { color: '#f1f5f9' },
                     ticks: {
-                        precision: 0,
                         color: '#94a3b8',
-                        font: { size: 11 }
+                        font: { size: 11 },
+                        callback: (v) => '₹' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
                     }
                 },
                 y1: {
@@ -1149,15 +1153,15 @@ function renderBkCompletedPerformanceTrend(rows) {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Revenue (₹)',
-                        color: '#10b981',
+                        text: 'Completed Bookings',
+                        color: '#6366f1',
                         font: { size: 11, weight: '600' }
                     },
                     grid: { drawOnChartArea: false },
                     ticks: {
+                        precision: 0,
                         color: '#94a3b8',
-                        font: { size: 11 },
-                        callback: (v) => '₹' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
+                        font: { size: 11 }
                     }
                 }
             }
@@ -1166,7 +1170,7 @@ function renderBkCompletedPerformanceTrend(rows) {
 }
 
 // =============================================================================
-// Service Revenue Breakdown Donut Chart for Completed Bookings
+// Donut Chart for Completed Bookings vs Total Bookings
 // =============================================================================
 let bkCompletedDonutChart = null;
 function renderBkCompletedServiceDonut(rows, k) {
@@ -1179,67 +1183,16 @@ function renderBkCompletedServiceDonut(rows, k) {
     if (existing) existing.destroy();
 
     const titleEl = document.getElementById('rightChartTitle');
-    if (titleEl) titleEl.textContent = 'Completed Revenue by Service';
+    if (titleEl) titleEl.textContent = 'Completed Bookings Distribution';
 
-    const serviceMap = {};
-    let totalComputedRevenue = 0;
+    const completed = Number(k?.completed_bookings || rows?.length || 0);
+    const total     = Number(k?.total_bookings || completed || 0);
+    const remaining = Math.max(0, total - completed);
+    const grandRevenue = Number(k?.completed_revenue || 0);
 
-    (rows || []).forEach(r => {
-        const rawService = r.service || 'Other';
-        const amt = Number(r.amount || 0);
-        const names = rawService.split(',').map(s => s.trim()).filter(Boolean);
-        const svcCount = names.length || 1;
-        const perSvcAmt = amt / svcCount;
-
-        if (names.length === 0) {
-            names.push('Unspecified');
-        }
-
-        names.forEach(name => {
-            if (!serviceMap[name]) {
-                serviceMap[name] = { count: 0, revenue: 0 };
-            }
-            serviceMap[name].count   += 1;
-            serviceMap[name].revenue += perSvcAmt;
-            totalComputedRevenue    += perSvcAmt;
-        });
-    });
-
-    const entries = Object.entries(serviceMap).sort((a, b) => b[1].revenue - a[1].revenue);
-    const palette = ['#10b981', '#6366f1', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#64748b'];
-
-    let labels   = [];
-    let dataVals = [];
-    let counts   = [];
-    let colors   = [];
-
-    if (entries.length <= 5) {
-        entries.forEach((e, idx) => {
-            labels.push(e[0]);
-            dataVals.push(Math.round(e[1].revenue));
-            counts.push(e[1].count);
-            colors.push(palette[idx % palette.length]);
-        });
-    } else {
-        const top5 = entries.slice(0, 5);
-        const rest = entries.slice(5);
-
-        top5.forEach((e, idx) => {
-            labels.push(e[0]);
-            dataVals.push(Math.round(e[1].revenue));
-            counts.push(e[1].count);
-            colors.push(palette[idx % palette.length]);
-        });
-
-        const otherRev   = rest.reduce((sum, e) => sum + e[1].revenue, 0);
-        const otherCount = rest.reduce((sum, e) => sum + e[1].count, 0);
-        labels.push('Other Services');
-        dataVals.push(Math.round(otherRev));
-        counts.push(otherCount);
-        colors.push('#64748b');
-    }
-
-    const grandRevenue = Number(k?.completed_revenue) || totalComputedRevenue;
+    const labels   = ['Completed Bookings', 'Remaining Bookings'];
+    const dataVals = [completed, remaining];
+    const colors   = ['#10b981', '#e2e8f0'];
 
     bkCompletedDonutChart = new Chart(ctx, {
         type: 'doughnut',
@@ -1265,11 +1218,9 @@ function renderBkCompletedServiceDonut(rows, k) {
                     cornerRadius: 8,
                     callbacks: {
                         label: function(context) {
-                            const rev = context.parsed || 0;
-                            const pct = grandRevenue > 0 ? ((rev / grandRevenue) * 100).toFixed(1) : 0;
-                            const idx = context.dataIndex;
-                            const c = counts[idx] || 0;
-                            return ` ${context.label}: ₹${rev.toLocaleString('en-IN')} (${pct}%) • ${c} service${c === 1 ? '' : 's'}`;
+                            const val = context.parsed || 0;
+                            const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                            return ` ${context.label}: ${val} (${pct}%)`;
                         }
                     }
                 }
@@ -1283,28 +1234,19 @@ function renderBkCompletedServiceDonut(rows, k) {
     if (centerVal) centerVal.textContent = '₹' + Math.round(grandRevenue).toLocaleString('en-IN');
     if (centerLbl) centerLbl.textContent = 'Total Revenue';
 
-    // Update Legend (Single-line items: Service - Count (%), Revenue - ₹X)
-    const cur = (v) => '₹' + Math.round(Number(v) || 0).toLocaleString('en-IN');
-    const getPct = (rev) => {
-        if (!grandRevenue || grandRevenue <= 0) return '0%';
-        const val = (rev / grandRevenue) * 100;
-        return (val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)) + '%';
-    };
-
+    const getPct = (val) => (total > 0 ? ((val / total) * 100).toFixed(1) : 0) + '%';
     const legendEl = document.getElementById('donutLegend');
     if (legendEl) {
-        if (labels.length === 0) {
-            legendEl.innerHTML = '<div style="color:#94a3b8;font-size:0.8rem;text-align:center;padding:8px;">No completed services found.</div>';
-        } else {
-            legendEl.innerHTML = labels.map((name, i) => `
-                <div class="donut-legend-item">
-                    <span class="donut-legend-dot" style="background-color: ${colors[i]};"></span>
-                    <span class="donut-legend-text">
-                        ${name} - <strong>${counts[i]}</strong> (${getPct(dataVals[i])}), Revenue - <strong style="color: ${colors[i]};">${cur(dataVals[i])}</strong>
-                    </span>
-                </div>
-            `).join('');
-        }
+        legendEl.innerHTML = `
+            <div class="donut-legend-item">
+                <span class="donut-legend-dot" style="background-color: #10b981;"></span>
+                <span class="donut-legend-text">Completed Bookings - <strong>${completed}</strong> (${getPct(completed)}), Revenue - <strong style="color: #10b981;">₹${Math.round(grandRevenue).toLocaleString('en-IN')}</strong></span>
+            </div>
+            <div class="donut-legend-item">
+                <span class="donut-legend-dot" style="background-color: #94a3b8;"></span>
+                <span class="donut-legend-text">Remaining Bookings - <strong>${remaining}</strong> (${getPct(remaining)})</span>
+            </div>
+        `;
     }
 }
 
@@ -1685,25 +1627,25 @@ function renderBkCancelledPerformanceTrend(rows) {
                     hoverBackgroundColor: '#ef4444',
                     borderRadius: 6,
                     borderSkipped: false,
-                    yAxisID: 'y',
+                    yAxisID: 'y1',
                     order: 2,
                     maxBarThickness: 32
                 },
                 {
                     type: 'line',
-                    label: 'Lost Value (₹)',
+                    label: 'Cancelled Revenue Lost (₹)',
                     data: lostValues,
-                    borderColor: '#f59e0b',
-                    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
                     borderWidth: 2.5,
-                    pointBackgroundColor: '#f59e0b',
+                    pointBackgroundColor: '#ef4444',
                     pointBorderColor: '#ffffff',
                     pointBorderWidth: 1.5,
                     pointRadius: 4,
                     pointHoverRadius: 6,
                     fill: true,
                     tension: 0.35,
-                    yAxisID: 'y1',
+                    yAxisID: 'y',
                     order: 1
                 }
             ]
@@ -1733,7 +1675,7 @@ function renderBkCancelledPerformanceTrend(rows) {
                     cornerRadius: 8,
                     callbacks: {
                         label: function(context) {
-                            if (context.dataset.yAxisID === 'y1') {
+                            if (context.dataset.yAxisID === 'y') {
                                 return ' Lost Value: ₹' + Number(context.parsed.y || 0).toLocaleString('en-IN');
                             }
                             return ' Cancelled: ' + Number(context.parsed.y || 0) + ' booking' + (context.parsed.y === 1 ? '' : 's');
@@ -1748,29 +1690,29 @@ function renderBkCancelledPerformanceTrend(rows) {
                     display: true,
                     position: 'left',
                     beginAtZero: true,
-                    title: { display: true, text: 'Cancellations', color: '#ef4444', font: { size: 11, weight: '600' } },
+                    title: { display: true, text: 'Cancelled Revenue Lost (₹)', color: '#ef4444', font: { size: 11, weight: '600' } },
                     grid: { color: '#f1f5f9', drawBorder: false },
-                    ticks: { precision: 0, color: '#94a3b8', font: { size: 11 } }
+                    ticks: {
+                        color: '#94a3b8',
+                        font: { size: 11 },
+                        callback: (v) => '₹' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
+                    }
                 },
                 y1: {
                     type: 'linear',
                     display: true,
                     position: 'right',
                     beginAtZero: true,
-                    title: { display: true, text: 'Lost Value (₹)', color: '#f59e0b', font: { size: 11, weight: '600' } },
+                    title: { display: true, text: 'Cancelled Bookings', color: '#f59e0b', font: { size: 11, weight: '600' } },
                     grid: { drawOnChartArea: false },
-                    ticks: {
-                        color: '#94a3b8',
-                        font: { size: 11 },
-                        callback: (v) => '₹' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
-                    }
+                    ticks: { precision: 0, color: '#94a3b8', font: { size: 11 } }
                 }
             }
         }
     });
 }
 
-// ── Cancellation by Reason Donut Chart ───────────────────────────────────────
+// ── Donut Chart for Cancelled Bookings vs Total Bookings ─────────────────────
 function renderBkCancelledReasonDonut(rows, k) {
     const ctx = document.getElementById('distributionChart');
     if (!ctx) return;
@@ -1782,25 +1724,16 @@ function renderBkCancelledReasonDonut(rows, k) {
     if (existingChart) existingChart.destroy();
 
     const titleEl = document.getElementById('rightChartTitle');
-    if (titleEl) titleEl.textContent = 'Cancellations by Reason';
+    if (titleEl) titleEl.textContent = 'Cancelled Bookings Distribution';
 
-    const reasonMap = {};
-    (rows || []).forEach(r => {
-        const reason = (r.reason || 'Not specified').trim();
-        if (!reasonMap[reason]) reasonMap[reason] = { count: 0, lostValue: 0 };
-        reasonMap[reason].count++;
-        reasonMap[reason].lostValue += Number(r.est_value || 0);
-    });
+    const cancelledCount = Number(k?.cancelled_bookings || rows?.length || 0);
+    const totalCount     = Number(k?.total_bookings || cancelledCount || 0);
+    const remainingCount = Math.max(0, totalCount - cancelledCount);
+    const lostValue      = Number(k?.estimated_value_affected || 0);
 
-    const entries  = Object.entries(reasonMap).sort((a, b) => b[1].count - a[1].count);
-    const palette  = ['#ef4444', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#10b981', '#64748b'];
-
-    const labels   = entries.map(e => e[0]);
-    const dataVals = entries.map(e => e[1].count);
-    const lostVals = entries.map(e => e[1].lostValue);
-    const colors   = entries.map((_, i) => palette[i % palette.length]);
-
-    const totalCancelled = Number(k.cancelled_bookings || rows.length || 0);
+    const labels   = ['Cancelled Bookings', 'Remaining Bookings'];
+    const dataVals = [cancelledCount, remainingCount];
+    const colors   = ['#ef4444', '#e2e8f0'];
 
     bkCancelledDonutChart = new Chart(ctx, {
         type: 'doughnut',
@@ -1827,12 +1760,8 @@ function renderBkCancelledReasonDonut(rows, k) {
                     callbacks: {
                         label: function(context) {
                             const val = context.parsed || 0;
-                            const pct = totalCancelled > 0 ? ((val / totalCancelled) * 100).toFixed(1) : 0;
-                            const lv  = lostVals[context.dataIndex] || 0;
-                            return [
-                                ` ${context.label}: ${val} (${pct}%)`,
-                                ` Lost Value: ₹${Math.round(lv).toLocaleString('en-IN')}`
-                            ];
+                            const pct = totalCount > 0 ? ((val / totalCount) * 100).toFixed(1) : 0;
+                            return ` ${context.label}: ${val} (${pct}%)`;
                         }
                     }
                 }
@@ -1843,29 +1772,23 @@ function renderBkCancelledReasonDonut(rows, k) {
     // Center stat
     const centerVal = document.getElementById('donutCenterValue');
     const centerLbl = document.getElementById('donutCenterLabel');
-    if (centerVal) centerVal.textContent = totalCancelled.toLocaleString('en-IN');
-    if (centerLbl) centerLbl.textContent = 'Total Cancelled';
+    if (centerVal) centerVal.textContent = '₹' + Math.round(lostValue).toLocaleString('en-IN');
+    if (centerLbl) centerLbl.textContent = 'Lost Value';
 
     // Legend
     const legendEl = document.getElementById('donutLegend');
     if (legendEl) {
-        if (labels.length === 0) {
-            legendEl.innerHTML = '<div style="color:#94a3b8;font-size:0.8rem;text-align:center;padding:8px;">No cancellation data found.</div>';
-        } else {
-            const getPct = (count) => {
-                if (!totalCancelled || totalCancelled <= 0) return '0%';
-                const v = (count / totalCancelled) * 100;
-                return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)) + '%';
-            };
-            legendEl.innerHTML = labels.map((name, i) => `
-                <div class="donut-legend-item">
-                    <span class="donut-legend-dot" style="background-color: ${colors[i]};"></span>
-                    <span class="donut-legend-text">
-                        ${name} - <strong>${dataVals[i]}</strong> (${getPct(dataVals[i])}), Lost Value - <strong style="color: ${colors[i]};">₹${Math.round(lostVals[i]).toLocaleString('en-IN')}</strong>
-                    </span>
-                </div>
-            `).join('');
-        }
+        const getPct = (cnt) => (totalCount > 0 ? ((cnt / totalCount) * 100).toFixed(1) : 0) + '%';
+        legendEl.innerHTML = `
+            <div class="donut-legend-item">
+                <span class="donut-legend-dot" style="background-color: #ef4444;"></span>
+                <span class="donut-legend-text">Cancelled Bookings - <strong>${cancelledCount}</strong> (${getPct(cancelledCount)}), Lost - <strong style="color: #ef4444;">₹${Math.round(lostValue).toLocaleString('en-IN')}</strong></span>
+            </div>
+            <div class="donut-legend-item">
+                <span class="donut-legend-dot" style="background-color: #94a3b8;"></span>
+                <span class="donut-legend-text">Remaining Bookings - <strong>${remainingCount}</strong> (${getPct(remainingCount)})</span>
+            </div>
+        `;
     }
 }
 
@@ -2231,13 +2154,13 @@ function renderBkNoShowPerformanceTrend(rows) {
                     hoverBackgroundColor: '#f59e0b',
                     borderRadius: 6,
                     borderSkipped: false,
-                    yAxisID: 'y',
+                    yAxisID: 'y1',
                     order: 2,
                     maxBarThickness: 32
                 },
                 {
                     type: 'line',
-                    label: 'Missed Value (₹)',
+                    label: 'No-Show Missed Value (₹)',
                     data: missedValues,
                     borderColor: '#ef4444',
                     backgroundColor: 'rgba(239, 68, 68, 0.08)',
@@ -2249,7 +2172,7 @@ function renderBkNoShowPerformanceTrend(rows) {
                     pointHoverRadius: 6,
                     fill: true,
                     tension: 0.35,
-                    yAxisID: 'y1',
+                    yAxisID: 'y',
                     order: 1
                 }
             ]
@@ -2270,7 +2193,7 @@ function renderBkNoShowPerformanceTrend(rows) {
                     cornerRadius: 8,
                     callbacks: {
                         label: function(context) {
-                            if (context.dataset.type === 'line') {
+                            if (context.dataset.yAxisID === 'y') {
                                 return ` Missed Value: ₹${Number(context.parsed.y || 0).toLocaleString('en-IN')}`;
                             }
                             return ` No-Shows: ${context.parsed.y}`;
@@ -2288,29 +2211,29 @@ function renderBkNoShowPerformanceTrend(rows) {
                     display: true,
                     position: 'left',
                     beginAtZero: true,
-                    ticks: { stepSize: 1, precision: 0, font: { size: 11 }, color: '#64748b' },
                     grid: { color: '#f1f5f9' },
-                    title: { display: true, text: 'No-Shows', color: '#64748b', font: { size: 11 } }
+                    ticks: {
+                        font: { size: 11 },
+                        color: '#64748b',
+                        callback: val => '₹' + Number(val).toLocaleString('en-IN')
+                    },
+                    title: { display: true, text: 'No-Show Missed Value (₹)', color: '#ef4444', font: { size: 11, weight: '600' } }
                 },
                 y1: {
                     type: 'linear',
                     display: true,
                     position: 'right',
                     beginAtZero: true,
+                    ticks: { stepSize: 1, precision: 0, font: { size: 11 }, color: '#64748b' },
                     grid: { drawOnChartArea: false },
-                    ticks: {
-                        font: { size: 11 },
-                        color: '#ef4444',
-                        callback: val => '₹' + Number(val).toLocaleString('en-IN')
-                    },
-                    title: { display: true, text: 'Missed Value (₹)', color: '#ef4444', font: { size: 11 } }
+                    title: { display: true, text: 'No-Shows', color: '#f59e0b', font: { size: 11, weight: '600' } }
                 }
             }
         }
     });
 }
 
-// ── Clean Donut Chart for Services Affected by No-Shows ───────────────────────
+// ── Donut Chart for No-Show Bookings vs Total Bookings ────────────────────────
 function renderBkNoShowServiceDonut(rows, k) {
     const ctx = document.getElementById('distributionChart');
     if (!ctx) return;
@@ -2323,47 +2246,24 @@ function renderBkNoShowServiceDonut(rows, k) {
     if (existing) existing.destroy();
 
     const titleEl = document.getElementById('rightChartTitle');
-    if (titleEl) titleEl.textContent = 'Services Affected by No-Shows';
+    if (titleEl) titleEl.textContent = 'No-Show Bookings Distribution';
 
-    // Aggregate by service
-    const serviceMap = {};
-    (rows || []).forEach(r => {
-        const srvRaw = r.service || 'Unknown';
-        const parts = srvRaw.split(',').map(s => s.trim()).filter(Boolean);
-        const count = parts.length || 1;
-        const valPerService = (Number(r.missed_value || 0)) / count;
+    const noShowCount  = Number(k?.no_show_bookings || rows?.length || 0);
+    const totalCount   = Number(k?.total_bookings || noShowCount || 0);
+    const remaining    = Math.max(0, totalCount - noShowCount);
+    const missedValue  = Number(k?.estimated_value_missed || 0);
 
-        if (parts.length === 0) {
-            const s = 'Unknown';
-            if (!serviceMap[s]) serviceMap[s] = { count: 0, lostVal: 0 };
-            serviceMap[s].count   += 1;
-            serviceMap[s].lostVal += Number(r.missed_value || 0);
-        } else {
-            parts.forEach(srv => {
-                if (!serviceMap[srv]) serviceMap[srv] = { count: 0, lostVal: 0 };
-                serviceMap[srv].count   += 1;
-                serviceMap[srv].lostVal += valPerService;
-            });
-        }
-    });
-
-    const sortedServices = Object.keys(serviceMap).sort((a, b) => serviceMap[b].count - serviceMap[a].count);
-    const totalSlots = sortedServices.reduce((sum, s) => sum + serviceMap[s].count, 0) || 0;
-
-    const palette = ['#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#10b981', '#3b82f6', '#64748b'];
-    const colors = sortedServices.map((_, i) => palette[i % palette.length]);
-
-    const labels   = sortedServices;
-    const dataVals = sortedServices.map(s => serviceMap[s].count);
-    const lostVals = sortedServices.map(s => serviceMap[s].lostVal);
+    const labels   = ['No-Show Bookings', 'Remaining Bookings'];
+    const dataVals = [noShowCount, remaining];
+    const colors   = ['#f59e0b', '#e2e8f0'];
 
     bkNoShowDonutChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: labels.length ? labels : ['No Data'],
+            labels,
             datasets: [{
-                data: dataVals.length ? dataVals : [1],
-                backgroundColor: colors.length ? colors : ['#e2e8f0'],
+                data: dataVals,
+                backgroundColor: colors,
                 borderWidth: 2,
                 borderColor: '#ffffff',
                 hoverOffset: 6
@@ -2381,12 +2281,9 @@ function renderBkNoShowServiceDonut(rows, k) {
                     cornerRadius: 8,
                     callbacks: {
                         label: function(context) {
-                            if (!labels.length) return ' No data';
-                            const idx = context.dataIndex;
-                            const count = dataVals[idx] || 0;
-                            const pct = totalSlots > 0 ? ((count / totalSlots) * 100).toFixed(1) : 0;
-                            const lVal = Math.round(lostVals[idx] || 0).toLocaleString('en-IN');
-                            return ` ${labels[idx]}: ${count} (${pct}%) — Lost: ₹${lVal}`;
+                            const val = context.parsed || 0;
+                            const pct = totalCount > 0 ? ((val / totalCount) * 100).toFixed(1) : 0;
+                            return ` ${context.label}: ${val} (${pct}%)`;
                         }
                     }
                 }
@@ -2397,31 +2294,23 @@ function renderBkNoShowServiceDonut(rows, k) {
     // Center Stat
     const centerVal = document.getElementById('donutCenterValue');
     const centerLbl = document.getElementById('donutCenterLabel');
-    const noShowCount = Number(k.no_show_bookings || rows.length || 0);
-    if (centerVal) centerVal.textContent = noShowCount.toLocaleString('en-IN');
-    if (centerLbl) centerLbl.textContent = 'TOTAL MISSED';
+    if (centerVal) centerVal.textContent = '₹' + Math.round(missedValue).toLocaleString('en-IN');
+    if (centerLbl) centerLbl.textContent = 'Missed Value';
 
     // Interactive Legend
-    const getPct = (count) => {
-        if (!totalSlots || totalSlots <= 0) return '0%';
-        const v = (count / totalSlots) * 100;
-        return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)) + '%';
-    };
-
     const legendEl = document.getElementById('donutLegend');
     if (legendEl) {
-        if (labels.length === 0) {
-            legendEl.innerHTML = '<div style="color:#94a3b8;font-size:0.8rem;text-align:center;padding:8px;">No no-show records found.</div>';
-        } else {
-            legendEl.innerHTML = labels.map((name, i) => `
-                <div class="donut-legend-item">
-                    <span class="donut-legend-dot" style="background-color: ${colors[i]};"></span>
-                    <span class="donut-legend-text">
-                        ${name} - <strong>${dataVals[i]}</strong> (${getPct(dataVals[i])}), Missed Value - <strong style="color: ${colors[i]};">₹${Math.round(lostVals[i]).toLocaleString('en-IN')}</strong>
-                    </span>
-                </div>
-            `).join('');
-        }
+        const getPct = (cnt) => (totalCount > 0 ? ((cnt / totalCount) * 100).toFixed(1) : 0) + '%';
+        legendEl.innerHTML = `
+            <div class="donut-legend-item">
+                <span class="donut-legend-dot" style="background-color: #f59e0b;"></span>
+                <span class="donut-legend-text">No-Show Bookings - <strong>${noShowCount}</strong> (${getPct(noShowCount)}), Missed - <strong style="color: #f59e0b;">₹${Math.round(missedValue).toLocaleString('en-IN')}</strong></span>
+            </div>
+            <div class="donut-legend-item">
+                <span class="donut-legend-dot" style="background-color: #94a3b8;"></span>
+                <span class="donut-legend-text">Remaining Bookings - <strong>${remaining}</strong> (${getPct(remaining)})</span>
+            </div>
+        `;
     }
 }
 
@@ -2786,7 +2675,7 @@ function renderBkRefundTrend(rows) {
                     hoverBackgroundColor: '#f43f5e',
                     borderRadius: 6,
                     borderSkipped: false,
-                    yAxisID: 'y',
+                    yAxisID: 'y1',
                     order: 2,
                     maxBarThickness: 32
                 },
@@ -2804,7 +2693,7 @@ function renderBkRefundTrend(rows) {
                     pointHoverRadius: 6,
                     fill: true,
                     tension: 0.35,
-                    yAxisID: 'y1',
+                    yAxisID: 'y',
                     order: 1
                 }
             ]
@@ -2825,7 +2714,7 @@ function renderBkRefundTrend(rows) {
                     cornerRadius: 8,
                     callbacks: {
                         label: function(context) {
-                            if (context.dataset.type === 'line') {
+                            if (context.dataset.yAxisID === 'y') {
                                 return ` Amount Refunded: ₹${Number(context.raw || 0).toLocaleString('en-IN')}`;
                             }
                             return ` Refunds: ${context.raw}`;
@@ -2845,12 +2734,11 @@ function renderBkRefundTrend(rows) {
                     beginAtZero: true,
                     grid: { color: '#f1f5f9' },
                     ticks: {
-                        stepSize: 1,
-                        precision: 0,
-                        color: '#f43f5e',
-                        font: { size: 11 }
+                        font: { size: 11 },
+                        color: '#f59e0b',
+                        callback: val => '₹' + Number(val).toLocaleString('en-IN')
                     },
-                    title: { display: true, text: 'Refunds Count', color: '#f43f5e', font: { size: 11 } }
+                    title: { display: true, text: 'Amount Refunded (₹)', color: '#f59e0b', font: { size: 11 } }
                 },
                 y1: {
                     type: 'linear',
@@ -2859,19 +2747,20 @@ function renderBkRefundTrend(rows) {
                     beginAtZero: true,
                     grid: { drawOnChartArea: false },
                     ticks: {
-                        font: { size: 11 },
-                        color: '#f59e0b',
-                        callback: val => '₹' + Number(val).toLocaleString('en-IN')
+                        stepSize: 1,
+                        precision: 0,
+                        color: '#f43f5e',
+                        font: { size: 11 }
                     },
-                    title: { display: true, text: 'Amount Refunded (₹)', color: '#f59e0b', font: { size: 11 } }
+                    title: { display: true, text: 'Refunds Count', color: '#f43f5e', font: { size: 11 } }
                 }
             }
         }
     });
 }
 
-// ── Clean Donut Chart for Refunds by Payment Method ──────────────────────────
-function renderBkRefundMethodDonut(rows, k) {
+// ── Clean Donut Chart for Refunds vs Total ──────────────────────────────────
+function renderBkRefundMethodDonut(rows, k, totalAll) {
     const ctx = document.getElementById('distributionChart');
     if (!ctx) return;
 
@@ -2884,45 +2773,24 @@ function renderBkRefundMethodDonut(rows, k) {
     if (existing) existing.destroy();
 
     const titleEl = document.getElementById('rightChartTitle');
-    if (titleEl) titleEl.textContent = 'Refunds by Payment Method';
+    if (titleEl) titleEl.textContent = 'Booking Status Distribution';
 
-    // Aggregate by payment method
-    const methodMap = {};
-    (rows || []).forEach(r => {
-        let m = (r.method || 'Not Specified').trim();
-        if (!m || m === '-') m = 'Not Specified';
-        m = m.charAt(0).toUpperCase() + m.slice(1);
-        if (!methodMap[m]) methodMap[m] = { count: 0, totalAmount: 0 };
-        methodMap[m].count += 1;
-        methodMap[m].totalAmount += Number(r.amount || 0);
-    });
+    const totalCount = Number(totalAll || k.total_bookings_denominator || (rows || []).length || 0);
+    const refundCount = Number(k.refunded_bookings || rows.length || 0);
+    const totalRefundVal = Number(k.total_refunded || 0);
+    const remaining = Math.max(0, totalCount - refundCount);
 
-    const sortedMethods = Object.keys(methodMap).sort((a, b) => methodMap[b].count - methodMap[a].count);
-    const totalRefundCount = sortedMethods.reduce((sum, m) => sum + methodMap[m].count, 0) || 0;
-    const totalRefundVal = sortedMethods.reduce((sum, m) => sum + methodMap[m].totalAmount, 0) || Number(k.total_refunded || 0);
-
-    const paletteMap = {
-        'Upi': '#3b82f6',
-        'Cash': '#10b981',
-        'Card': '#8b5cf6',
-        'Wallet': '#f59e0b',
-        'Net Banking': '#ec4899',
-        'Not Specified': '#94a3b8'
-    };
-    const fallbackPalette = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4', '#64748b'];
-
-    const labels   = sortedMethods;
-    const dataVals = sortedMethods.map(m => methodMap[m].count);
-    const amtVals  = sortedMethods.map(m => methodMap[m].totalAmount);
-    const colors   = sortedMethods.map((m, i) => paletteMap[m] || fallbackPalette[i % fallbackPalette.length]);
+    const labels   = ['Refunded Bookings', 'Remaining Bookings'];
+    const dataVals = [refundCount, remaining];
+    const colors   = ['#a855f7', '#e2e8f0'];
 
     bkRefundDonutChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: labels.length ? labels : ['No Data'],
+            labels,
             datasets: [{
-                data: dataVals.length ? dataVals : [1],
-                backgroundColor: colors.length ? colors : ['#e2e8f0'],
+                data: dataVals,
+                backgroundColor: colors,
                 borderWidth: 2,
                 borderColor: '#ffffff',
                 hoverOffset: 6
@@ -2940,12 +2808,9 @@ function renderBkRefundMethodDonut(rows, k) {
                     cornerRadius: 8,
                     callbacks: {
                         label: function(context) {
-                            if (!labels.length) return ' No data';
-                            const idx = context.dataIndex;
-                            const count = dataVals[idx] || 0;
-                            const pct = totalRefundCount > 0 ? ((count / totalRefundCount) * 100).toFixed(1) : 0;
-                            const amt = Math.round(amtVals[idx] || 0).toLocaleString('en-IN');
-                            return ` ${labels[idx]}: ${count} (${pct}%) — Total: ₹${amt}`;
+                            const val = context.parsed || 0;
+                            const pct = totalCount > 0 ? ((val / totalCount) * 100).toFixed(1) : 0;
+                            return ` ${context.label}: ${val} (${pct}%)`;
                         }
                     }
                 }
@@ -2960,26 +2825,19 @@ function renderBkRefundMethodDonut(rows, k) {
     if (centerLbl) centerLbl.textContent = 'TOTAL REFUNDED';
 
     // Interactive Legend
-    const getPct = (count) => {
-        if (!totalRefundCount || totalRefundCount <= 0) return '0%';
-        const v = (count / totalRefundCount) * 100;
-        return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)) + '%';
-    };
-
     const legendEl = document.getElementById('donutLegend');
     if (legendEl) {
-        if (labels.length === 0) {
-            legendEl.innerHTML = '<div style="color:#94a3b8;font-size:0.8rem;text-align:center;padding:8px;">No refund records found.</div>';
-        } else {
-            legendEl.innerHTML = labels.map((name, i) => `
-                <div class="donut-legend-item">
-                    <span class="donut-legend-dot" style="background-color: ${colors[i]};"></span>
-                    <span class="donut-legend-text">
-                        ${name} - <strong>${dataVals[i]}</strong> (${getPct(dataVals[i])}), Amount - <strong style="color: ${colors[i]};">₹${Math.round(amtVals[i]).toLocaleString('en-IN')}</strong>
-                    </span>
-                </div>
-            `).join('');
-        }
+        const getPct = (cnt) => (totalCount > 0 ? ((cnt / totalCount) * 100).toFixed(1) : 0) + '%';
+        legendEl.innerHTML = `
+            <div class="donut-legend-item">
+                <span class="donut-legend-dot" style="background-color: #a855f7;"></span>
+                <span class="donut-legend-text">Refunded Bookings - <strong>${refundCount}</strong> (${getPct(refundCount)}), Total - <strong style="color: #a855f7;">${formatCurrency(totalRefundVal)}</strong></span>
+            </div>
+            <div class="donut-legend-item">
+                <span class="donut-legend-dot" style="background-color: #94a3b8;"></span>
+                <span class="donut-legend-text">Remaining Bookings - <strong>${remaining}</strong> (${getPct(remaining)})</span>
+            </div>
+        `;
     }
 }
 
@@ -3274,7 +3132,7 @@ async function renderBkRefunds(data, supabase) {
 
             // ── Charts
             renderBkRefundTrend(rows);
-            renderBkRefundMethodDonut(rows, k);
+            renderBkRefundMethodDonut(rows, k, totalBookings);
 
             // ── Table
             setupBkRefundTable(rows, filterStart, filterEnd);
