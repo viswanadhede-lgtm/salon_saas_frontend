@@ -947,10 +947,19 @@
             background: #ffffff;
             border: 1px solid #cbd5e1;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-            text-decoration: none;
+            text-decoration: none !important;
             transition: all 0.15s ease;
             white-space: nowrap;
             user-select: none;
+        }
+
+        .sub-report-nav-pill,
+        .sub-report-nav-pill:hover,
+        .sub-report-nav-pill:focus,
+        .sub-report-nav-pill:active,
+        .sub-report-nav-pill span,
+        .sub-report-nav-pill:hover span {
+            text-decoration: none !important;
         }
 
         .sub-report-nav-pill:hover {
