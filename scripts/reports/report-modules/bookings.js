@@ -463,12 +463,19 @@ function renderBkTotalStatusDonut(k, rows, revs = {}) {
     const completed = Number(k.completed || 0);
     const cancelled = Number(k.cancelled || 0);
     const noShows   = Number(k.no_shows || 0);
+    const refunded  = Number(k.refunded || k.refunded_bookings || 0);
     const total     = Number(k.total_bookings || (completed + cancelled + noShows) || 0);
     const other     = Math.max(0, total - (completed + cancelled + noShows));
 
     const labels   = ['Completed Bookings', 'Cancelled Bookings', 'No-Shows'];
     const dataVals = [completed, cancelled, noShows];
     const colors   = ['#10b981', '#ef4444', '#f59e0b'];
+
+    if (refunded > 0) {
+        labels.push('Refunded Bookings');
+        dataVals.push(refunded);
+        colors.push('#a855f7');
+    }
 
     if (other > 0) {
         labels.push('Confirmed / Other');
@@ -520,17 +527,21 @@ function renderBkTotalStatusDonut(k, rows, revs = {}) {
     let fallbackCompletedRev = 0;
     let fallbackCancelRev = 0;
     let fallbackNoShowRev = 0;
+    let fallbackRefundRev = 0;
     (rows || []).forEach(r => {
         const s = (r.status || '').toLowerCase().replace(/[\s_]/g, '-');
+        const p = (r.payment_status || '').toLowerCase();
         const amt = Number(r.amount || 0);
-        if (s === 'completed') fallbackCompletedRev += amt;
+        if (s === 'completed' && p === 'paid') fallbackCompletedRev += amt;
         else if (s === 'cancelled') fallbackCancelRev += amt;
         else if (s === 'no-show' || s === 'noshow') fallbackNoShowRev += amt;
+        if (p === 'refunded' || s === 'refunded') fallbackRefundRev += amt;
     });
 
     const finalCompletedRev = (revs.realizedRev !== undefined && revs.realizedRev !== 0) ? revs.realizedRev : fallbackCompletedRev;
     const finalCancelRev    = (revs.cancelVal !== undefined && revs.cancelVal !== 0)     ? revs.cancelVal   : fallbackCancelRev;
     const finalNoShowRev    = (revs.noShowVal !== undefined && revs.noShowVal !== 0)     ? revs.noShowVal   : fallbackNoShowRev;
+    const finalRefundRev    = (revs.totalRefund !== undefined && revs.totalRefund !== 0) ? revs.totalRefund : fallbackRefundRev;
 
     const cur = (v) => '₹' + Math.round(Number(v) || 0).toLocaleString('en-IN');
     const getPct = (count) => {
@@ -568,6 +579,18 @@ function renderBkTotalStatusDonut(k, rows, revs = {}) {
             revColor: '#d97706'
         }
     ];
+
+    if (refunded > 0) {
+        legendItems.push({
+            name: 'Refunded Bookings',
+            count: refunded,
+            color: '#a855f7',
+            pct: getPct(refunded),
+            revLabel: 'Refunded Amount',
+            revVal: cur(finalRefundRev),
+            revColor: '#9333ea'
+        });
+    }
 
     if (other > 0) {
         let otherAmt = 0;
@@ -943,8 +966,8 @@ async function renderBkTotal(data, supabase) {
             // 2. Performance Trend: Booking Volume & Revenue
             renderBkTotalPerformanceTrend(rows);
 
-            // 3. Status Distribution: Completed, Cancelled, No-Shows
-            renderBkTotalStatusDonut(k, rows, { realizedRev, cancelVal, noShowVal });
+            // 3. Status Distribution: Completed, Cancelled, No-Shows, Refunded
+            renderBkTotalStatusDonut(k, rows, { realizedRev, cancelVal, noShowVal, totalRefund: sc.total_refunded_amount });
 
             // 4. All Bookings Table: Search, 25-item Pagination, Export CSV, and Print
             setupBkTotalTable(rows, filterStart, filterEnd);
