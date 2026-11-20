@@ -927,11 +927,10 @@
             display: inline-flex;
             align-items: center;
             margin-left: auto;
-            background: #f1f5f9;
-            padding: 3px 4px;
-            border-radius: 10px;
-            gap: 3px;
-            border: 1px solid #e2e8f0;
+            background: transparent;
+            padding: 0;
+            gap: 8px;
+            border: none;
             overflow-x: auto;
             max-width: 100%;
         }
@@ -939,12 +938,15 @@
         .sub-report-nav-pill {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 5px 12px;
-            border-radius: 7px;
-            font-size: 0.8rem;
+            gap: 7px;
+            padding: 6px 13px;
+            border-radius: 8px;
+            font-size: 0.815rem;
             font-weight: 500;
-            color: #64748b;
+            color: #334155;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
             text-decoration: none;
             transition: all 0.15s ease;
             white-space: nowrap;
@@ -953,26 +955,36 @@
 
         .sub-report-nav-pill:hover {
             color: #0f172a;
-            background: rgba(255, 255, 255, 0.7);
+            background: #f8fafc;
+            border-color: #94a3b8;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+            transform: translateY(-1px);
         }
 
         .sub-report-nav-pill.active {
-            background: #ffffff;
-            color: #4f46e5;
+            background: #4f46e5;
+            border-color: #4338ca;
+            color: #ffffff;
             font-weight: 600;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 2px 5px rgba(79, 70, 229, 0.3);
         }
 
         .sub-report-nav-pill i,
         .sub-report-nav-pill svg {
-            width: 13px;
-            height: 13px;
+            width: 14px;
+            height: 14px;
             color: #64748b;
+            transition: color 0.15s ease;
+        }
+
+        .sub-report-nav-pill:hover i,
+        .sub-report-nav-pill:hover svg {
+            color: #334155;
         }
 
         .sub-report-nav-pill.active i,
         .sub-report-nav-pill.active svg {
-            color: #4f46e5;
+            color: #ffffff;
         }
 
     </style>
