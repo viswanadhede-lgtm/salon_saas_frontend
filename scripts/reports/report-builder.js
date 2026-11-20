@@ -970,10 +970,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 { type: 'prod-overview',     label: 'Sales Overview',     icon: 'bar-chart-2' },
                 { type: 'prod-wise',         label: 'Product-wise Sales', icon: 'box' },
                 { type: 'prod-category',     label: 'Sales by Category',  icon: 'grid' },
-                { type: 'prod-transactions', label: 'Transactions',       icon: 'file-text' },
                 { type: 'prod-discounts',    label: 'Discounts',          icon: 'tag' },
-                { type: 'prod-returns',      label: 'Returns & Refunds',  icon: 'rotate-ccw' },
-                { type: 'prod-payments',     label: 'Sales Payments',     icon: 'credit-card' }
+                { type: 'prod-returns',      label: 'Returns & Refunds',  icon: 'rotate-ccw' }
             ],
             memberships: [
                 { type: 'mem-overview',      label: 'Overview',                  icon: 'bar-chart-2' },

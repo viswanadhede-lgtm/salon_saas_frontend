@@ -197,13 +197,6 @@ const CATEGORIES = {
                 colorClass: 'bg-purple'
             },
             {
-                type: 'prod-transactions',
-                label: 'Sales Transactions Report',
-                desc: 'Searchable record of individual POS retail sales and line items',
-                icon: 'file-text',
-                colorClass: 'bg-indigo'
-            },
-            {
                 type: 'prod-discounts',
                 label: 'Discounts Report',
                 desc: 'Analyze coupon codes, membership perks, and revenue impact',
@@ -216,13 +209,6 @@ const CATEGORIES = {
                 desc: 'Track return reasons, refunded amounts and inventory adjustments',
                 icon: 'rotate-ccw',
                 colorClass: 'bg-amber'
-            },
-            {
-                type: 'prod-payments',
-                label: 'Sales Payments Report',
-                desc: 'Reconcile sales against cash, UPI, card and pending collections',
-                icon: 'credit-card',
-                colorClass: 'bg-cyan'
             }
         ]
     },
