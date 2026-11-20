@@ -906,6 +906,73 @@
         .back-link:hover {
             color: #4f46e5;
         }
+    
+        /* 1st Row Navigation Bar with Segmented Sub-Report Pills */
+        .top-nav-row {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            margin-bottom: 0.95rem;
+            flex-wrap: wrap;
+        }
+
+        .top-nav-row .back-link {
+            margin-bottom: 0;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .sub-report-nav-strip {
+            display: inline-flex;
+            align-items: center;
+            background: #f1f5f9;
+            padding: 3px 4px;
+            border-radius: 10px;
+            gap: 3px;
+            border: 1px solid #e2e8f0;
+            overflow-x: auto;
+            max-width: 100%;
+        }
+
+        .sub-report-nav-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 7px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #64748b;
+            text-decoration: none;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .sub-report-nav-pill:hover {
+            color: #0f172a;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .sub-report-nav-pill.active {
+            background: #ffffff;
+            color: #4f46e5;
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+
+        .sub-report-nav-pill i,
+        .sub-report-nav-pill svg {
+            width: 13px;
+            height: 13px;
+            color: #64748b;
+        }
+
+        .sub-report-nav-pill.active i,
+        .sub-report-nav-pill.active svg {
+            color: #4f46e5;
+        }
+
     </style>
 </head>
 
@@ -921,11 +988,14 @@
         <div id="global-header"></div>
 
         <main class="content-area">
-            <!-- 1st Row: Back Link -->
-            <a href="reports.html" class="back-link" id="reportBackLink">
-                <i data-feather="arrow-left" style="width: 14px;"></i>
-                Back to Library
-            </a>
+            <!-- 1st Row: Back Link + Segmented Sub-Report Nav Strip -->
+            <div class="top-nav-row" id="topNavRow">
+                <a href="reports.html" class="back-link" id="reportBackLink">
+                    <i data-feather="arrow-left" style="width: 14px;"></i>
+                    Back to Library
+                </a>
+                <div class="sub-report-nav-strip" id="subReportNavStrip" style="display: none;"></div>
+            </div>
 
             <!-- 2nd Row: Title (Left) + Right-aligned Toolbar (Branch, Date, Download) -->
             <div class="content-header">

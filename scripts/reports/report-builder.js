@@ -929,6 +929,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // 4.1 Wire Segmented Sub-Report Nav Strip (Active for Bookings module only for now)
+    const navStripEl = document.getElementById('subReportNavStrip');
+    if (navStripEl) {
+        const isBookings = (data.backCat === 'bookings' || type.startsWith('bk-'));
+        if (isBookings) {
+            const bookingTabs = [
+                { type: 'bk-total',     label: 'Total Bookings',     icon: 'calendar' },
+                { type: 'bk-completed', label: 'Completed Bookings', icon: 'check-circle' },
+                { type: 'bk-cancelled', label: 'Cancelled Bookings', icon: 'x-circle' },
+                { type: 'bk-no-shows',  label: 'No-Shows',           icon: 'user-x' },
+                { type: 'bk-refunds',   label: 'Refunded Bookings',  icon: 'rotate-ccw' }
+            ];
+
+            navStripEl.innerHTML = bookingTabs.map(tab => {
+                const isActive = (tab.type === type);
+                return `
+                    <a href="report-detail.html?type=${tab.type}&cat=bookings" 
+                       class="sub-report-nav-pill ${isActive ? 'active' : ''}"
+                       title="${tab.label}">
+                        <i data-feather="${tab.icon}"></i>
+                        <span>${tab.label}</span>
+                    </a>
+                `;
+            }).join('');
+            navStripEl.style.display = 'inline-flex';
+            if (typeof feather !== 'undefined') feather.replace();
+        } else {
+            navStripEl.style.display = 'none';
+            navStripEl.innerHTML = '';
+        }
+    }
+
     // 5. Set table section title
     const tableHeaderTitle = document.getElementById('tableTitleText') || document.querySelector('.data-table-container .table-header h2');
     if (tableHeaderTitle && data.tableTitle) {
