@@ -45,20 +45,47 @@
                         <p>Overview of your salon's performance for the selected period.</p>
                     </div>
                     <div class="overview-header-controls">
-                        <!-- Modern Soft Date Range Selector Pill -->
-                        <div class="ov-date-selector-pill">
-                            <div class="ov-date-icon-circle">
-                                <i data-feather="calendar"></i>
+                        <!-- Modern Soft Date Range Selector Pill with Custom Popover -->
+                        <div class="ov-date-control-group">
+                            <div class="ov-date-selector-pill" id="ovDatePill">
+                                <div class="ov-date-icon-circle">
+                                    <i data-feather="calendar"></i>
+                                </div>
+                                <select id="overviewDateRange" aria-label="Select Date Range">
+                                    <option value="today" selected>Today</option>
+                                    <option value="this_week">This Week</option>
+                                    <option value="this_month">This Month</option>
+                                    <option value="last_month">Last Month</option>
+                                    <option value="30days">Last 30 Days</option>
+                                    <option value="custom">Custom Dates...</option>
+                                </select>
+                                <i data-feather="chevron-down" class="feather-icon-trail"></i>
                             </div>
-                            <select id="overviewDateRange" aria-label="Select Date Range">
-                                <option value="today" selected>Today</option>
-                                <option value="this_week">This Week</option>
-                                <option value="this_month">This Month</option>
-                                <option value="last_month">Last Month</option>
-                                <option value="30days">Last 30 Days</option>
-                                <option value="oct1_16">Oct 1, 2026 - Oct 16, 2026</option>
-                            </select>
-                            <i data-feather="chevron-down" class="feather-icon-trail"></i>
+
+                            <!-- Modern Soft Popover for Custom Dates -->
+                            <div class="ov-custom-date-popover" id="ovCustomDatePopover" style="display: none;">
+                                <div class="ov-popover-header">
+                                    <div class="ov-popover-title">
+                                        <i data-feather="calendar" style="width:14px; height:14px; color:#2563eb;"></i>
+                                        <span>Custom Date Range</span>
+                                    </div>
+                                    <button type="button" class="ov-popover-close" id="ovCustomDateClose" aria-label="Close">&times;</button>
+                                </div>
+                                <div class="ov-popover-body">
+                                    <div class="ov-date-field">
+                                        <label for="ovCustomStart">From Date</label>
+                                        <input type="date" id="ovCustomStart" class="ov-date-input" />
+                                    </div>
+                                    <div class="ov-date-field">
+                                        <label for="ovCustomEnd">To Date</label>
+                                        <input type="date" id="ovCustomEnd" class="ov-date-input" />
+                                    </div>
+                                </div>
+                                <div class="ov-popover-footer">
+                                    <button type="button" class="ov-btn-cancel" id="ovCustomDateCancel">Cancel</button>
+                                    <button type="button" class="ov-btn-apply" id="ovCustomDateApply">Apply Range</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

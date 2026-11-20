@@ -116,8 +116,18 @@ function getDateRange(selectorVal) {
         const lastDayPrev  = new Date(today.getFullYear(), today.getMonth(), 0);
         return { start: iso(firstDayPrev), end: iso(lastDayPrev) };
     }
-    // Default: oct1_16 test range
-    return { start: '2026-10-01', end: '2026-10-16' };
+    if (selectorVal === 'custom') {
+        const startInput = document.getElementById('ovCustomStart');
+        const endInput   = document.getElementById('ovCustomEnd');
+        const s = startInput ? startInput.value.trim() : '';
+        const e = endInput   ? endInput.value.trim()   : '';
+        if (s && e) {
+            return s <= e ? { start: s, end: e } : { start: e, end: s };
+        }
+        return { start: iso(today), end: iso(today) };
+    }
+    // Fallback: today
+    return { start: iso(today), end: iso(today) };
 }
 
 // =============================================================================
@@ -722,17 +732,123 @@ async function loadOverviewData() {
 }
 
 // =============================================================================
+// CUSTOM DATE RANGE CONTROLLER
+// =============================================================================
+let activeDatePreset = 'today';
+
+function initCustomDateRangeControls() {
+    const dateRangeEl = document.getElementById('overviewDateRange');
+    const popover     = document.getElementById('ovCustomDatePopover');
+    const startInput  = document.getElementById('ovCustomStart');
+    const endInput    = document.getElementById('ovCustomEnd');
+    const applyBtn    = document.getElementById('ovCustomDateApply');
+    const cancelBtn   = document.getElementById('ovCustomDateCancel');
+    const closeBtn    = document.getElementById('ovCustomDateClose');
+    const datePill    = document.getElementById('ovDatePill');
+
+    if (!dateRangeEl || !popover) return;
+
+    activeDatePreset = dateRangeEl.value || 'today';
+
+    // Helper to format ISO date to YYYY-MM-DD
+    const pad = function(n) { return String(n).padStart(2, '0'); };
+    const now = new Date();
+    const todayIso = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+    const fifteenAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 14);
+    const fifteenAgoIso = fifteenAgo.getFullYear() + '-' + pad(fifteenAgo.getMonth() + 1) + '-' + pad(fifteenAgo.getDate());
+
+    // Pre-fill inputs with sensible default range
+    if (startInput && !startInput.value) startInput.value = fifteenAgoIso;
+    if (endInput   && !endInput.value)   endInput.value   = todayIso;
+
+    function openPopover() {
+        popover.style.display = 'block';
+        if (window.feather) feather.replace();
+    }
+
+    function closePopover(revert) {
+        popover.style.display = 'none';
+        if (revert && activeDatePreset !== 'custom') {
+            dateRangeEl.value = activeDatePreset;
+        }
+    }
+
+    // Handle select changes
+    dateRangeEl.addEventListener('change', function() {
+        if (dateRangeEl.value === 'custom') {
+            openPopover();
+        } else {
+            closePopover(false);
+            activeDatePreset = dateRangeEl.value;
+            loadOverviewData();
+        }
+    });
+
+    // Re-open popover if clicked while custom is selected
+    if (datePill) {
+        datePill.addEventListener('click', function(e) {
+            if (dateRangeEl.value === 'custom' && popover.style.display === 'none') {
+                openPopover();
+            }
+        });
+    }
+
+    // Apply custom range
+    if (applyBtn) {
+        applyBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const s = startInput ? startInput.value.trim() : '';
+            const eDate = endInput ? endInput.value.trim() : '';
+            if (!s || !eDate) {
+                alert('Please select both From and To dates.');
+                return;
+            }
+            if (s > eDate) {
+                startInput.value = eDate;
+                endInput.value   = s;
+            }
+            activeDatePreset = 'custom';
+            closePopover(false);
+            loadOverviewData();
+        });
+    }
+
+    // Cancel / Close buttons
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            closePopover(true);
+        });
+    }
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            closePopover(true);
+        });
+    }
+
+    // Close on outside click
+    document.addEventListener('click', function(e) {
+        if (popover.style.display === 'block') {
+            const controlGroup = document.querySelector('.ov-date-control-group');
+            if (controlGroup && !controlGroup.contains(e.target)) {
+                closePopover(true);
+            }
+        }
+    });
+}
+
+// =============================================================================
 // INITIALIZATION
 // =============================================================================
 async function initOverviewPage() {
     if (window.feather) feather.replace();
 
+    // Initialize custom date range controls
+    initCustomDateRangeControls();
+
     // Fetch initial overview data
     await loadOverviewData();
-
-    // Re-fire on date range filter changes
-    const dateRangeEl = document.getElementById('overviewDateRange');
-    if (dateRangeEl) dateRangeEl.addEventListener('change', loadOverviewData);
 
     // Listen for global header branch switch
     window.addEventListener('branch:changed', () => {

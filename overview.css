@@ -199,6 +199,158 @@ body.dashboard-body {
     color: #64748b;
 }
 
+/* ── Custom Date Range Popover ───────────────────────────── */
+.ov-date-control-group {
+    position: relative;
+    display: inline-block;
+}
+
+.ov-custom-date-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 290px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+    padding: 16px;
+    z-index: 1000;
+    animation: ovPopSlide 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes ovPopSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.ov-popover-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 14px;
+}
+
+.ov-popover-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.ov-popover-close {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+.ov-popover-close:hover {
+    color: #334155;
+    background: #f1f5f9;
+}
+
+.ov-popover-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.ov-date-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ov-date-field label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.ov-date-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #0f172a;
+    background: #f8fafc;
+    box-sizing: border-box;
+    outline: none;
+    font-family: inherit;
+    transition: all 0.15s ease;
+}
+
+.ov-date-input:focus {
+    background: #ffffff;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.ov-popover-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.ov-btn-cancel {
+    padding: 7px 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ov-btn-cancel:hover {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.ov-btn-apply {
+    padding: 7px 16px;
+    background: #2563eb;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #ffffff;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    transition: all 0.15s ease;
+}
+
+.ov-btn-apply:hover {
+    background: #1d4ed8;
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.28);
+}
+
 /* ── Section Container ─────────────────────────────────── */
 .ov-section-card {
     background: #ffffff;
