@@ -48,6 +48,11 @@ DECLARE
     v_unique_products_sold      bigint  := 0;
     v_active_categories_count   bigint  := 0;
 
+    -- Group 2 Product-Wise Variables
+    v_pw_total_net_units        bigint  := 0;
+    v_pw_total_returned_units   bigint  := 0;
+    v_pw_total_net_revenue      numeric := 0;
+
     -- Sub-Report Payload JSONBs
     v_prod_overview             jsonb;
     v_prod_wise                 jsonb;
@@ -277,76 +282,200 @@ BEGIN
     -- =========================================================================
     -- GROUP 2: PRODUCT-WISE SALES REPORT (prod_wise)
     -- =========================================================================
+    -- Aggregate Group 2 Totals directly from item-level app.sales
+    SELECT
+        GREATEST(0, COALESCE(SUM(CASE WHEN status = 'paid' THEN quantity ELSE 0 END) -
+                             SUM(CASE WHEN status = 'refunded' THEN quantity ELSE 0 END), 0))::bigint,
+        COALESCE(SUM(CASE WHEN status = 'refunded' THEN quantity ELSE 0 END), 0)::bigint,
+        GREATEST(0, COALESCE(SUM(CASE WHEN status = 'paid' THEN total_amount ELSE 0 END) -
+                             SUM(CASE WHEN status = 'refunded' THEN total_amount ELSE 0 END), 0))
+    INTO v_pw_total_net_units, v_pw_total_returned_units, v_pw_total_net_revenue
+    FROM app.sales
+    WHERE company_id = p_company_id
+      AND (p_branch_id IS NULL OR branch_id = p_branch_id)
+      AND created_at::date BETWEEN v_start_date AND v_end_date;
+
     SELECT jsonb_build_object(
         'kpis', (
-            WITH top_sku AS (
-                SELECT product_name, SUM(quantity) AS sold
+            WITH product_stats AS (
+                SELECT
+                    product_id,
+                    product_name,
+                    category_name,
+                    COALESCE(SUM(CASE WHEN status = 'paid'     THEN quantity     ELSE 0 END), 0)::bigint AS units_sold,
+                    COALESCE(SUM(CASE WHEN status = 'refunded' THEN quantity     ELSE 0 END), 0)::bigint AS units_returned,
+                    (COALESCE(SUM(CASE WHEN status = 'paid'     THEN quantity     ELSE 0 END), 0) -
+                     COALESCE(SUM(CASE WHEN status = 'refunded' THEN quantity     ELSE 0 END), 0))::bigint AS net_units,
+                    COALESCE(SUM(CASE WHEN status = 'paid'     THEN total_amount ELSE 0 END), 0)         AS gross_revenue,
+                    COALESCE(SUM(CASE WHEN status = 'refunded' THEN total_amount ELSE 0 END), 0)         AS refund_revenue,
+                    GREATEST(0,
+                        COALESCE(SUM(CASE WHEN status = 'paid'     THEN total_amount ELSE 0 END), 0) -
+                        COALESCE(SUM(CASE WHEN status = 'refunded' THEN total_amount ELSE 0 END), 0)
+                    ) AS net_revenue
                 FROM app.sales
                 WHERE company_id = p_company_id
                   AND (p_branch_id IS NULL OR branch_id = p_branch_id)
                   AND created_at::date BETWEEN v_start_date AND v_end_date
-                  AND status = 'paid'
-                GROUP BY product_name
-                ORDER BY sold DESC
+                GROUP BY product_id, product_name, category_name
+            ),
+            top_product AS (
+                SELECT product_name, net_units, net_revenue
+                FROM product_stats
+                ORDER BY net_units DESC, net_revenue DESC
                 LIMIT 1
             ),
-            refund_total AS (
-                SELECT COALESCE(SUM(total_amount), 0) AS val
+            category_stats AS (
+                SELECT
+                    COALESCE(NULLIF(TRIM(category_name), ''), 'Uncategorised') AS cat_name,
+                    (COALESCE(SUM(CASE WHEN status = 'paid'     THEN quantity ELSE 0 END), 0) -
+                     COALESCE(SUM(CASE WHEN status = 'refunded' THEN quantity ELSE 0 END), 0))::bigint AS net_cat_units
                 FROM app.sales
                 WHERE company_id = p_company_id
                   AND (p_branch_id IS NULL OR branch_id = p_branch_id)
                   AND created_at::date BETWEEN v_start_date AND v_end_date
-                  AND status = 'refunded'
+                GROUP BY COALESCE(NULLIF(TRIM(category_name), ''), 'Uncategorised')
+            ),
+            top_category AS (
+                SELECT cat_name, net_cat_units
+                FROM category_stats
+                ORDER BY net_cat_units DESC
+                LIMIT 1
             )
             SELECT jsonb_build_object(
-                'total_units',     v_quantity_sold,
-                'gross_units',     v_gross_quantity,
-                'net_revenue',     v_net_sales,
-                'top_sku_name',    COALESCE((SELECT product_name FROM top_sku), '—'),
-                'top_sku_units',   COALESCE((SELECT sold FROM top_sku), 0),
-                'top_sku_pct',     CASE WHEN v_gross_quantity > 0 AND (SELECT sold FROM top_sku) IS NOT NULL
-                                      THEN ROUND(((SELECT sold FROM top_sku)::numeric / v_gross_quantity) * 100, 1)::text || '%'
-                                      ELSE '0%' END,
-                'returned_units',  v_returned_quantity,
-                'refunded_amount', (SELECT val FROM refund_total)
+                -- 4 Confirmed Stat Cards
+                -- Card 1: Total Products Sold
+                'total_units_sold',           v_pw_total_net_units,
+                'total_units_returned',       v_pw_total_returned_units,
+                -- Card 2: Top-Selling Product
+                'top_selling_product_name',   COALESCE((SELECT product_name FROM top_product), '—'),
+                'top_selling_units',          COALESCE((SELECT net_units FROM top_product), 0),
+                -- Card 3: Top Product Contribution
+                'top_product_volume_share',   CASE WHEN v_pw_total_net_units > 0 AND (SELECT net_units FROM top_product) IS NOT NULL
+                                                  THEN ROUND(((SELECT net_units FROM top_product)::numeric / v_pw_total_net_units) * 100, 1)::text || '%'
+                                                  ELSE '0%' END,
+                'top_product_revenue_share',  CASE WHEN v_pw_total_net_revenue > 0 AND (SELECT net_revenue FROM top_product) IS NOT NULL
+                                                  THEN ROUND(((SELECT net_revenue FROM top_product)::numeric / v_pw_total_net_revenue) * 100, 1)::text || '%'
+                                                  ELSE '0%' END,
+                'top_product_revenue_amount', COALESCE((SELECT net_revenue FROM top_product), 0),
+                -- Card 4: Product Category Leader
+                'category_leader_name',       COALESCE((SELECT cat_name FROM top_category), '—'),
+                'category_leader_units',      COALESCE((SELECT net_cat_units FROM top_category), 0),
+                -- Backward compatibility aliases
+                'total_units',                v_pw_total_net_units,
+                'gross_units',                v_pw_total_net_units + v_pw_total_returned_units,
+                'net_revenue',                v_pw_total_net_revenue,
+                'top_sku_name',               COALESCE((SELECT product_name FROM top_product), '—'),
+                'top_sku_units',              COALESCE((SELECT net_units FROM top_product), 0),
+                'top_sku_pct',                CASE WHEN v_pw_total_net_units > 0 AND (SELECT net_units FROM top_product) IS NOT NULL
+                                                  THEN ROUND(((SELECT net_units FROM top_product)::numeric / v_pw_total_net_units) * 100, 1)::text || '%'
+                                                  ELSE '0%' END,
+                'returned_units',             v_pw_total_returned_units,
+                'refunded_amount',            v_total_refunds
             )
         ),
         'trend', (
-            SELECT jsonb_build_object(
-                'labels', COALESCE(jsonb_agg(t.day_label   ORDER BY t.sale_date), '[]'::jsonb),
-                'values', COALESCE(jsonb_agg(t.daily_units ORDER BY t.sale_date), '[]'::jsonb)
-            )
-            FROM (
-                SELECT
-                    created_at::date AS sale_date,
-                    TO_CHAR(created_at::date, 'DD Mon') AS day_label,
-                    SUM(quantity)::bigint AS daily_units
+            WITH top_cats AS (
+                SELECT COALESCE(NULLIF(TRIM(category_name), ''), 'General') AS cat_name,
+                       SUM(CASE WHEN status = 'paid' THEN quantity ELSE 0 END) AS total_units
                 FROM app.sales
                 WHERE company_id = p_company_id
                   AND (p_branch_id IS NULL OR branch_id = p_branch_id)
                   AND created_at::date BETWEEN v_start_date AND v_end_date
-                  AND status = 'paid'
+                GROUP BY COALESCE(NULLIF(TRIM(category_name), ''), 'General')
+                ORDER BY total_units DESC
+                LIMIT 4
+            ),
+            distinct_days AS (
+                SELECT created_at::date AS sale_date, TO_CHAR(created_at::date, 'DD Mon') AS day_label
+                FROM app.sales
+                WHERE company_id = p_company_id
+                  AND (p_branch_id IS NULL OR branch_id = p_branch_id)
+                  AND created_at::date BETWEEN v_start_date AND v_end_date
                 GROUP BY created_at::date
-            ) t
+                ORDER BY sale_date
+            ),
+            day_cat_counts AS (
+                SELECT
+                    s.created_at::date AS sale_date,
+                    CASE WHEN tc.cat_name IS NOT NULL THEN tc.cat_name ELSE 'Other Categories' END AS cat_group,
+                    SUM(CASE WHEN s.status = 'paid' THEN s.quantity ELSE 0 END)::bigint AS units
+                FROM app.sales s
+                LEFT JOIN top_cats tc ON tc.cat_name = COALESCE(NULLIF(TRIM(s.category_name), ''), 'General')
+                WHERE s.company_id = p_company_id
+                  AND (p_branch_id IS NULL OR s.branch_id = p_branch_id)
+                  AND s.created_at::date BETWEEN v_start_date AND v_end_date
+                GROUP BY s.created_at::date, CASE WHEN tc.cat_name IS NOT NULL THEN tc.cat_name ELSE 'Other Categories' END
+            ),
+            cat_groups AS (
+                SELECT DISTINCT cat_group FROM day_cat_counts
+            )
+            SELECT jsonb_build_object(
+                'labels',   COALESCE((SELECT jsonb_agg(day_label ORDER BY sale_date) FROM distinct_days), '[]'::jsonb),
+                'datasets', COALESCE((SELECT jsonb_agg(
+                                jsonb_build_object(
+                                    'label', cg.cat_group,
+                                    'data', (
+                                        SELECT COALESCE(jsonb_agg(COALESCE(dcc.units, 0) ORDER BY d.sale_date), '[]'::jsonb)
+                                        FROM distinct_days d
+                                        LEFT JOIN day_cat_counts dcc ON dcc.sale_date = d.sale_date AND dcc.cat_group = cg.cat_group
+                                    )
+                                )
+                            ) FROM cat_groups cg), '[]'::jsonb),
+                'values',   COALESCE((SELECT jsonb_agg(tot.daily_units ORDER BY tot.sale_date)
+                                      FROM (
+                                          SELECT s.created_at::date AS sale_date, SUM(CASE WHEN s.status = 'paid' THEN s.quantity ELSE 0 END)::bigint AS daily_units
+                                          FROM app.sales s
+                                          WHERE s.company_id = p_company_id
+                                            AND (p_branch_id IS NULL OR s.branch_id = p_branch_id)
+                                            AND s.created_at::date BETWEEN v_start_date AND v_end_date
+                                          GROUP BY s.created_at::date
+                                      ) tot), '[]'::jsonb)
+            )
         ),
         'distribution', (
-            SELECT jsonb_build_object(
-                'labels', COALESCE(jsonb_agg(d.label ORDER BY d.units DESC), '[]'::jsonb),
-                'values', COALESCE(jsonb_agg(d.units ORDER BY d.units DESC), '[]'::jsonb)
-            )
-            FROM (
+            WITH top_5_skus AS (
                 SELECT
-                    COALESCE(product_name, 'Unknown') AS label,
-                    SUM(quantity)::bigint AS units
+                    COALESCE(product_name, 'Unknown') AS product_name,
+                    (COALESCE(SUM(CASE WHEN status = 'paid' THEN quantity ELSE 0 END), 0) -
+                     COALESCE(SUM(CASE WHEN status = 'refunded' THEN quantity ELSE 0 END), 0))::bigint AS net_units
                 FROM app.sales
                 WHERE company_id = p_company_id
                   AND (p_branch_id IS NULL OR branch_id = p_branch_id)
                   AND created_at::date BETWEEN v_start_date AND v_end_date
-                  AND status = 'paid'
                 GROUP BY product_name
-                ORDER BY units DESC
+                HAVING (COALESCE(SUM(CASE WHEN status = 'paid' THEN quantity ELSE 0 END), 0) -
+                        COALESCE(SUM(CASE WHEN status = 'refunded' THEN quantity ELSE 0 END), 0)) > 0
+                ORDER BY net_units DESC
                 LIMIT 5
-            ) d
+            ),
+            all_skus AS (
+                SELECT
+                    COALESCE(product_name, 'Unknown') AS product_name,
+                    (COALESCE(SUM(CASE WHEN status = 'paid' THEN quantity ELSE 0 END), 0) -
+                     COALESCE(SUM(CASE WHEN status = 'refunded' THEN quantity ELSE 0 END), 0))::bigint AS net_units
+                FROM app.sales
+                WHERE company_id = p_company_id
+                  AND (p_branch_id IS NULL OR branch_id = p_branch_id)
+                  AND created_at::date BETWEEN v_start_date AND v_end_date
+                GROUP BY product_name
+            ),
+            other_skus AS (
+                SELECT
+                    'All Other Products' AS product_name,
+                    COALESCE(SUM(a.net_units), 0)::bigint AS net_units
+                FROM all_skus a
+                WHERE a.product_name NOT IN (SELECT product_name FROM top_5_skus)
+                  AND a.net_units > 0
+            ),
+            combined AS (
+                SELECT product_name, net_units, 1 AS sort_order FROM top_5_skus
+                UNION ALL
+                SELECT product_name, net_units, 2 AS sort_order FROM other_skus WHERE net_units > 0
+            )
+            SELECT jsonb_build_object(
+                'labels', COALESCE((SELECT jsonb_agg(product_name ORDER BY sort_order, net_units DESC) FROM combined), '[]'::jsonb),
+                'values', COALESCE((SELECT jsonb_agg(net_units     ORDER BY sort_order, net_units DESC) FROM combined), '[]'::jsonb)
+            )
         ),
         'rows', (
             SELECT COALESCE(jsonb_agg(
@@ -357,37 +486,49 @@ BEGIN
                     'category',  COALESCE(s.category_name, 'General'),
                     'sold',      s.units_sold,
                     'returned',  s.units_returned,
+                    'net_units', s.net_units,
                     'gross',     s.gross_sales,
                     'disc',      s.discounts,
+                    'refund',    s.refund_amount,
                     'net',       s.net_sales,
-                    'pct',       CASE WHEN v_total_sales > 0
-                                      THEN ROUND((s.gross_sales / v_total_sales) * 100, 1)::text || '%'
+                    'pct',       CASE WHEN v_pw_total_net_units > 0
+                                      THEN ROUND((s.net_units::numeric / v_pw_total_net_units) * 100, 1)::text || '%'
                                       ELSE '0%' END,
                     'txns',      s.txns
                 )
-            ORDER BY s.gross_sales DESC), '[]'::jsonb)
+            ORDER BY s.net_units DESC, s.net_sales DESC), '[]'::jsonb)
             FROM (
                 SELECT
-                    ROW_NUMBER() OVER (ORDER BY COALESCE(SUM(CASE WHEN s.status = 'paid' THEN s.total_amount ELSE 0 END), 0) DESC) AS rn,
-                    p.product_id,
-                    p.product_name,
-                    'SKU-' || UPPER(SUBSTRING(p.product_id::text, 1, 6)) AS sku,
-                    p.category_name,
+                    ROW_NUMBER() OVER (ORDER BY (
+                        COALESCE(SUM(CASE WHEN s.status = 'paid' THEN s.quantity ELSE 0 END), 0) -
+                        COALESCE(SUM(CASE WHEN s.status = 'refunded' THEN s.quantity ELSE 0 END), 0)
+                    ) DESC,
+                    GREATEST(0,
+                        COALESCE(SUM(CASE WHEN s.status = 'paid' THEN s.total_amount ELSE 0 END), 0) -
+                        COALESCE(SUM(CASE WHEN s.status = 'refunded' THEN s.total_amount ELSE 0 END), 0)
+                    ) DESC) AS rn,
+                    COALESCE(s.product_id, p.product_id) AS product_id,
+                    COALESCE(p.product_name, s.product_name) AS product_name,
+                    'SKU-' || UPPER(SUBSTRING(COALESCE(s.product_id, p.product_id)::text, 1, 6)) AS sku,
+                    COALESCE(p.category_name, s.category_name, 'General') AS category_name,
                     COALESCE(SUM(CASE WHEN s.status = 'paid'     THEN s.quantity     ELSE 0 END), 0)::bigint AS units_sold,
                     COALESCE(SUM(CASE WHEN s.status = 'refunded' THEN s.quantity     ELSE 0 END), 0)::bigint AS units_returned,
+                    (COALESCE(SUM(CASE WHEN s.status = 'paid'     THEN s.quantity     ELSE 0 END), 0) -
+                     COALESCE(SUM(CASE WHEN s.status = 'refunded' THEN s.quantity     ELSE 0 END), 0))::bigint AS net_units,
                     COALESCE(SUM(CASE WHEN s.status = 'paid'     THEN s.total_amount ELSE 0 END), 0)         AS gross_sales,
-                    0::numeric                                                                              AS discounts,
+                    0::numeric                                                                               AS discounts,
+                    COALESCE(SUM(CASE WHEN s.status = 'refunded' THEN s.total_amount ELSE 0 END), 0)         AS refund_amount,
                     GREATEST(0,
                         COALESCE(SUM(CASE WHEN s.status = 'paid'     THEN s.total_amount ELSE 0 END), 0) -
                         COALESCE(SUM(CASE WHEN s.status = 'refunded' THEN s.total_amount ELSE 0 END), 0)
                     ) AS net_sales,
                     COUNT(DISTINCT CASE WHEN s.status = 'paid' THEN s.sale_id END)::bigint AS txns
                 FROM app.sales s
-                JOIN app.products p ON p.product_id = s.product_id
+                LEFT JOIN app.products p ON p.product_id = s.product_id
                 WHERE s.company_id = p_company_id
                   AND (p_branch_id IS NULL OR s.branch_id = p_branch_id)
                   AND s.created_at::date BETWEEN v_start_date AND v_end_date
-                GROUP BY p.product_id, p.product_name, p.category_name
+                GROUP BY COALESCE(s.product_id, p.product_id), COALESCE(p.product_name, s.product_name), COALESCE(p.category_name, s.category_name, 'General')
                 HAVING COUNT(s.id) > 0
             ) s
         )

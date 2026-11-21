@@ -245,6 +245,7 @@ function renderTrendChart(labels, values, options = {}) {
     if (!ctx) return;
     if (trendChartInstance) trendChartInstance.destroy();
 
+    const isStacked = !!options.isStacked;
     const isDual = !!options.dualAxis;
     const isCurrency = options.isCurrency !== false;
     const chartType = options.type || 'bar';
@@ -252,7 +253,50 @@ function renderTrendChart(labels, values, options = {}) {
     let datasets = [];
     let scales = {};
 
-    if (isDual) {
+    if (isStacked && options.datasets && options.datasets.length > 0) {
+        const palette = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#94a3b8'];
+        datasets = options.datasets.map((ds, idx) => ({
+            type: 'bar',
+            label: ds.label,
+            data: ds.data,
+            backgroundColor: palette[idx % palette.length],
+            stack: 'stackedGroup',
+            barThickness: 'flex',
+            maxBarThickness: 32
+        }));
+
+        scales = {
+            x: {
+                stacked: true,
+                title: {
+                    display: true,
+                    text: options.xAxisTitle || 'Timeline →',
+                    color: '#64748b',
+                    font: { size: 12, weight: '600', family: 'Inter, system-ui, -apple-system, sans-serif' },
+                    padding: { top: 8 }
+                },
+                grid: { display: false },
+                ticks: { color: '#94a3b8', font: { size: 11 } }
+            },
+            y: {
+                stacked: true,
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: options.yAxisTitle || 'Units Sold →',
+                    color: '#64748b',
+                    font: { size: 12, weight: '600', family: 'Inter, system-ui, -apple-system, sans-serif' },
+                    padding: { bottom: 8 }
+                },
+                grid: { color: '#f1f5f9', drawBorder: false },
+                ticks: {
+                    color: '#94a3b8',
+                    font: { size: 11 },
+                    precision: 0
+                }
+            }
+        };
+    } else if (isDual) {
         const revenueData = options.revenueValues || values || [];
         const quantityData = options.quantityValues || [];
         datasets = [
@@ -389,7 +433,7 @@ function renderTrendChart(labels, values, options = {}) {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    display: isDual,
+                    display: isDual || isStacked,
                     position: 'top',
                     labels: {
                         boxWidth: 12,
@@ -405,10 +449,18 @@ function renderTrendChart(labels, values, options = {}) {
                     callbacks: {
                         label: (ctx) => {
                             const val = ctx.parsed.y ?? ctx.parsed;
+                            if (isStacked) {
+                                return ` ${ctx.dataset.label}: ${Number(val).toLocaleString('en-IN')} units`;
+                            }
                             if (ctx.dataset.yAxisID === 'y1' || (!isCurrency && !isDual)) {
                                 return ` ${ctx.dataset.label}: ${Number(val).toLocaleString('en-IN')} units`;
                             }
                             return ` ${ctx.dataset.label}: ${fmtINR(val)}`;
+                        },
+                        footer: (items) => {
+                            if (!isStacked || !items || items.length === 0) return '';
+                            const sum = items.reduce((a, b) => a + (b.parsed.y || 0), 0);
+                            return `Total: ${Number(sum).toLocaleString('en-IN')} units`;
                         }
                     }
                 }
@@ -728,7 +780,14 @@ function getPreviewData() {
             },
             trend: {
                 labels: ['01 Oct', '04 Oct', '07 Oct', '10 Oct', '13 Oct', '16 Oct', '19 Oct', '20 Oct'],
-                values: [38, 46, 41, 58, 44, 62, 39, 42]
+                values: [38, 46, 41, 58, 44, 62, 39, 42],
+                datasets: [
+                    { label: 'Hair Care', data: [18, 22, 19, 28, 20, 30, 18, 20] },
+                    { label: 'Skin Care', data: [8, 10, 9, 13, 10, 14, 9, 10] },
+                    { label: 'Styling & Tools', data: [5, 6, 6, 8, 7, 9, 6, 6] },
+                    { label: 'Beard & Men', data: [4, 5, 4, 6, 4, 6, 4, 4] },
+                    { label: 'Other Categories', data: [3, 3, 3, 3, 3, 3, 2, 2] }
+                ]
             },
             distribution: {
                 labels: ["L'Oréal Shampoo", 'Moroccan Oil', 'Dermalogica', 'Olaplex No. 3', 'Beardo Oil', 'Others'],
@@ -1088,20 +1147,30 @@ async function renderProdWise(data, supabase) {
 
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
-        // 2. Trend Chart (Units Sold Trend)
-        renderTrendChart(trend.labels, trend.values, {
-            type: 'bar',
-            datasetLabel: 'Units Sold',
-            isCurrency: false,
-            color: '#6366f1',
-            yAxisTitle: 'Units Sold →',
-            xAxisTitle: 'Timeline →'
-        });
+        // 2. Trend Chart (Stacked Categories Volume by Timeline)
+        if (trend.datasets && trend.datasets.length > 0) {
+            renderTrendChart(trend.labels, trend.values, {
+                isStacked: true,
+                datasets: trend.datasets,
+                isCurrency: false,
+                yAxisTitle: 'Units Sold →',
+                xAxisTitle: 'Timeline →'
+            });
+        } else {
+            renderTrendChart(trend.labels, trend.values, {
+                type: 'bar',
+                datasetLabel: 'Units Sold',
+                isCurrency: false,
+                color: '#6366f1',
+                yAxisTitle: 'Units Sold →',
+                xAxisTitle: 'Timeline →'
+            });
+        }
 
         // 3. Donut Chart (Top SKUs Volume Share)
         renderDonutChart(dist.labels, dist.values, {
             centerLabel: 'Units Sold',
-            centerValue: Number(k.total_units || 348).toLocaleString('en-IN'),
+            centerValue: Number(soldUnits || 348).toLocaleString('en-IN'),
             isCurrency: false,
             colors: ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#94a3b8']
         });
@@ -1123,15 +1192,15 @@ async function renderProdWise(data, supabase) {
                     ? `<span style="color:#b45309;font-weight:600;">-${fmtINR(r.disc)}</span>`
                     : `<span style="color:#94a3b8;">—</span>`;
 
-                // Refund Amount derived from returned units × avg unit price where available
-                const refundAmt = r.refund_amount || (r.returned > 0 ? Math.round((r.gross / Math.max(r.sold, 1)) * r.returned) : 0);
+                // Refund Amount: support r.refund or r.refund_amount
+                const refundAmt = r.refund ?? r.refund_amount ?? (r.returned > 0 ? Math.round((r.gross / Math.max(r.sold, 1)) * r.returned) : 0);
                 const refundBadge = refundAmt > 0
                     ? `<span style="color:#dc2626;font-weight:600;">-${fmtINR(refundAmt)}</span>`
                     : `<span style="color:#94a3b8;">—</span>`;
 
                 return [
                     `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${rankBg};font-weight:700;font-size:0.75rem;color:${rankTextColor};">${rank}</span>`,
-                    `<div><strong>${r.name}</strong><br><small style="color:#94a3b8;font-size:0.7rem;">${r.txns ? `${r.txns} bills` : ''}</small></div>`,
+                    `<div><strong>${r.name}</strong><br><small style="color:#94a3b8;font-size:0.7rem;">${r.sku ? `${r.sku} • ` : ''}${r.txns ? `${r.txns} bills` : ''}</small></div>`,
                     `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:#f1f5f9;color:#475569;font-weight:600;font-size:0.75rem;">${r.category}</span>`,
                     `<strong>${Number(r.sold || 0).toLocaleString('en-IN')}</strong>`,
                     retBadge,
