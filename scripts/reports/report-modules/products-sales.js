@@ -723,8 +723,8 @@ function getPreviewData() {
                 top_product_volume_share: '13.8%',
                 top_product_revenue_share: '30.1%',
                 top_product_revenue_amount: 38600,
-                highest_revenue_product_name: "L'Oréal Serie Expert Shampoo",
-                highest_revenue_amount: 38600
+                category_leader_name: 'Hair Care',
+                category_leader_units: 162
             },
             trend: {
                 labels: ['01 Oct', '04 Oct', '07 Oct', '10 Oct', '13 Oct', '16 Oct', '19 Oct', '20 Oct'],
@@ -1080,11 +1080,11 @@ async function renderProdWise(data, supabase) {
         data.kpi3.value = topVolShare;
         data.kpi3.subHtml = `<span style="color:#059669;font-size:0.75rem;font-weight:600;">${topRevShare} revenue (${fmtINR(topRevAmount)})</span>`;
 
-        // Card 4: Highest Revenue-Generating Product
-        const highRevName = k.highest_revenue_product_name || k.top_selling_product_name || k.top_sku_name || '—';
-        const highRevAmount = k.highest_revenue_amount || k.top_product_revenue_amount || 0;
-        data.kpi4.value = highRevName;
-        data.kpi4.subHtml = `<span style="color:#0284c7;font-size:0.75rem;font-weight:600;">${fmtINR(highRevAmount)} generated</span>`;
+        // Card 4: Product Category Leader
+        const catLeaderName = k.category_leader_name || k.top_category || '—';
+        const catLeaderUnits = k.category_leader_units ?? k.top_category_units ?? 0;
+        data.kpi4.value = catLeaderName;
+        data.kpi4.subHtml = `<span style="color:#0284c7;font-size:0.75rem;font-weight:600;">${Number(catLeaderUnits).toLocaleString('en-IN')} overall units sold</span>`;
 
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 

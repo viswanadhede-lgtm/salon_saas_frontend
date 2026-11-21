@@ -383,7 +383,7 @@ const REPORT_TYPES = {
         kpi1: { label: 'Total Products Sold',                 value: 'Loading...' },
         kpi2: { label: 'Top-Selling Product',                 value: 'Loading...' },
         kpi3: { label: 'Top Product Contribution',            value: 'Loading...' },
-        kpi4: { label: 'Highest Revenue-Generating Product',  value: 'Loading...' },
+        kpi4: { label: 'Product Category Leader',             value: 'Loading...' },
         tableTitle: 'Product Performance & Sales Ledger',
         headers: ['Rank', 'Product', 'Category', 'Units Sold', 'Units Returned', 'Gross Sales', 'Discounts', 'Refund Amount', 'Net Sales', 'Share'],
         rows: []
