@@ -116,8 +116,12 @@ BEGIN
     PERFORM shared.check_subscription(p_company_id);
 
     -- =========================================================================
-    -- STAFF PROFILE LOOKUP (if p_staff_id provided)
+    -- SECTION 2: CORE LOGIC IMPLEMENTATION (THREE REVENUE MODULES ENGINE)
     -- =========================================================================
+
+    -- -------------------------------------------------------------------------
+    -- 2.1 STAFF PROFILE LOOKUP (if p_staff_id provided)
+    -- -------------------------------------------------------------------------
     IF p_staff_id IS NOT NULL THEN
         SELECT jsonb_build_object(
             'staff_id',   s.staff_id,
@@ -133,9 +137,9 @@ BEGIN
           AND s.company_id = p_company_id;
     END IF;
 
-    -- =========================================================================
-    -- 1. STAFF REVENUE FROM BOOKINGS (bookings_for_business_transaction)
-    -- =========================================================================
+    -- -------------------------------------------------------------------------
+    -- 2.2 MODULE 1: STAFF REVENUE FROM BOOKINGS (bookings_for_business_transaction)
+    -- -------------------------------------------------------------------------
     SELECT
         -- Case 1: Completed Bookings
         COUNT(*) FILTER (WHERE LOWER(TRIM(booking_status)) = 'completed' AND LOWER(TRIM(payment_status)) = 'paid'),
@@ -177,9 +181,9 @@ BEGIN
     v_gross_total_bookings_count := v_completed_bookings_count + v_cancelled_bookings_count + v_noshow_bookings_count;
     v_net_service_revenue        := GREATEST(0, v_completed_bookings_revenue - v_refunded_bookings_amount);
 
-    -- =========================================================================
-    -- 2. STAFF REVENUE FROM POS (sales_for_business_transactions)
-    -- =========================================================================
+    -- -------------------------------------------------------------------------
+    -- 2.3 MODULE 2: STAFF REVENUE FROM POS (sales_for_business_transactions)
+    -- -------------------------------------------------------------------------
     -- Case 1: Gross Sales
     SELECT
         COALESCE(SUM(total_quantity) FILTER (WHERE LOWER(TRIM(payment_status)) = 'paid'), 0)::bigint,
@@ -231,9 +235,9 @@ BEGIN
     -- Case 4: Net POS Revenue
     v_net_products_sales_revenue := GREATEST(0, v_gross_products_sales_revenue - v_total_refunded_sales_amount);
 
-    -- =========================================================================
-    -- 3. STAFF REVENUE FROM MEMBERSHIP SALES (membership_purchases)
-    -- =========================================================================
+    -- -------------------------------------------------------------------------
+    -- 2.4 MODULE 3: STAFF REVENUE FROM MEMBERSHIP SALES (membership_purchases)
+    -- -------------------------------------------------------------------------
     SELECT
         -- Case 1: Assigned / Sold Memberships
         COUNT(*) FILTER (WHERE (p_staff_id IS NULL OR assigned_by_user_id = p_staff_id) AND LOWER(TRIM(payment_status)) = 'paid'),
@@ -266,18 +270,18 @@ BEGIN
 
     v_net_membership_revenue := GREATEST(0, v_memberships_sold_revenue - v_refunded_memberships_amount);
 
-    -- =========================================================================
-    -- 4. TOTALS ACROSS ALL THREE REVENUE GENERATION MODULES
-    -- =========================================================================
+    -- -------------------------------------------------------------------------
+    -- 2.5 TOTALS ACROSS ALL THREE REVENUE GENERATION MODULES
+    -- -------------------------------------------------------------------------
     v_gross_total_revenue    := v_completed_bookings_revenue + v_gross_products_sales_revenue + v_memberships_sold_revenue;
     v_total_refunds_amount   := v_refunded_bookings_amount + v_total_refunded_sales_amount + v_refunded_memberships_amount;
     v_total_discounts_amount := v_discounted_bookings_total_amount + v_discounted_sales_total_amount + v_discounted_memberships_total_amt;
     v_net_total_revenue      := GREATEST(0, v_gross_total_revenue - v_total_refunds_amount - v_total_discounts_amount);
     v_total_activities_count := v_completed_bookings_count + v_gross_products_sold_quantity + v_memberships_sold_count;
 
-    -- =========================================================================
-    -- 5. STAFF PERFORMANCE LEADERBOARD (FLEET-WIDE SUMMARY)
-    -- =========================================================================
+    -- -------------------------------------------------------------------------
+    -- 2.6 STAFF PERFORMANCE LEADERBOARD (FLEET-WIDE SUMMARY)
+    -- -------------------------------------------------------------------------
     SELECT COALESCE(jsonb_agg(
         jsonb_build_object(
             'id',                  st.staff_id,
@@ -392,9 +396,9 @@ BEGIN
           AND LOWER(TRIM(COALESCE(s.status, ''))) != 'deleted'
     ) st;
 
-    -- =========================================================================
-    -- RETURN COMPLETE 3-MODULE PAYLOAD
-    -- =========================================================================
+    -- -------------------------------------------------------------------------
+    -- 2.7 RETURN COMPLETE 3-MODULE PAYLOAD
+    -- -------------------------------------------------------------------------
     RETURN jsonb_build_object(
         'staff_profile', v_staff_profile,
         'bookings_module', jsonb_build_object(

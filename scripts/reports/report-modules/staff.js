@@ -60,23 +60,23 @@ async function callStaffRpc(supabase, companyId, branchId, start, end, staffId =
     const cid = (companyId && companyId !== 'null' && companyId !== 'undefined' && companyId !== 'all') ? companyId : null;
     const bid = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== 'all') ? branchId : null;
 
-    console.log('[staff] Calling get_staff_report with:', { cid, bid, start, end, staffId });
+    console.log('[staff] Calling get_staff_revenue_stats_across_three_modules with:', { cid, bid, start, end, staffId });
     try {
-        const { data, error } = await supabase.rpc('get_staff_report', {
+        const { data, error } = await supabase.rpc('get_staff_revenue_stats_across_three_modules', {
             p_company_id: cid,
+            p_staff_id:   staffId || null,
             p_branch_id:  bid,
             p_start_date: start,
-            p_end_date:   end,
-            p_staff_id:   staffId || null
+            p_end_date:   end
         });
 
         if (error) {
-            console.warn('[staff] get_staff_report RPC returned error or not yet installed:', error.message);
+            console.warn('[staff] get_staff_revenue_stats_across_three_modules RPC returned error or not yet installed:', error.message);
             return null;
         }
         return unwrapRpcResult(data);
     } catch (err) {
-        console.warn('[staff] Error executing get_staff_report RPC:', err.message);
+        console.warn('[staff] Error executing get_staff_revenue_stats_across_three_modules RPC:', err.message);
         return null;
     }
 }
@@ -254,16 +254,16 @@ async function renderStaffOverview(data, supabase) {
 
         // Loading state
         updateKPIs(
-            { label: 'Total Staff',            value: 'Loading...' },
-            { label: 'Top Performer',          value: 'Loading...' },
-            { label: 'Avg Bookings per Staff', value: 'Loading...' },
-            { label: 'Inactive Staff',         value: 'Loading...' }
+            { label: 'Total Staff',                value: 'Loading...' },
+            { label: 'Average Bookings for staff',  value: 'Loading...' },
+            { label: 'Total revenue Generated',    value: 'Loading...' },
+            { label: 'Top Performer',              value: 'Loading...' }
         );
 
         let report = await callStaffRpc(supabase, companyId, bid, start, end, null);
 
-        // Fallback demo/initial dataset if RPC not yet deployed in DB
-        if (!report || !report.kpis) {
+        // Fallback demo/initial dataset if RPC returns null or empty
+        if (!report || (!report.kpis && !report.staff_leaderboard && !report.totals_across_modules)) {
             report = {
                 kpis: {
                     total_staff: 20,
@@ -393,32 +393,95 @@ async function renderStaffOverview(data, supabase) {
             };
         }
 
-        const kpis        = report.kpis || {};
-        const trend       = report.capacity_trend || {};
-        const dist        = report.status_distribution || {};
-        const staffDirect = report.staff_directory || [];
+        const staffDirect = (report.staff_leaderboard && report.staff_leaderboard.length > 0)
+            ? report.staff_leaderboard
+            : (report.staff_directory || []);
+
+        const bookingsModule    = report.bookings_module || {};
+        const posModule         = report.pos_module || {};
+        const membershipsModule = report.memberships_module || {};
+        const totalsAcross      = report.totals_across_modules || {};
+        const kpis              = report.kpis || {};
+        const trend             = report.capacity_trend || {};
+        const dist              = report.status_distribution || {};
+
+        // -------------------------------------------------------------
+        // STAT CARD 1: Total Staff
+        // Total staff = total number of staff with status is not deleted
+        // Active staff = staff that has atleast one booking in the last 30 days
+        // Inactive staff = staff that has no bookings in the last 30 days and the status is not deleted
+        // -------------------------------------------------------------
+        const totalStaff = kpis.total_staff !== undefined
+            ? kpis.total_staff
+            : staffDirect.length;
+
+        const activeStaff = kpis.active_staff !== undefined
+            ? kpis.active_staff
+            : staffDirect.filter(s => (s.completed_bookings || 0) > 0 || (s.status || '').toLowerCase() === 'active').length;
+
+        const inactiveStaff = kpis.inactive_staff !== undefined
+            ? kpis.inactive_staff
+            : Math.max(0, totalStaff - activeStaff);
+
+        // -------------------------------------------------------------
+        // STAT CARD 2: Average Bookings for staff
+        // Average Bookings for staff = total completed bookings / total number of staff
+        // Total completed bookings obtained from RPC get_staff_revenue_stats_across_three_modules
+        // -------------------------------------------------------------
+        const totalCompletedBookings = bookingsModule.case_1_completed?.completed_bookings_count
+            ?? (kpis.total_completed_bookings ?? staffDirect.reduce((sum, s) => sum + (s.completed_bookings || 0), 0));
+
+        const avgBookingsPerStaff = totalStaff > 0
+            ? (totalCompletedBookings / totalStaff).toFixed(1)
+            : '0';
+
+        // -------------------------------------------------------------
+        // STAT CARD 3: Total revenue Generated
+        // Total revenue Generated = revenue generated by all staff across all 3 revenue modules (Bookings + POS + Memberships) for the selected period
+        // Description - Average Revenue Per Staff = amount
+        // -------------------------------------------------------------
+        const totalRevenue = totalsAcross.gross_total_revenue
+            ?? (kpis.total_revenue ?? staffDirect.reduce((sum, s) => sum + (s.total_revenue || 0), 0));
+
+        const avgRevenuePerStaff = totalStaff > 0
+            ? Math.round(totalRevenue / totalStaff)
+            : 0;
+
+        // -------------------------------------------------------------
+        // STAT CARD 4: Top Performer
+        // Top performer = staff name
+        // description = amount & % of total revenue example ₹1,25,000 · 22.5% of total sales
+        // -------------------------------------------------------------
+        const topStaff = staffDirect.length > 0 ? staffDirect[0] : null;
+        const topPerformerName = topStaff ? topStaff.name : (kpis.top_performer_name || '—');
+        const topPerformerRevenue = topStaff ? (topStaff.total_revenue || 0) : (kpis.top_performer_revenue || 0);
+        const topPct = totalRevenue > 0
+            ? ((topPerformerRevenue / totalRevenue) * 100).toFixed(1) + '%'
+            : '0%';
 
         // 1. Update 4 Stat Cards
         updateKPIs(
             {
                 label: 'Total Staff',
-                value: String(kpis.total_staff || staffDirect.length),
-                sub: `${kpis.active_staff || 0} Active • ${kpis.on_leave_staff || 0} On Leave`
+                value: String(totalStaff),
+                sub: `${activeStaff} Active · ${inactiveStaff} Inactive`
+            },
+            {
+                label: 'Average Bookings for staff',
+                value: String(avgBookingsPerStaff),
+                sub: `${totalCompletedBookings} total completed bookings`
+            },
+            {
+                label: 'Total revenue Generated',
+                value: formatCurrency(totalRevenue),
+                sub: `Average Revenue Per Staff = ${formatCurrency(avgRevenuePerStaff)}`
             },
             {
                 label: 'Top Performer',
-                value: kpis.top_performer_name || '—',
-                sub: `${formatCurrency(kpis.top_performer_revenue || 0)} (${kpis.top_performer_bookings || 0} Bookings)`
-            },
-            {
-                label: 'Avg Bookings per Staff',
-                value: String(kpis.avg_bookings_per_staff || 0),
-                sub: 'Completed appointments / staff'
-            },
-            {
-                label: 'Inactive Staff',
-                value: String(kpis.inactive_staff || 0),
-                sub: `${kpis.on_leave_staff || 0} currently on leave`
+                value: topPerformerName,
+                sub: (topStaff || topPerformerRevenue > 0)
+                    ? `${formatCurrency(topPerformerRevenue)} · ${topPct} of total sales`
+                    : 'No sales recorded'
             }
         );
 
@@ -507,18 +570,18 @@ async function renderStaffOverview(data, supabase) {
         if (distCanvas) {
             distChartInstance = destroyChart(distChartInstance);
 
-            const totalStaff = dist.total || kpis.total_staff || 20;
-            const activeCount = dist.active !== undefined ? dist.active : (kpis.active_staff || 12);
-            const leaveCount  = dist.on_leave !== undefined ? dist.on_leave : (kpis.on_leave_staff || 4);
-            const inactiveCount = dist.inactive !== undefined ? dist.inactive : (kpis.inactive_staff || 4);
+            const totalDistStaff = dist.total || totalStaff || 20;
+            const activeCount    = dist.active !== undefined ? dist.active : activeStaff;
+            const leaveCount     = dist.on_leave !== undefined ? dist.on_leave : (kpis.on_leave_staff || staffDirect.filter(s => (s.status || '').toLowerCase().includes('leave')).length);
+            const inactiveCount  = dist.inactive !== undefined ? dist.inactive : inactiveStaff;
 
-            const activePct   = totalStaff > 0 ? Math.round((activeCount / totalStaff) * 100) : 60;
-            const leavePct    = totalStaff > 0 ? Math.round((leaveCount / totalStaff) * 100) : 20;
-            const inactivePct = totalStaff > 0 ? Math.round((inactiveCount / totalStaff) * 100) : 20;
+            const activePct   = totalDistStaff > 0 ? Math.round((activeCount / totalDistStaff) * 100) : 60;
+            const leavePct    = totalDistStaff > 0 ? Math.round((leaveCount / totalDistStaff) * 100) : 20;
+            const inactivePct = totalDistStaff > 0 ? Math.round((inactiveCount / totalDistStaff) * 100) : 20;
 
             const centerVal = document.getElementById('donutCenterValue');
             const centerLbl = document.getElementById('donutCenterLabel');
-            if (centerVal) centerVal.textContent = String(totalStaff);
+            if (centerVal) centerVal.textContent = String(totalDistStaff);
             if (centerLbl) centerLbl.textContent = 'Staff';
 
             const statusSlices = [
@@ -631,8 +694,8 @@ async function renderStaffOverview(data, supabase) {
                 formatCurrency(s.membership_sales || 0),
                 `<strong style="color:#059669;">${formatCurrency(s.total_revenue || 0)}</strong>`,
                 formatCurrency(s.avg_ticket || 0),
-                (s.discount_given || 0) > 0
-                    ? `<span style="color:#dc2626; font-weight:600;">${formatCurrency(s.discount_given)}</span>`
+                (s.discount_given || s.total_discounts || 0) > 0
+                    ? `<span style="color:#dc2626; font-weight:600;">${formatCurrency(s.discount_given || s.total_discounts)}</span>`
                     : `<span style="color:#94a3b8;">—</span>`,
                 `<span class="status-pill ${statusClass}">${statusLabel}</span>`,
                 `<a href="report-detail.html?type=staff-insights&staffId=${s.id}&cat=staff" class="btn-view-360">
