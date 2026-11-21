@@ -716,14 +716,15 @@ function getPreviewData() {
         // 2. Product-wise
         'prod_wise': {
             kpis: {
-                total_units: 348,
-                gross_units: 359,
-                net_revenue: 128400,
-                top_sku_name: "L'Oréal Shampoo",
-                top_sku_units: 48,
-                top_sku_pct: '30.1%',
-                returned_units: 11,
-                refunded_amount: 4200
+                total_units_sold: 348,
+                total_units_returned: 11,
+                top_selling_product_name: "L'Oréal Serie Expert Shampoo",
+                top_selling_units: 48,
+                top_product_volume_share: '13.8%',
+                top_product_revenue_share: '30.1%',
+                top_product_revenue_amount: 38600,
+                highest_revenue_product_name: "L'Oréal Serie Expert Shampoo",
+                highest_revenue_amount: 38600
             },
             trend: {
                 labels: ['01 Oct', '04 Oct', '07 Oct', '10 Oct', '13 Oct', '16 Oct', '19 Oct', '20 Oct'],
@@ -1059,22 +1060,31 @@ async function renderProdWise(data, supabase) {
         const dist = report.distribution || { labels: [], values: [] };
         const rows = report.rows || [];
 
-        // 1. KPI Cards (Option 3: Balanced Commercial & Inventory)
-        // Card 1: Total Units Sold
-        data.kpi1.value = Number(k.total_units || 348).toLocaleString('en-IN') + ' units';
-        data.kpi1.subHtml = `<span style="color:#64748b;font-size:0.75rem;">${k.gross_units || 359} Gross units billed</span>`;
+        // 1. Four Stat Cards (Product-Wise Sales)
+        // Card 1: Total Products Sold
+        const soldUnits = k.total_units_sold ?? k.total_units ?? 0;
+        const retUnits = k.total_units_returned ?? k.returned_units ?? 0;
+        data.kpi1.value = `${Number(soldUnits).toLocaleString('en-IN')} units`;
+        data.kpi1.subHtml = `<span style="color:#dc2626;font-size:0.75rem;font-weight:600;">${Number(retUnits).toLocaleString('en-IN')} units returned</span>`;
 
-        // Card 2: Net Product Revenue
-        data.kpi2.value = fmtINR(k.net_revenue || 128400);
-        data.kpi2.subHtml = `<span style="color:#059669;font-weight:600;font-size:0.75rem;">Realized after discounts</span>`;
+        // Card 2: Top-Selling Product
+        const topSellName = k.top_selling_product_name || k.top_sku_name || '—';
+        const topSellUnits = k.top_selling_units ?? k.top_sku_units ?? 0;
+        data.kpi2.value = topSellName;
+        data.kpi2.subHtml = `<span style="color:#4f46e5;font-size:0.75rem;font-weight:600;">${Number(topSellUnits).toLocaleString('en-IN')} units sold</span>`;
 
-        // Card 3: Top Selling SKU
-        data.kpi3.value = k.top_sku_name || "L'Oréal Shampoo";
-        data.kpi3.subHtml = `<span style="color:#4f46e5;font-weight:600;font-size:0.75rem;">${k.top_sku_units || 48} units • ${k.top_sku_pct || '30.1%'} vol</span>`;
+        // Card 3: Top Product Contribution
+        const topVolShare = k.top_product_volume_share || k.top_sku_pct || '0%';
+        const topRevShare = k.top_product_revenue_share || '0%';
+        const topRevAmount = k.top_product_revenue_amount || 0;
+        data.kpi3.value = topVolShare;
+        data.kpi3.subHtml = `<span style="color:#059669;font-size:0.75rem;font-weight:600;">${topRevShare} revenue (${fmtINR(topRevAmount)})</span>`;
 
-        // Card 4: Units Returned
-        data.kpi4.value = Number(k.returned_units || 11).toLocaleString('en-IN') + ' units';
-        data.kpi4.subHtml = `<span style="color:#dc2626;font-weight:600;background:#fee2e2;padding:1px 6px;border-radius:4px;font-size:0.72rem;">-${fmtINR(k.refunded_amount || 4200)} refund val</span>`;
+        // Card 4: Highest Revenue-Generating Product
+        const highRevName = k.highest_revenue_product_name || k.top_selling_product_name || k.top_sku_name || '—';
+        const highRevAmount = k.highest_revenue_amount || k.top_product_revenue_amount || 0;
+        data.kpi4.value = highRevName;
+        data.kpi4.subHtml = `<span style="color:#0284c7;font-size:0.75rem;font-weight:600;">${fmtINR(highRevAmount)} generated</span>`;
 
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
