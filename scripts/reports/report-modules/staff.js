@@ -247,6 +247,56 @@ async function renderStaffOverview(data, supabase) {
     const oldInsightsTop = document.getElementById('staffInsightsTopWrap');
     if (oldInsightsTop) oldInsightsTop.remove();
 
+    const applyStaffCardColors = () => {
+        const card1 = document.getElementById('kpiLabel1')?.closest('.kpi-card');
+        const card2 = document.getElementById('kpiLabel2')?.closest('.kpi-card');
+        const card3 = document.getElementById('kpiLabel3')?.closest('.kpi-card');
+        const card4 = document.getElementById('kpiLabel4')?.closest('.kpi-card');
+
+        if (card1) {
+            card1.style.borderTop = '3.5px solid #6366f1';
+            card1.style.background = 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 32%)';
+            card1.style.transition = 'all 0.2s ease';
+        }
+        if (card2) {
+            card2.style.borderTop = '3.5px solid #0284c7';
+            card2.style.background = 'linear-gradient(180deg, #f0f9ff 0%, #ffffff 32%)';
+            card2.style.transition = 'all 0.2s ease';
+        }
+        if (card3) {
+            card3.style.borderTop = '3.5px solid #10b981';
+            card3.style.background = 'linear-gradient(180deg, #ecfdf5 0%, #ffffff 32%)';
+            card3.style.transition = 'all 0.2s ease';
+        }
+        if (card4) {
+            card4.style.borderTop = '3.5px solid #f59e0b';
+            card4.style.background = 'linear-gradient(180deg, #fffbeb 0%, #ffffff 32%)';
+            card4.style.transition = 'all 0.2s ease';
+        }
+
+        const val1 = document.getElementById('kpiValue1');
+        const val2 = document.getElementById('kpiValue2');
+        const val3 = document.getElementById('kpiValue3');
+        const val4 = document.getElementById('kpiValue4');
+        if (val1) val1.style.color = '#312e81'; // Deep Indigo
+        if (val2) val2.style.color = '#0369a1'; // Deep Sky Blue
+        if (val3) val3.style.color = '#047857'; // Deep Emerald Green
+        if (val4) val4.style.color = '#78350f'; // Warm Amber Brown
+
+        const lbl1 = document.getElementById('kpiLabel1');
+        const lbl2 = document.getElementById('kpiLabel2');
+        const lbl3 = document.getElementById('kpiLabel3');
+        const lbl4 = document.getElementById('kpiLabel4');
+        if (lbl1) lbl1.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;"><i data-feather="users" style="width:13px; height:13px; color:#6366f1;"></i> Total Staff</span>`;
+        if (lbl2) lbl2.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;"><i data-feather="calendar" style="width:13px; height:13px; color:#0284c7;"></i> Average Bookings for staff</span>`;
+        if (lbl3) lbl3.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;"><i data-feather="dollar-sign" style="width:13px; height:13px; color:#10b981;"></i> Total revenue Generated</span>`;
+        if (lbl4) lbl4.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;"><i data-feather="award" style="width:13px; height:13px; color:#f59e0b;"></i> Top Performer</span>`;
+
+        if (window.feather) {
+            try { feather.replace(); } catch (e) {}
+        }
+    };
+
     const loadStaffOverview = async () => {
         const start = filterStart ? filterStart.value : ((new Date(Date.now() - 30 * 86400000)).toISOString().split('T')[0]);
         const end   = filterEnd   ? filterEnd.value   : (new Date().toISOString().split('T')[0]);
@@ -259,6 +309,7 @@ async function renderStaffOverview(data, supabase) {
             { label: 'Total revenue Generated',    value: 'Loading...' },
             { label: 'Top Performer',              value: 'Loading...' }
         );
+        applyStaffCardColors();
 
         let report = await callStaffRpc(supabase, companyId, bid, start, end, null);
 
@@ -459,31 +510,59 @@ async function renderStaffOverview(data, supabase) {
             ? ((topPerformerRevenue / totalRevenue) * 100).toFixed(1) + '%'
             : '0%';
 
-        // 1. Update 4 Stat Cards
+        // 1. Update 4 Stat Cards with vibrant, distinctive colors and pill badges
         updateKPIs(
             {
                 label: 'Total Staff',
                 value: String(totalStaff),
-                sub: `${activeStaff} Active · ${inactiveStaff} Inactive`
+                subHtml: `
+                    <span style="display:inline-flex; align-items:center; gap:5px; background:#ecfdf5; color:#065f46; font-weight:700; padding:2px 8px; border-radius:6px; font-size:0.75rem; border:1px solid #a7f3d0;">
+                        <span style="width:6px; height:6px; border-radius:50%; background:#10b981; display:inline-block;"></span>${activeStaff} Active
+                    </span>
+                    <span style="display:inline-flex; align-items:center; gap:5px; background:#f8fafc; color:#64748b; font-weight:600; padding:2px 8px; border-radius:6px; font-size:0.75rem; border:1px solid #e2e8f0;">
+                        <span style="width:6px; height:6px; border-radius:50%; background:#94a3b8; display:inline-block;"></span>${inactiveStaff} Inactive
+                    </span>
+                    <span style="color:#94a3b8; font-size:0.72rem; margin-left:auto; font-weight:500;">Last 30d</span>
+                `
             },
             {
                 label: 'Average Bookings for staff',
                 value: String(avgBookingsPerStaff),
-                sub: `${totalCompletedBookings} total completed bookings`
+                subHtml: `
+                    <span style="display:inline-flex; align-items:center; gap:5px; background:#e0f2fe; color:#0369a1; font-weight:700; padding:2px 8px; border-radius:6px; font-size:0.75rem; border:1px solid #bae6fd;">
+                        <i data-feather="check-circle" style="width:12px; height:12px;"></i>${totalCompletedBookings} Bookings
+                    </span>
+                    <span style="color:#64748b; font-size:0.74rem; font-weight:500;">across <strong style="color:#0f172a;">${totalStaff} staff</strong></span>
+                `
             },
             {
                 label: 'Total revenue Generated',
                 value: formatCurrency(totalRevenue),
-                sub: `Average Revenue Per Staff = ${formatCurrency(avgRevenuePerStaff)}`
+                subHtml: `
+                    <span style="display:inline-flex; align-items:center; gap:4px; background:#ecfdf5; color:#047857; font-weight:700; padding:2px 8px; border-radius:6px; font-size:0.75rem; border:1px solid #a7f3d0;">
+                        <i data-feather="trending-up" style="width:12px; height:12px;"></i>Avg / Staff:
+                    </span>
+                    <strong style="color:#047857; font-size:0.8rem; font-weight:700;">${formatCurrency(avgRevenuePerStaff)}</strong>
+                `
             },
             {
                 label: 'Top Performer',
                 value: topPerformerName,
-                sub: (topStaff || topPerformerRevenue > 0)
-                    ? `${formatCurrency(topPerformerRevenue)} · ${topPct} of total sales`
-                    : 'No sales recorded'
+                subHtml: (topStaff || topPerformerRevenue > 0)
+                    ? `
+                        <span style="display:inline-flex; align-items:center; gap:4px; background:#fef3c7; color:#92400e; font-weight:700; padding:2px 8px; border-radius:6px; font-size:0.75rem; border:1px solid #fde68a;">
+                            <i data-feather="dollar-sign" style="width:12px; height:12px;"></i>${formatCurrency(topPerformerRevenue)}
+                        </span>
+                        <span style="display:inline-flex; align-items:center; background:#f3e8ff; color:#6b21a8; font-weight:700; padding:2px 8px; border-radius:6px; font-size:0.73rem; border:1px solid #e9d5ff;">
+                            ${topPct} of total sales
+                        </span>
+                      `
+                    : `<span style="color:#94a3b8; font-size:0.75rem;">No sales recorded</span>`
             }
         );
+
+        // Re-apply colorful borders, gradients, and icons
+        applyStaffCardColors();
 
         // 2. Render Left Chart: Staff Capacity & Headcount Trend (3 Lines)
         const leftCanvas = document.getElementById('trendChart');
