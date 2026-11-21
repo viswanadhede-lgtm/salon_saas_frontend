@@ -245,77 +245,175 @@ function renderTrendChart(labels, values, options = {}) {
     if (!ctx) return;
     if (trendChartInstance) trendChartInstance.destroy();
 
-    const chartType = options.type || 'bar';
+    const isDual = !!options.dualAxis;
     const isCurrency = options.isCurrency !== false;
-    const barColor = options.color || '#6366f1';
-    const bgColors = values.map((_, i) => i === values.length - 1 ? '#0ea5e9' : barColor);
+    const chartType = options.type || 'bar';
+
+    let datasets = [];
+    let scales = {};
+
+    if (isDual) {
+        const revenueData = options.revenueValues || values || [];
+        const quantityData = options.quantityValues || [];
+        datasets = [
+            {
+                type: 'bar',
+                label: 'Product Revenue (₹)',
+                data: revenueData,
+                backgroundColor: revenueData.map((_, i) => i === revenueData.length - 1 ? '#0284c7' : '#38bdf8'),
+                borderRadius: 5,
+                yAxisID: 'y',
+                order: 2,
+                barThickness: 'flex',
+                maxBarThickness: 28
+            },
+            {
+                type: 'line',
+                label: 'Units Sold',
+                data: quantityData,
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                borderWidth: 2.5,
+                pointBackgroundColor: '#4f46e5',
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                fill: false,
+                tension: 0.35,
+                yAxisID: 'y1',
+                order: 1
+            }
+        ];
+
+        scales = {
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Revenue (₹) →',
+                    color: '#0284c7',
+                    font: { size: 11, weight: '600' }
+                },
+                grid: { color: '#f1f5f9', drawBorder: false },
+                ticks: {
+                    color: '#64748b',
+                    font: { size: 10 },
+                    callback: (v) => v >= 1000 ? `₹${(v/1000).toFixed(0)}k` : `₹${v}`
+                }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Quantity Sold (Units) →',
+                    color: '#6366f1',
+                    font: { size: 11, weight: '600' }
+                },
+                grid: { drawOnChartArea: false },
+                ticks: {
+                    color: '#6366f1',
+                    font: { size: 10 },
+                    precision: 0
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: options.xAxisTitle || 'Timeline →',
+                    color: '#64748b',
+                    font: { size: 11, weight: '600' }
+                },
+                grid: { display: false },
+                ticks: { color: '#94a3b8', font: { size: 10 } }
+            }
+        };
+    } else {
+        const barColor = options.color || '#6366f1';
+        const bgColors = values.map((_, i) => i === values.length - 1 ? '#0ea5e9' : barColor);
+        datasets = [{
+            type: chartType,
+            label: options.datasetLabel || 'Sales',
+            data: values,
+            backgroundColor: chartType === 'line' ? 'rgba(99, 102, 241, 0.12)' : bgColors,
+            borderColor: '#6366f1',
+            borderWidth: chartType === 'line' ? 2.5 : 0,
+            fill: chartType === 'line',
+            tension: 0.35,
+            borderRadius: chartType === 'bar' ? 6 : 0,
+            barThickness: 28,
+        }];
+        scales = {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: options.yAxisTitle || (isCurrency ? 'Revenue (₹) →' : 'Units →'),
+                    color: '#64748b',
+                    font: { size: 12, weight: '600', family: 'Inter, system-ui, -apple-system, sans-serif' },
+                    padding: { bottom: 8 }
+                },
+                grid: { color: '#f1f5f9', drawBorder: false },
+                ticks: {
+                    color: '#94a3b8',
+                    font: { size: 11 },
+                    callback: (v) => isCurrency ? (v >= 1000 ? `₹${(v/1000).toFixed(0)}k` : `₹${v}`) : v
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: options.xAxisTitle || 'Timeline →',
+                    color: '#64748b',
+                    font: { size: 12, weight: '600', family: 'Inter, system-ui, -apple-system, sans-serif' },
+                    padding: { top: 8 }
+                },
+                grid: { display: false },
+                ticks: { color: '#94a3b8', font: { size: 11 } }
+            }
+        };
+    }
 
     trendChartInstance = new Chart(ctx, {
         type: chartType,
         data: {
             labels: labels,
-            datasets: [{
-                label: options.datasetLabel || 'Sales',
-                data: values,
-                backgroundColor: chartType === 'line' ? 'rgba(99, 102, 241, 0.12)' : bgColors,
-                borderColor: '#6366f1',
-                borderWidth: chartType === 'line' ? 2.5 : 0,
-                fill: chartType === 'line',
-                tension: 0.35,
-                borderRadius: chartType === 'bar' ? 6 : 0,
-                barThickness: 28,
-            }]
+            datasets: datasets
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: false },
+                legend: {
+                    display: isDual,
+                    position: 'top',
+                    labels: {
+                        boxWidth: 12,
+                        font: { size: 11, weight: '500' }
+                    }
+                },
                 tooltip: {
                     backgroundColor: '#0f172a',
                     padding: 12,
                     cornerRadius: 8,
                     titleFont: { size: 13, weight: '600' },
-                    bodyFont: { size: 13 },
+                    bodyFont: { size: 12 },
                     callbacks: {
                         label: (ctx) => {
                             const val = ctx.parsed.y ?? ctx.parsed;
-                            return ` ${options.datasetLabel || 'Value'}: ${isCurrency ? fmtINR(val) : Number(val).toLocaleString('en-IN')}`;
+                            if (ctx.dataset.yAxisID === 'y1' || (!isCurrency && !isDual)) {
+                                return ` ${ctx.dataset.label}: ${Number(val).toLocaleString('en-IN')} units`;
+                            }
+                            return ` ${ctx.dataset.label}: ${fmtINR(val)}`;
                         }
                     }
                 }
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        // Note: Chart.js rotates the Y-axis title counter-clockwise by 90°.
-                        // Therefore, a rightward arrow '→' in the string points straight UPWARDS on screen.
-                        text: options.yAxisTitle || (isCurrency ? 'Revenue (₹) →' : 'Units →'),
-                        color: '#64748b',
-                        font: { size: 12, weight: '600', family: 'Inter, system-ui, -apple-system, sans-serif' },
-                        padding: { bottom: 8 }
-                    },
-                    grid: { color: '#f1f5f9', drawBorder: false },
-                    ticks: {
-                        color: '#94a3b8',
-                        font: { size: 11 },
-                        callback: (v) => isCurrency ? (v >= 1000 ? `₹${(v/1000).toFixed(0)}k` : `₹${v}`) : v
-                    }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: options.xAxisTitle || 'Timeline →',
-                        color: '#64748b',
-                        font: { size: 12, weight: '600', family: 'Inter, system-ui, -apple-system, sans-serif' },
-                        padding: { top: 8 }
-                    },
-                    grid: { display: false },
-                    ticks: { color: '#94a3b8', font: { size: 11 } }
-                }
-            }
+            scales: scales
         }
     });
 }
@@ -842,12 +940,12 @@ async function renderProdOverview(data, supabase) {
         const rows = report.sales_transactions || report.rows || [];
 
         // 1. KPI Cards (4 cards with rich financial & inventory breakdown)
-        data.kpi1.value = fmtINR(k.total_sales || 142850);
+        data.kpi1.value = fmtINR(k.total_sales || 0);
         data.kpi1.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Gross billed retail sales</span>`;
 
-        const discAmount = k.total_discounts || 10250;
-        const refundAmount = k.total_refunds || 4200;
-        data.kpi2.value = fmtINR(k.net_sales || 128400);
+        const discAmount = k.total_discounts || 0;
+        const refundAmount = k.total_refunds || 0;
+        data.kpi2.value = fmtINR(k.net_sales || 0);
         data.kpi2.subHtml = `
             <span style="display:inline-flex;align-items:center;gap:3px;color:#b45309;font-weight:600;background:#fef3c7;padding:1px 6px;border-radius:4px;font-size:0.72rem;">
                 -${fmtINR(discAmount)} Disc
@@ -857,9 +955,9 @@ async function renderProdOverview(data, supabase) {
             </span>
         `;
 
-        const grossQty = k.gross_quantity || 359;
-        const returnedQty = k.quantity_returned || 11;
-        const netQty = k.quantity_sold || 348;
+        const grossQty = k.gross_quantity || 0;
+        const returnedQty = k.quantity_returned || 0;
+        const netQty = k.quantity_sold || 0;
         data.kpi3.value = Number(netQty).toLocaleString('en-IN') + ' units';
         data.kpi3.subHtml = `
             <span style="color:#64748b;font-size:0.75rem;">${grossQty} Gross</span>
@@ -867,23 +965,25 @@ async function renderProdOverview(data, supabase) {
             <span style="color:#dc2626;font-weight:600;font-size:0.75rem;">-${returnedQty} Ret.</span>
         `;
 
-        data.kpi4.value = Number(k.unique_products || 42).toLocaleString('en-IN') + ' SKUs';
-        data.kpi4.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Active in 5 categories</span>`;
+        const uniqueProducts = k.unique_products || 0;
+        const activeCats = k.active_categories_count || 0;
+        data.kpi4.value = Number(uniqueProducts).toLocaleString('en-IN') + ' SKUs';
+        data.kpi4.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Active in ${activeCats} ${activeCats === 1 ? 'category' : 'categories'}</span>`;
 
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
-        // 2. Trend Chart (Sales Trend)
+        // 2. Dual-Axis Trend Chart (Revenue & Quantity Sold)
         renderTrendChart(trend.labels, trend.values, {
-            type: 'bar',
-            datasetLabel: 'Daily Product Revenue',
-            color: '#0ea5e9'
+            dualAxis: true,
+            revenueValues: trend.revenue_values || trend.values || [],
+            quantityValues: trend.quantity_values || []
         });
 
         // 3. Donut Chart (Category Share)
         renderDonutChart(cats.labels, cats.values, {
             centerLabel: 'Net Sales',
             centerValue: fmtINR(k.net_sales || 0),
-            colors: ['#0ea5e9', '#6366f1', '#10b981', '#f59e0b', '#ec4899']
+            colors: ['#0ea5e9', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6']
         });
 
         // 4. Data Table — headers: Date & Time | Sale Ref | Customer | Product | Category | Staff | Qty | Gross Amount | Discount | Final Amount | Payment Method | Payment Status
