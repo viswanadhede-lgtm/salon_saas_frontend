@@ -1215,36 +1215,36 @@ async function renderStaffInsights(data, supabase) {
             const rowsHtml = rows.map(r => `
                 <div style="display:flex; justify-content:space-between; align-items:center;
                             padding:7px 0; border-bottom:1px solid #f1f5f9;">
-                    <!-- LHS Column: Dot + Label on left, Count Badge on right (aligned column) -->
+                    <!-- LHS Column: Dot + Label on left, Count Badge on right (compact & moved left) -->
                     <div style="display:flex; align-items:center; justify-content:space-between;
-                                flex:1.15; min-width:0; padding-right:10px;">
-                        <div style="display:flex; align-items:center; gap:7px; min-width:0;">
-                            <span style="width:7px; height:7px; border-radius:50%;
+                                flex:0.85; min-width:0; padding-right:8px;">
+                        <div style="display:flex; align-items:center; gap:6px; min-width:0;">
+                            <span style="width:6px; height:6px; border-radius:50%;
                                          background:${r.dot}; display:inline-block; flex-shrink:0;"></span>
-                            <span style="font-size:0.78rem; color:#475569; font-weight:500;
+                            <span style="font-size:0.76rem; color:#475569; font-weight:500;
                                          white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${r.label}</span>
                         </div>
                         ${r.count !== undefined
-                            ? `<span style="font-size:0.73rem; background:#f1f5f9; color:#475569;
-                                           font-weight:600; padding:1px 6px; border-radius:6px;
-                                           min-width:24px; text-align:center; flex-shrink:0; margin-left:6px;">${r.count}</span>`
+                            ? `<span style="font-size:0.72rem; background:#f1f5f9; color:#475569;
+                                           font-weight:600; padding:1px 5px; border-radius:5px;
+                                           min-width:20px; text-align:center; flex-shrink:0; margin-left:4px;">${r.count}</span>`
                             : ''}
                     </div>
 
-                    <!-- RHS Column: Metric Description on left, Rupee Value on right (aligned column) -->
+                    <!-- RHS Column: Metric Description on left, Rupee Value on right (spacious room) -->
                     <div style="display:flex; align-items:center; justify-content:space-between;
-                                flex:0.85; min-width:0; padding-left:10px; border-left:1px solid #f1f5f9;">
-                        <span style="font-size:0.75rem; color:#64748b; font-weight:500;
+                                flex:1.15; min-width:0; padding-left:12px; border-left:1px solid #f1f5f9;">
+                        <span style="font-size:0.76rem; color:#64748b; font-weight:500;
                                      white-space:nowrap;">${r.metric}</span>
                         <span style="font-size:0.82rem; font-weight:700; color:${r.valueColor};
-                                     flex-shrink:0; margin-left:6px; text-align:right;">${formatCurrency(r.value)}</span>
+                                     flex-shrink:0; margin-left:8px; text-align:right;">${formatCurrency(r.value)}</span>
                     </div>
                 </div>
             `).join('');
 
             return `
                 <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px;
-                            border-top:3.5px solid ${accentColor}; padding:18px 20px;
+                            border-top:3.5px solid ${accentColor}; padding:18px 16px;
                             flex:1; min-width:280px; display:flex; flex-direction:column; gap:0;">
                     <!-- Card Header -->
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
