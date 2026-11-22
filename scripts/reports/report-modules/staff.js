@@ -1215,29 +1215,29 @@ async function renderStaffInsights(data, supabase) {
             const rowsHtml = rows.map(r => `
                 <div style="display:flex; justify-content:space-between; align-items:center;
                             padding:7px 0; border-bottom:1px solid #f1f5f9;">
-                    <!-- LHS Column: Dot + Label on left, Count Badge on right (compact & moved left) -->
+                    <!-- LHS Column: Dot + Label on left, Count Badge on right (balanced 50/50) -->
                     <div style="display:flex; align-items:center; justify-content:space-between;
-                                flex:0.85; min-width:0; padding-right:8px;">
+                                flex:1; min-width:0; padding-right:10px;">
                         <div style="display:flex; align-items:center; gap:6px; min-width:0;">
                             <span style="width:6px; height:6px; border-radius:50%;
                                          background:${r.dot}; display:inline-block; flex-shrink:0;"></span>
-                            <span style="font-size:0.76rem; color:#475569; font-weight:500;
+                            <span style="font-size:0.77rem; color:#475569; font-weight:500;
                                          white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${r.label}</span>
                         </div>
                         ${r.count !== undefined
-                            ? `<span style="font-size:0.72rem; background:#f1f5f9; color:#475569;
+                            ? `<span style="font-size:0.73rem; background:#f1f5f9; color:#475569;
                                            font-weight:600; padding:1px 5px; border-radius:5px;
-                                           min-width:20px; text-align:center; flex-shrink:0; margin-left:4px;">${r.count}</span>`
+                                           min-width:22px; text-align:center; flex-shrink:0; margin-left:4px;">${r.count}</span>`
                             : ''}
                     </div>
 
-                    <!-- RHS Column: Metric Description on left, Rupee Value on right (spacious room) -->
+                    <!-- RHS Column: Metric Description on left, Rupee Value on right (balanced 50/50) -->
                     <div style="display:flex; align-items:center; justify-content:space-between;
-                                flex:1.15; min-width:0; padding-left:12px; border-left:1px solid #f1f5f9;">
+                                flex:1; min-width:0; padding-left:10px; border-left:1px solid #f1f5f9;">
                         <span style="font-size:0.76rem; color:#64748b; font-weight:500;
                                      white-space:nowrap;">${r.metric}</span>
                         <span style="font-size:0.82rem; font-weight:700; color:${r.valueColor};
-                                     flex-shrink:0; margin-left:8px; text-align:right;">${formatCurrency(r.value)}</span>
+                                     flex-shrink:0; margin-left:6px; text-align:right;">${formatCurrency(r.value)}</span>
                     </div>
                 </div>
             `).join('');
