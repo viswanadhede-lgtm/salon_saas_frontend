@@ -271,6 +271,8 @@ async function renderStaffOverview(data, supabase) {
     // Remove any leftover Staff 360 Insights header if user switched sub-reports
     const oldInsightsTop = document.getElementById('staffInsightsTopWrap');
     if (oldInsightsTop) oldInsightsTop.remove();
+    const oldHeaderSearch = document.getElementById('staffHeaderSearchWrap');
+    if (oldHeaderSearch) oldHeaderSearch.remove();
 
     const applyStaffCardColors = () => {
         const card1 = document.getElementById('kpiLabel1')?.closest('.kpi-card');
@@ -801,6 +803,35 @@ async function renderStaffInsights(data, supabase) {
         }
     }
 
+    // ── Inject Search Bar into header filter row (LHS of branch selector) ───
+    let headerSearchWrap = document.getElementById('staffHeaderSearchWrap');
+    if (!headerSearchWrap) {
+        headerSearchWrap = document.createElement('div');
+        headerSearchWrap.id = 'staffHeaderSearchWrap';
+        headerSearchWrap.className = 'cust-search-bar-wrap';
+        headerSearchWrap.style.cssText = 'position:relative; min-width:220px; max-width:300px;';
+        headerSearchWrap.innerHTML = `
+            <div class="cust-search-input-box" style="border:1px solid #e2e8f0; border-radius:8px; background:#fff; display:flex; align-items:center; gap:7px; padding:5px 10px; height:36px;">
+                <i data-feather="search" style="width:14px;height:14px;color:#94a3b8;flex-shrink:0;"></i>
+                <input type="text" id="staffProfileSearchInput"
+                    placeholder="Search staff..."
+                    autocomplete="off"
+                    style="border:none; outline:none; font-size:0.82rem; color:#0f172a; background:transparent; width:100%;">
+            </div>
+            <div class="cust-search-dropdown" id="staffSearchDropdown" style="display:none;"></div>
+        `;
+
+        // Prepend before the branch filter pill
+        const headerActions = document.getElementById('headerRightActions');
+        const branchPill    = document.getElementById('branchFilterPill');
+        if (headerActions && branchPill) {
+            headerActions.insertBefore(headerSearchWrap, branchPill);
+        } else if (headerActions) {
+            headerActions.prepend(headerSearchWrap);
+        }
+        if (window.feather) feather.replace();
+    }
+
     const loadStaffProfile = async (staffIdToLoad) => {
         const start = filterStart ? filterStart.value : ((new Date(Date.now() - 180 * 86400000)).toISOString().split('T')[0]);
         const end   = filterEnd   ? filterEnd.value   : (new Date().toISOString().split('T')[0]);
@@ -1146,16 +1177,8 @@ async function renderStaffInsights(data, supabase) {
     const renderTopSearchAndDossier = (profile, staffDirectory) => {
         const initial = (profile.name || 'S').charAt(0).toUpperCase();
 
+        // Dossier card only — search bar is now in the header filter row
         topWrap.innerHTML = `
-            <!-- Progressive Staff Search Bar -->
-            <div class="cust-search-bar-wrap">
-                <div class="cust-search-input-box">
-                    <i data-feather="search"></i>
-                    <input type="text" id="staffProfileSearchInput" placeholder="Search staff team by name, role, phone, or email to load 360° profile..." autocomplete="off">
-                </div>
-                <div class="cust-search-dropdown" id="staffSearchDropdown"></div>
-            </div>
-
             <!-- Staff 360 Dossier Header Card -->
             <div class="cust-profile-dossier">
                 <div class="cust-dossier-left">
@@ -1183,7 +1206,7 @@ async function renderStaffInsights(data, supabase) {
 
         if (window.feather) feather.replace();
 
-        // Wire progressive search auto-complete
+        // Wire progressive search auto-complete (input is now in the header bar)
         const searchInput = document.getElementById('staffProfileSearchInput');
         const dropdown    = document.getElementById('staffSearchDropdown');
 
@@ -1239,7 +1262,7 @@ async function renderStaffInsights(data, supabase) {
             });
 
             document.addEventListener('click', (ev) => {
-                if (!topWrap.contains(ev.target)) {
+                if (!headerSearchWrap || !headerSearchWrap.contains(ev.target)) {
                     dropdown.style.display = 'none';
                 }
             });

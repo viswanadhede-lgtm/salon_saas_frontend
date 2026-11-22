@@ -556,7 +556,7 @@ const REPORT_TYPES = {
     },
     'staff-insights': {
         title: 'Staff 360° Insights',
-        subtitle: 'Individual staff profile, service bookings, retail POS sales, membership sales & revenue contribution share',
+        subtitle: 'Full Staff Profile',
         icon: 'award',
         backCat: 'staff',
         leftChartTitle: 'Monthly Revenue Breakdown by Stream',
