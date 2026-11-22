@@ -1215,18 +1215,29 @@ async function renderStaffInsights(data, supabase) {
             const rowsHtml = rows.map(r => `
                 <div style="display:flex; justify-content:space-between; align-items:center;
                             padding:7px 0; border-bottom:1px solid #f1f5f9;">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="width:7px; height:7px; border-radius:50%;
-                                     background:${r.dot}; display:inline-block; flex-shrink:0;"></span>
-                        <span style="font-size:0.8rem; color:#475569; font-weight:500;">${r.label}</span>
+                    <!-- LHS Column: Dot + Label on left, Count Badge on right (aligned column) -->
+                    <div style="display:flex; align-items:center; justify-content:space-between;
+                                flex:1.15; min-width:0; padding-right:10px;">
+                        <div style="display:flex; align-items:center; gap:7px; min-width:0;">
+                            <span style="width:7px; height:7px; border-radius:50%;
+                                         background:${r.dot}; display:inline-block; flex-shrink:0;"></span>
+                            <span style="font-size:0.78rem; color:#475569; font-weight:500;
+                                         white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${r.label}</span>
+                        </div>
                         ${r.count !== undefined
-                            ? `<span style="font-size:0.75rem; background:#f1f5f9; color:#64748b;
-                                           font-weight:600; padding:1px 7px; border-radius:10px;">${r.count}</span>`
+                            ? `<span style="font-size:0.73rem; background:#f1f5f9; color:#475569;
+                                           font-weight:600; padding:1px 6px; border-radius:6px;
+                                           min-width:24px; text-align:center; flex-shrink:0; margin-left:6px;">${r.count}</span>`
                             : ''}
                     </div>
-                    <div style="text-align:right; flex-shrink:0; margin-left:12px;">
-                        <span style="font-size:0.78rem; color:#64748b; font-weight:500;">${r.metric}</span>
-                        <span style="font-size:0.82rem; font-weight:700; color:${r.valueColor}; margin-left:5px;">${formatCurrency(r.value)}</span>
+
+                    <!-- RHS Column: Metric Description on left, Rupee Value on right (aligned column) -->
+                    <div style="display:flex; align-items:center; justify-content:space-between;
+                                flex:0.85; min-width:0; padding-left:10px; border-left:1px solid #f1f5f9;">
+                        <span style="font-size:0.75rem; color:#64748b; font-weight:500;
+                                     white-space:nowrap;">${r.metric}</span>
+                        <span style="font-size:0.82rem; font-weight:700; color:${r.valueColor};
+                                     flex-shrink:0; margin-left:6px; text-align:right;">${formatCurrency(r.value)}</span>
                     </div>
                 </div>
             `).join('');
@@ -1265,11 +1276,11 @@ async function renderStaffInsights(data, supabase) {
         const bookingsCard = buildCard(
             'Bookings Revenue Breakdown', '#3b82f6', 'calendar',
             [
-                { dot: '#10b981', label: 'Completed Bookings', count: bk.completed_count, metric: 'Revenue Generated', value: bk.completed_rev,    valueColor: '#059669' },
-                { dot: '#f59e0b', label: 'Cancelled Bookings', count: bk.cancelled_count, metric: 'Revenue Missed',    value: bk.cancelled_missed,  valueColor: '#d97706' },
-                { dot: '#f97316', label: 'No-show Bookings',   count: bk.noshow_count,    metric: 'Revenue Missed',    value: bk.noshow_missed,     valueColor: '#ea580c' },
-                { dot: '#dc2626', label: 'Refunded Bookings',  count: bk.refunded_count,  metric: 'Refunded Amount',   value: bk.refunded_amount,   valueColor: '#dc2626' },
-                { dot: '#8b5cf6', label: 'Discounts Given',    count: bk.discount_count,  metric: 'Discounted Amount', value: bk.discount_amount,   valueColor: '#7c3aed' }
+                { dot: '#10b981', label: 'Completed Bookings', count: bk.completed_count, metric: 'Revenue Gen.',    value: bk.completed_rev,    valueColor: '#059669' },
+                { dot: '#f59e0b', label: 'Cancelled Bookings', count: bk.cancelled_count, metric: 'Revenue Missed',  value: bk.cancelled_missed,  valueColor: '#d97706' },
+                { dot: '#f97316', label: 'No-show Bookings',   count: bk.noshow_count,    metric: 'Revenue Missed',  value: bk.noshow_missed,     valueColor: '#ea580c' },
+                { dot: '#dc2626', label: 'Refunded Bookings',  count: bk.refunded_count,  metric: 'Refunded amt.',   value: bk.refunded_amount,   valueColor: '#dc2626' },
+                { dot: '#8b5cf6', label: 'Discounts Given',    count: bk.discount_count,  metric: 'Discounted amt.', value: bk.discount_amount,   valueColor: '#7c3aed' }
             ],
             bk.gross, bk.net
         );
@@ -1277,9 +1288,9 @@ async function renderStaffInsights(data, supabase) {
         const retailCard = buildCard(
             'Retail Sales Breakdown', '#f59e0b', 'shopping-bag',
             [
-                { dot: '#10b981', label: 'Products Sold',      count: `${ps.sold_units} units`,     metric: 'Revenue Generated', value: ps.sold_rev,       valueColor: '#059669' },
-                { dot: '#dc2626', label: 'Refunded Products',  count: `${ps.refunded_units} units`, metric: 'Refunded Amount',   value: ps.refunded_amount,valueColor: '#dc2626' },
-                { dot: '#8b5cf6', label: 'Discounts Given',    count: `${ps.discount_sales} sales`, metric: 'Discounted Amount', value: ps.discount_amount,valueColor: '#7c3aed' }
+                { dot: '#10b981', label: 'Products Sold',      count: `${ps.sold_units} units`,     metric: 'Revenue Gen.',    value: ps.sold_rev,       valueColor: '#059669' },
+                { dot: '#dc2626', label: 'Refunded Products',  count: `${ps.refunded_units} units`, metric: 'Refunded amt.',   value: ps.refunded_amount,valueColor: '#dc2626' },
+                { dot: '#8b5cf6', label: 'Discounts Given',    count: `${ps.discount_sales} sales`, metric: 'Discounted amt.', value: ps.discount_amount,valueColor: '#7c3aed' }
             ],
             ps.gross, ps.net
         );
@@ -1287,9 +1298,9 @@ async function renderStaffInsights(data, supabase) {
         const memberCard = buildCard(
             'Membership Sales Breakdown', '#8b5cf6', 'credit-card',
             [
-                { dot: '#10b981', label: 'Memberships Sold',     count: ms.sold_count,     metric: 'Revenue Generated', value: ms.sold_rev,        valueColor: '#059669' },
-                { dot: '#dc2626', label: 'Refunded Memberships', count: ms.refunded_count, metric: 'Refunded Amount',   value: ms.refunded_amount, valueColor: '#dc2626' },
-                { dot: '#8b5cf6', label: 'Discounts Given',      count: ms.discount_count, metric: 'Discounted Amount', value: ms.discount_amount, valueColor: '#7c3aed' }
+                { dot: '#10b981', label: 'Memberships Sold',     count: ms.sold_count,     metric: 'Revenue Gen.',    value: ms.sold_rev,        valueColor: '#059669' },
+                { dot: '#dc2626', label: 'Refunded Memberships', count: ms.refunded_count, metric: 'Refunded amt.',   value: ms.refunded_amount, valueColor: '#dc2626' },
+                { dot: '#8b5cf6', label: 'Discounts Given',      count: ms.discount_count, metric: 'Discounted amt.', value: ms.discount_amount, valueColor: '#7c3aed' }
             ],
             ms.gross, ms.net
         );
