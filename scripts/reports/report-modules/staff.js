@@ -672,6 +672,9 @@ async function renderStaffOverview(data, supabase) {
                 formatCurrency(s.retail_sales      || 0),
                 formatCurrency(s.membership_sales  || 0),
                 `<strong style="color:#059669;">${formatCurrency(s.total_revenue || 0)}</strong>`,
+                (s.total_refunds || 0) > 0
+                    ? `<span style="color:#dc2626; font-weight:600;">−${formatCurrency(s.total_refunds)}</span>`
+                    : `<span style="color:#94a3b8;">—</span>`,
                 `<strong style="color:#0369a1;">${formatCurrency(s.net_revenue   || 0)}</strong>`,
                 formatCurrency(s.avg_ticket        || 0),
                 (s.total_discounts || 0) > 0
@@ -687,7 +690,7 @@ async function renderStaffOverview(data, supabase) {
         const headers = [
             'Staff Member', 'Role', 'Bookings',
             'Service Rev', 'Retail Sales', 'Membership Sales',
-            'Total Revenue', 'Net Revenue', 'Avg Ticket',
+            'Total Revenue', 'Total Refunds', 'Net Revenue', 'Avg Ticket',
             'Discount Given', 'Status', 'Action'
         ];
 
