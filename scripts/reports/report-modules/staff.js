@@ -953,7 +953,8 @@ async function renderStaffInsights(data, supabase) {
                             col_gross: 3800,
                             col_discount: '-₹300 (VIP Disc)',
                             col_final: 3500,
-                            col_payment: 'UPI'
+                            col_payment: 'UPI',
+                            col_status: 'Paid'
                         },
                         {
                             col_date: '15 Oct 2026',
@@ -965,7 +966,8 @@ async function renderStaffInsights(data, supabase) {
                             col_gross: 2200,
                             col_discount: '—',
                             col_final: 2200,
-                            col_payment: 'Card'
+                            col_payment: 'Card',
+                            col_status: 'Refunded'
                         }
                     ],
                     memberships: [
@@ -1546,7 +1548,7 @@ async function renderStaffInsights(data, supabase) {
             },
 products: {
             title: `${profile.name || 'Staff Member'}'s Retail POS Product Sales`,
-            headers: ['Sale Date', 'Customer', 'Product(s)', 'Qty', 'Gross Total', 'Discount', 'Final Amount', 'Payment Mode'],
+            headers: ['Sale Date', 'Customer', 'Product(s)', 'Qty', 'Gross Total', 'Discount', 'Final Amount', 'Payment Mode', 'Status'],
             unitName: 'product sales',
             reportFileName: `${(profile.name || 'Staff').replace(/\s+/g, '_')}_Retail_Sales`,
             rows: rawProducts.map(p => {
@@ -1567,6 +1569,8 @@ products: {
                         onclick="this.closest('td').querySelector('.prod-expanded')?.remove() || this.insertAdjacentHTML('afterend', '<span class=\\'prod-expanded\\' style=\\'display:block;font-size:0.75rem;color:#475569;margin-top:3px;\\'>${productList.slice(1).join(', ')}</span>')"
                         >+${remaining} more</span>`;
                 }
+                const pStatus = (p.col_status || 'Paid').trim();
+                const pStatusClass = pStatus.toLowerCase() === 'refunded' ? 'cancelled' : 'completed';
                 return [
                     p.col_date,
                     p.col_customer,
@@ -1575,7 +1579,8 @@ products: {
                     formatCurrency(p.col_gross),
                     (p.col_discount && p.col_discount.startsWith('-')) ? `<span style="color:#e11d48;font-weight:600;">${p.col_discount}</span>` : (p.col_discount || '—'),
                     `<strong>${formatCurrency(p.col_final)}</strong>`,
-                    p.col_payment || 'Cash'
+                    p.col_payment || 'Cash',
+                    `<span class="status-pill ${pStatusClass}">${pStatus}</span>`
                 ];
             })
         },
