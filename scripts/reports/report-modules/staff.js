@@ -1,4 +1,4 @@
-// scripts/reports/report-modules/staff.js
+﻿// scripts/reports/report-modules/staff.js
 // 360-Degree Staff Performance & Intelligence Module
 // Sub-Report 1: Staff Overview (Fleet-Wide Team Performance & HR Capacity)
 // Sub-Report 2: Staff 360° Insights (Individual Staff Dossier, 3-Stream Revenue & Activity Ledgers)
@@ -56,27 +56,28 @@ function unwrapRpcResult(data) {
 }
 
 // Helper: Call Staff 360° RPC (individual staff dossier — dedicated to Staff 360° Insights page)
+// Helper: Call Staff 360° RPC — unified get_staff_reports with p_staff_id (Section B)
 async function callStaff360Rpc(supabase, companyId, branchId, start, end, staffId = null) {
     const cid = (companyId && companyId !== 'null' && companyId !== 'undefined' && companyId !== 'all') ? companyId : null;
     const bid = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== 'all') ? branchId : null;
 
-    console.log('[staff] Calling get_staff_revenue_stats_across_three_modules with:', { cid, bid, start, end, staffId });
+    console.log('[staff] Calling get_staff_reports (Section B) with:', { cid, bid, start, end, staffId });
     try {
-        const { data, error } = await supabase.rpc('get_staff_revenue_stats_across_three_modules', {
+        const { data, error } = await supabase.rpc('get_staff_reports', {
             p_company_id: cid,
-            p_staff_id: staffId || null,
             p_branch_id: bid,
             p_start_date: start,
-            p_end_date: end
+            p_end_date: end,
+            p_staff_id: staffId || null
         });
 
         if (error) {
-            console.warn('[staff] get_staff_revenue_stats_across_three_modules error:', error.message);
+            console.warn('[staff] get_staff_reports (Section B) error:', error.message);
             return null;
         }
         return unwrapRpcResult(data);
     } catch (err) {
-        console.warn('[staff] Error executing get_staff_revenue_stats_across_three_modules RPC:', err.message);
+        console.warn('[staff] Error executing get_staff_reports (Section B) RPC:', err.message);
         return null;
     }
 }
@@ -849,7 +850,7 @@ async function renderStaffInsights(data, supabase) {
         // If no staffId was passed (or no profile in report), auto-select top staff from directory and load their 360 profile
         if ((!staffIdToLoad || !report || !report.profile) && report && Array.isArray(report.staff_directory) && report.staff_directory.length > 0) {
             const firstStaff = report.staff_directory[0];
-            targetStaffId = firstStaff.id;
+            targetStaffId = firstStaff.staff_id || firstStaff.id;
             try {
                 const newUrl = new URL(window.location.href);
                 newUrl.searchParams.set('staffId', targetStaffId);
@@ -859,8 +860,8 @@ async function renderStaffInsights(data, supabase) {
         }
 
         // If a profile was returned, sync URL with the active staff ID
-        if (report && report.profile && report.profile.id) {
-            targetStaffId = report.profile.id;
+        if (report && report.profile && (report.profile.staff_id || report.profile.id)) {
+            targetStaffId = report.profile.staff_id || report.profile.id;
             try {
                 const newUrl = new URL(window.location.href);
                 if (newUrl.searchParams.get('staffId') !== targetStaffId) {
@@ -1033,7 +1034,7 @@ async function renderStaffInsights(data, supabase) {
         );
 
         // 3. Render Revenue Breakdown Cards (between KPIs and charts)
-        renderRevenueBreakdownCards();
+        renderRevenueBreakdownCards(report.breakdown || {});
 
         // 4. Render Left Chart: Net Revenue Breakdown by Stream (adaptive x-axis)
         const leftCanvas = document.getElementById('trendChart');
@@ -1041,7 +1042,6 @@ async function renderStaffInsights(data, supabase) {
             trendChartInstance = destroyChart(trendChartInstance);
 
             // ── Adaptive x-axis: determine buckets from selected date range ──────
-            const dateLabel = (document.getElementById('dateFilterLabel') || {}).textContent || 'Last 30 Days';
             const rawStart = filterStart ? filterStart.value : null;
             const rawEnd   = filterEnd   ? filterEnd.value   : null;
 
@@ -1050,74 +1050,63 @@ async function renderStaffInsights(data, supabase) {
             let spanDays = 30;
             if (rawStart && rawEnd) {
                 spanDays = Math.max(1, Math.round((new Date(rawEnd) - new Date(rawStart)) / msDay));
-            } else if (dateLabel.includes('7'))  { spanDays = 7; }
-            else if (dateLabel.includes('30'))   { spanDays = 30; }
-            else if (dateLabel.includes('3 M'))  { spanDays = 90; }
-            else if (dateLabel.includes('6 M'))  { spanDays = 180; }
-            else if (dateLabel.includes('Year')) { spanDays = 365; }
-            else if (dateLabel === 'Today')      { spanDays = 1; }
+            }
 
-            // Choose grouping & generate labels + dummy net-rev data
+            // ── Build chart data from real net_revenue_trend (daily rows from RPC) ─
+            // trend rows: [{ date: 'YYYY-MM-DD', bookings_net, products_net, memberships_net }]
+            const trendRows = report.net_revenue_trend || [];
             let xLabels = [], bkNet = [], prNet = [], memNet = [];
 
-            if (spanDays <= 1) {
-                // Today → hourly buckets (business hours 9AM–8PM)
-                const hours = ['9AM','10AM','11AM','12PM','1PM','2PM','3PM','4PM','5PM','6PM','7PM','8PM'];
-                xLabels = hours;
-                bkNet  = [0,  800, 1200, 2100, 1800, 900, 1500, 1100, 800, 600, 400, 200];
-                prNet  = [0,  200,  350,  500,  400, 300,  450,  300, 200, 150, 100,  50];
-                memNet = [0,    0,    0, 1000,    0,   0,    0,  500,   0,   0,   0,   0];
+            if (trendRows.length === 0) {
+                // No data — show empty placeholder bar
+                xLabels = ['No Data'];
+                bkNet = [0]; prNet = [0]; memNet = [0];
             } else if (spanDays <= 7) {
-                // Last 7 days → daily
-                const end = rawEnd ? new Date(rawEnd) : new Date();
-                for (let i = spanDays - 1; i >= 0; i--) {
-                    const d = new Date(end.getTime() - i * msDay);
+                // ≤7 days → show each day individually
+                trendRows.forEach(row => {
+                    const d = new Date(row.date);
                     xLabels.push(d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' }));
-                    bkNet .push(Math.round(3000 + Math.random() * 4000));
-                    prNet .push(Math.round(500  + Math.random() * 1500));
-                    memNet.push(Math.random() > 0.6 ? Math.round(500 + Math.random() * 1000) : 0);
-                }
+                    bkNet.push(row.bookings_net || 0);
+                    prNet.push(row.products_net || 0);
+                    memNet.push(row.memberships_net || 0);
+                });
             } else if (spanDays <= 31) {
-                // Last 30 days → weekly buckets
-                const weekCount = Math.ceil(spanDays / 7);
-                for (let w = 1; w <= weekCount; w++) {
-                    xLabels.push(`Week ${w}`);
-                    bkNet .push(Math.round(12000 + Math.random() * 8000));
-                    prNet .push(Math.round(2000  + Math.random() * 3000));
-                    memNet.push(Math.random() > 0.5 ? Math.round(1000 + Math.random() * 2000) : 0);
-                }
-            } else if (spanDays <= 93) {
-                // Last 3 months → monthly
-                const months3 = [];
-                const eDate = rawEnd ? new Date(rawEnd) : new Date();
-                for (let m = 2; m >= 0; m--) {
-                    const d = new Date(eDate.getFullYear(), eDate.getMonth() - m, 1);
-                    months3.push(d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }));
-                }
-                xLabels = months3;
-                bkNet  = [38000, 44000, 52400];
-                prNet  = [ 8000,  9500, 12000];
-                memNet = [ 2000,  3000,  4000];
-            } else if (spanDays <= 186) {
-                // Last 6 months → monthly
-                const eDate = rawEnd ? new Date(rawEnd) : new Date();
-                for (let m = 5; m >= 0; m--) {
-                    const d = new Date(eDate.getFullYear(), eDate.getMonth() - m, 1);
-                    xLabels.push(d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }));
-                    bkNet .push(Math.round(32000 + Math.random() * 22000));
-                    prNet .push(Math.round(6000  + Math.random() * 7000));
-                    memNet.push(Math.round(1000  + Math.random() * 4000));
-                }
+                // ≤31 days → group by ISO week number, label as Week 1, Week 2…
+                const weekMap = new Map();
+                trendRows.forEach(row => {
+                    const d = new Date(row.date);
+                    // ISO week: days since start of range / 7
+                    const startD = rawStart ? new Date(rawStart) : new Date(trendRows[0].date);
+                    const weekIdx = Math.floor((d - startD) / (7 * msDay));
+                    const key = `Week ${weekIdx + 1}`;
+                    if (!weekMap.has(key)) weekMap.set(key, { bk: 0, pr: 0, mem: 0 });
+                    const w = weekMap.get(key);
+                    w.bk  += (row.bookings_net   || 0);
+                    w.pr  += (row.products_net   || 0);
+                    w.mem += (row.memberships_net || 0);
+                });
+                weekMap.forEach((v, k) => {
+                    xLabels.push(k);
+                    bkNet.push(v.bk); prNet.push(v.pr); memNet.push(v.mem);
+                });
             } else {
-                // Full year / custom long range → monthly (12 months)
-                const eDate = rawEnd ? new Date(rawEnd) : new Date();
-                for (let m = 11; m >= 0; m--) {
-                    const d = new Date(eDate.getFullYear(), eDate.getMonth() - m, 1);
-                    xLabels.push(d.toLocaleDateString('en-IN', { month: 'short' }));
-                    bkNet .push(Math.round(28000 + Math.random() * 28000));
-                    prNet .push(Math.round(5000  + Math.random() * 9000));
-                    memNet.push(Math.round(0     + Math.random() * 5000));
-                }
+                // >31 days → group by calendar month (YYYY-MM)
+                const monthMap = new Map();
+                trendRows.forEach(row => {
+                    const d = new Date(row.date);
+                    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    const label = d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
+                    if (!monthMap.has(key)) monthMap.set(key, { label, bk: 0, pr: 0, mem: 0 });
+                    const m = monthMap.get(key);
+                    m.bk  += (row.bookings_net   || 0);
+                    m.pr  += (row.products_net   || 0);
+                    m.mem += (row.memberships_net || 0);
+                });
+                // Sort by key (YYYY-MM) so months are chronological
+                [...monthMap.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([, v]) => {
+                    xLabels.push(v.label);
+                    bkNet.push(v.bk); prNet.push(v.pr); memNet.push(v.mem);
+                });
             }
 
             trendChartInstance = new Chart(leftCanvas, {
@@ -1269,37 +1258,51 @@ async function renderStaffInsights(data, supabase) {
     };
 
     // ── Revenue Breakdown Cards (3 stream cards between KPIs and charts) ─────
-    const renderRevenueBreakdownCards = () => {
+    const renderRevenueBreakdownCards = (breakdown = {}) => {
         // Remove any existing breakdown row so it's always fresh on re-render
         const existing = document.getElementById('staffRevenueBreakdownRow');
         if (existing) existing.remove();
 
-        // Static demo data — backend integration to follow later
+        // Map real RPC breakdown data — fallback to 0 if backend not yet wired
+        const bkRaw = breakdown.bookings || {};
         const bk = {
-            completed_count: 42, completed_rev: 52400,
-            cancelled_count: 8, cancelled_missed: 9600,
-            noshow_count: 3, noshow_missed: 3600,
-            refunded_count: 2, refunded_amount: 1798,
-            discount_count: 5, discount_amount: 100
+            completed_count:   bkRaw.completed_count   || 0,
+            completed_rev:     bkRaw.completed_revenue  || 0,
+            cancelled_count:   bkRaw.cancelled_count    || 0,
+            cancelled_missed:  bkRaw.cancelled_missed_revenue || 0,
+            noshow_count:      bkRaw.noshow_count       || 0,
+            noshow_missed:     bkRaw.noshow_missed_revenue   || 0,
+            refunded_count:    bkRaw.refunded_count     || 0,
+            refunded_amount:   bkRaw.refunded_amount    || 0,
+            discount_count:    bkRaw.discounted_count   || 0,
+            discount_amount:   bkRaw.discounted_amount  || 0,
+            gross:             bkRaw.gross              || 0,
+            net:               bkRaw.net                || 0,
         };
-        bk.gross = bk.completed_rev + bk.refunded_amount + bk.discount_amount;
-        bk.net = bk.gross - bk.refunded_amount - bk.discount_amount;
 
+        const psRaw = breakdown.products || {};
         const ps = {
-            sold_units: 24, sold_rev: 8090,
-            refunded_units: 2, refunded_amount: 0,
-            discount_sales: 3, discount_amount: 0
+            sold_units:       psRaw.sold_units        || 0,
+            sold_rev:         psRaw.sold_revenue       || 0,
+            refunded_units:   psRaw.refunded_units     || 0,
+            refunded_amount:  psRaw.refunded_amount    || 0,
+            discount_sales:   psRaw.discounted_sales   || 0,
+            discount_amount:  psRaw.discounted_amount  || 0,
+            gross:            psRaw.gross              || 0,
+            net:              psRaw.net                || 0,
         };
-        ps.gross = ps.sold_rev + ps.refunded_amount + ps.discount_amount;
-        ps.net = ps.gross - ps.refunded_amount - ps.discount_amount;
 
+        const msRaw = breakdown.memberships || {};
         const ms = {
-            sold_count: 0, sold_rev: 0,
-            refunded_count: 0, refunded_amount: 0,
-            discount_count: 0, discount_amount: 0
+            sold_count:       msRaw.sold_count         || 0,
+            sold_rev:         msRaw.sold_revenue        || 0,
+            refunded_count:   msRaw.refunded_count      || 0,
+            refunded_amount:  msRaw.refunded_amount     || 0,
+            discount_count:   msRaw.discounted_count    || 0,
+            discount_amount:  msRaw.discounted_amount   || 0,
+            gross:            msRaw.gross               || 0,
+            net:              msRaw.net                 || 0,
         };
-        ms.gross = ms.sold_rev + ms.refunded_amount + ms.discount_amount;
-        ms.net = ms.gross - ms.refunded_amount - ms.discount_amount;
 
         // Helper to build one breakdown card
         const buildCard = (title, accentColor, iconName, rows, gross, net) => {
@@ -1455,13 +1458,13 @@ async function renderStaffInsights(data, supabase) {
                 );
 
                 if (matches.length === 0) {
-                    dropdown.innerHTML = `< div style = "padding:12px 16px;color:#94a3b8;font-size:0.85rem;" > No staff matches found for "${q}"</div > `;
+                    dropdown.innerHTML = `<div style="padding:12px 16px;color:#94a3b8;font-size:0.85rem;">No staff matches found for "${q}"</div>`;
                     dropdown.style.display = 'block';
                     return;
                 }
 
                 dropdown.innerHTML = matches.slice(0, 8).map(s => `
-    < div class="cust-search-item" data - id="${s.id}" >
+    <div class="cust-search-item" data-id="${s.staff_id || s.id}">
         <div class="cust-search-left">
             <div class="cust-avatar-circle" style="background:#fef3c7; color:#92400e;">${(s.name || 'S').charAt(0).toUpperCase()}</div>
             <div class="cust-info-text">
@@ -1469,7 +1472,7 @@ async function renderStaffInsights(data, supabase) {
                 <span>${s.phone || '—'} • ${s.email || '—'}</span>
             </div>
         </div>
-                    </div >
+    </div>
     `).join('');
 
                 dropdown.style.display = 'block';
