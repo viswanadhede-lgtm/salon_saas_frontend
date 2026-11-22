@@ -1516,9 +1516,9 @@ async function renderStaffInsights(data, supabase) {
         const rawMemberships = ledger.memberships || [];
 
         tabBar.innerHTML = `
-    < button class="report-tab-btn active" data - tab="bookings" >
-        Booking Sales < span class="tab-badge" > ${ rawBookings.length }</span >
-            </button >
+            <button class="report-tab-btn active" data-tab="bookings">
+                Booking Sales <span class="tab-badge">${rawBookings.length}</span>
+            </button>
             <button class="report-tab-btn" data-tab="products">
                 Product Sales <span class="tab-badge">${rawProducts.length}</span>
             </button>
@@ -1529,10 +1529,10 @@ async function renderStaffInsights(data, supabase) {
 
         const tabConfigs = {
             bookings: {
-                title: `${ profile.name || 'Staff Member' } 's Completed Booking Appointments`,
-headers: ['Date & Time', 'Service', 'Customer', 'Gross Amount', 'Discount', 'Final Paid', 'Payment Mode', 'Status'],
-    unitName: 'bookings',
-        reportFileName: `${(profile.name || 'Staff').replace(/\s+/g, '_')}_Bookings`,
+                title: `${profile.name || 'Staff Member'}'s Completed Booking Appointments`,
+                headers: ['Date & Time', 'Service', 'Customer', 'Gross Amount', 'Discount', 'Final Paid', 'Payment Mode', 'Status'],
+                unitName: 'bookings',
+                reportFileName: `${(profile.name || 'Staff').replace(/\s+/g, '_')}_Bookings`,
             rows: rawBookings.map(b => [
                 b.col_datetime,
                 `<span class="status-pill active" style="background:#e0e7ff;color:#3730a3;">${b.col_service}</span>`,
