@@ -35,6 +35,8 @@
             gap: 10px;
             align-items: center;
             margin-left: auto;
+            flex-wrap: nowrap;
+            flex-shrink: 0;
         }
 
         .btn-top-action {
@@ -111,6 +113,22 @@
             font-family: inherit;
             height: 38px;
             user-select: none;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .filter-dropdown-container {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .date-filter-btn {
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        #dateFilterLabel {
+            white-space: nowrap;
         }
 
         .report-filter-pill:hover {

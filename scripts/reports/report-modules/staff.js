@@ -50,7 +50,7 @@ function unwrapRpcResult(data) {
         }
     }
     if (typeof res === 'string') {
-        try { res = JSON.parse(res); } catch (e) {}
+        try { res = JSON.parse(res); } catch (e) { }
     }
     return (res && typeof res === 'object') ? res : {};
 }
@@ -64,10 +64,10 @@ async function callStaff360Rpc(supabase, companyId, branchId, start, end, staffI
     try {
         const { data, error } = await supabase.rpc('get_staff_revenue_stats_across_three_modules', {
             p_company_id: cid,
-            p_staff_id:   staffId || null,
-            p_branch_id:  bid,
+            p_staff_id: staffId || null,
+            p_branch_id: bid,
             p_start_date: start,
-            p_end_date:   end
+            p_end_date: end
         });
 
         if (error) {
@@ -90,9 +90,9 @@ async function callStaffOverviewRpc(supabase, companyId, branchId, start, end) {
     try {
         const { data, error } = await supabase.rpc('get_staff_reports', {
             p_company_id: cid,
-            p_branch_id:  bid,
+            p_branch_id: bid,
             p_start_date: start,
-            p_end_date:   end
+            p_end_date: end
         });
 
         if (error) {
@@ -193,7 +193,7 @@ function setupReportTable(headers, rows, options = {}) {
         }
 
         if (window.feather) {
-            try { feather.replace(); } catch (e) {}
+            try { feather.replace(); } catch (e) { }
         }
     }
 
@@ -262,11 +262,11 @@ function setupReportTable(headers, rows, options = {}) {
 async function renderStaffOverview(data, supabase) {
     console.log('[staff.js] Initializing Sub-Report 1: Staff Overview');
 
-    const companyId    = resolveCompanyId();
-    const filterStart  = document.getElementById('filterStartDate');
-    const filterEnd    = document.getElementById('filterEndDate');
+    const companyId = resolveCompanyId();
+    const filterStart = document.getElementById('filterStartDate');
+    const filterEnd = document.getElementById('filterEndDate');
     const filterBranch = document.getElementById('filterBranch');
-    const btnApply     = document.getElementById('btnApplyFilters');
+    const btnApply = document.getElementById('btnApplyFilters');
 
     // Remove any leftover Staff 360 Insights header if user switched sub-reports
     const oldInsightsTop = document.getElementById('staffInsightsTopWrap');
@@ -320,21 +320,21 @@ async function renderStaffOverview(data, supabase) {
         if (lbl4) lbl4.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;"><i data-feather="award" style="width:13px; height:13px; color:#f59e0b;"></i> Top Performer</span>`;
 
         if (window.feather) {
-            try { feather.replace(); } catch (e) {}
+            try { feather.replace(); } catch (e) { }
         }
     };
 
     const loadStaffOverview = async () => {
         const start = filterStart ? filterStart.value : ((new Date(Date.now() - 30 * 86400000)).toISOString().split('T')[0]);
-        const end   = filterEnd   ? filterEnd.value   : (new Date().toISOString().split('T')[0]);
-        const bid   = resolveBranchId(filterBranch);
+        const end = filterEnd ? filterEnd.value : (new Date().toISOString().split('T')[0]);
+        const bid = resolveBranchId(filterBranch);
 
         // Loading state
         updateKPIs(
-            { label: 'Total Staff',                value: 'Loading...' },
-            { label: 'Average Bookings for staff',  value: 'Loading...' },
-            { label: 'Total revenue Generated',    value: 'Loading...' },
-            { label: 'Top Performer',              value: 'Loading...' }
+            { label: 'Total Staff', value: 'Loading...' },
+            { label: 'Average Bookings for staff', value: 'Loading...' },
+            { label: 'Total revenue Generated', value: 'Loading...' },
+            { label: 'Top Performer', value: 'Loading...' }
         );
         applyStaffCardColors();
 
@@ -358,24 +358,24 @@ async function renderStaffOverview(data, supabase) {
                     top_performer_pct: 28
                 },
                 staff_leaderboard: [
-                    { id: 's-001', name: 'Priya Sharma',   role: 'Master Stylist',    status: 'active',   completed_bookings: 42, service_revenue: 52400, retail_sales: 12000, membership_sales: 4000, total_revenue: 68400, net_revenue: 61560, total_refunds: 0, total_discounts: 6840, avg_ticket: 1248 },
-                    { id: 's-002', name: 'Rahul Verma',    role: 'Senior Barber',     status: 'active',   completed_bookings: 38, service_revenue: 41800, retail_sales: 7500,  membership_sales: 2000, total_revenue: 51300, net_revenue: 46170, total_refunds: 0, total_discounts: 5130, avg_ticket: 1100 },
-                    { id: 's-003', name: 'Ananya Sen',     role: 'Senior Colorist',   status: 'active',   completed_bookings: 29, service_revenue: 38900, retail_sales: 6200,  membership_sales: 0,    total_revenue: 45100, net_revenue: 40590, total_refunds: 0, total_discounts: 4510, avg_ticket: 1341 },
-                    { id: 's-004', name: 'Kavita Nair',    role: 'Esthetician',       status: 'active',   completed_bookings: 24, service_revenue: 28400, retail_sales: 8900,  membership_sales: 3000, total_revenue: 40300, net_revenue: 36270, total_refunds: 0, total_discounts: 4030, avg_ticket: 1183 },
-                    { id: 's-005', name: 'Vikram Joshi',   role: 'Hair Stylist',      status: 'active',   completed_bookings: 10, service_revenue: 19500, retail_sales: 2400,  membership_sales: 0,    total_revenue: 21900, net_revenue: 19710, total_refunds: 0, total_discounts: 2190, avg_ticket: 1083 },
-                    { id: 's-006', name: 'Sneha Patel',    role: 'Nail Technician',   status: 'inactive', completed_bookings: 0,  service_revenue: 0,     retail_sales: 0,     membership_sales: 0,    total_revenue: 0,     net_revenue: 0,     total_refunds: 0, total_discounts: 0,    avg_ticket: 0    },
-                    { id: 's-007', name: 'Amit Deshmukh',  role: 'Stylist Assistant', status: 'inactive', completed_bookings: 0,  service_revenue: 0,     retail_sales: 0,     membership_sales: 0,    total_revenue: 0,     net_revenue: 0,     total_refunds: 0, total_discounts: 0,    avg_ticket: 0    }
+                    { id: 's-001', name: 'Priya Sharma', role: 'Master Stylist', status: 'active', completed_bookings: 42, service_revenue: 52400, retail_sales: 12000, membership_sales: 4000, total_revenue: 68400, net_revenue: 61560, total_refunds: 0, total_discounts: 6840, avg_ticket: 1248 },
+                    { id: 's-002', name: 'Rahul Verma', role: 'Senior Barber', status: 'active', completed_bookings: 38, service_revenue: 41800, retail_sales: 7500, membership_sales: 2000, total_revenue: 51300, net_revenue: 46170, total_refunds: 0, total_discounts: 5130, avg_ticket: 1100 },
+                    { id: 's-003', name: 'Ananya Sen', role: 'Senior Colorist', status: 'active', completed_bookings: 29, service_revenue: 38900, retail_sales: 6200, membership_sales: 0, total_revenue: 45100, net_revenue: 40590, total_refunds: 0, total_discounts: 4510, avg_ticket: 1341 },
+                    { id: 's-004', name: 'Kavita Nair', role: 'Esthetician', status: 'active', completed_bookings: 24, service_revenue: 28400, retail_sales: 8900, membership_sales: 3000, total_revenue: 40300, net_revenue: 36270, total_refunds: 0, total_discounts: 4030, avg_ticket: 1183 },
+                    { id: 's-005', name: 'Vikram Joshi', role: 'Hair Stylist', status: 'active', completed_bookings: 10, service_revenue: 19500, retail_sales: 2400, membership_sales: 0, total_revenue: 21900, net_revenue: 19710, total_refunds: 0, total_discounts: 2190, avg_ticket: 1083 },
+                    { id: 's-006', name: 'Sneha Patel', role: 'Nail Technician', status: 'inactive', completed_bookings: 0, service_revenue: 0, retail_sales: 0, membership_sales: 0, total_revenue: 0, net_revenue: 0, total_refunds: 0, total_discounts: 0, avg_ticket: 0 },
+                    { id: 's-007', name: 'Amit Deshmukh', role: 'Stylist Assistant', status: 'inactive', completed_bookings: 0, service_revenue: 0, retail_sales: 0, membership_sales: 0, total_revenue: 0, net_revenue: 0, total_refunds: 0, total_discounts: 0, avg_ticket: 0 }
                 ]
             };
         }
 
         // Extract the two top-level keys from get_staff_reports
-        const kpis        = report.overview_kpis   || {};
+        const kpis = report.overview_kpis || {};
         const leaderboard = report.staff_leaderboard || [];
 
         // ── STAT CARD 1: Total Staff — fixed 30-day activity window ──────────
-        const totalStaff    = kpis.total_staff    !== undefined ? kpis.total_staff    : leaderboard.length;
-        const activeStaff   = kpis.active_staff   !== undefined ? kpis.active_staff   : leaderboard.filter(s => (s.completed_bookings || 0) > 0).length;
+        const totalStaff = kpis.total_staff !== undefined ? kpis.total_staff : leaderboard.length;
+        const activeStaff = kpis.active_staff !== undefined ? kpis.active_staff : leaderboard.filter(s => (s.completed_bookings || 0) > 0).length;
         const inactiveStaff = kpis.inactive_staff !== undefined ? kpis.inactive_staff : Math.max(0, totalStaff - activeStaff);
 
         // ── STAT CARD 2: Average Bookings / Staff ────────────────────────────
@@ -397,9 +397,9 @@ async function renderStaffOverview(data, supabase) {
             : (totalStaff > 0 ? Math.round(totalRevenue / totalStaff) : 0);
 
         // ── STAT CARD 4: Top Performer ────────────────────────────────────────
-        const topPerformerName    = kpis.top_performer_name    || (leaderboard[0] ? leaderboard[0].name           : '—');
+        const topPerformerName = kpis.top_performer_name || (leaderboard[0] ? leaderboard[0].name : '—');
         const topPerformerRevenue = kpis.top_performer_revenue !== undefined ? kpis.top_performer_revenue : (leaderboard[0] ? leaderboard[0].total_revenue || 0 : 0);
-        const topPerformerPct     = kpis.top_performer_pct     !== undefined
+        const topPerformerPct = kpis.top_performer_pct !== undefined
             ? kpis.top_performer_pct
             : (totalRevenue > 0 ? ((topPerformerRevenue / totalRevenue) * 100).toFixed(1) : 0);
 
@@ -462,11 +462,11 @@ async function renderStaffOverview(data, supabase) {
         if (leftCanvas) {
             trendChartInstance = destroyChart(trendChartInstance);
 
-            const top10        = leaderboard.slice(0, 10);
-            const barLabels    = top10.map(s => s.name);
-            const serviceData  = top10.map(s => s.service_revenue   || 0);
-            const retailData   = top10.map(s => s.retail_sales       || 0);
-            const memberData   = top10.map(s => s.membership_sales   || 0);
+            const top10 = leaderboard.slice(0, 10);
+            const barLabels = top10.map(s => s.name);
+            const serviceData = top10.map(s => s.service_revenue || 0);
+            const retailData = top10.map(s => s.retail_sales || 0);
+            const memberData = top10.map(s => s.membership_sales || 0);
 
             trendChartInstance = new Chart(leftCanvas, {
                 type: 'bar',
@@ -553,11 +553,11 @@ async function renderStaffOverview(data, supabase) {
             distChartInstance = destroyChart(distChartInstance);
 
             const totalDistStaff = kpis.total_staff || leaderboard.length || totalStaff;
-            const activeCount    = leaderboard.filter(s => (s.completed_bookings || 0) > 0).length
-                                   || (kpis.active_staff !== undefined ? kpis.active_staff : activeStaff);
-            const inactiveCount  = Math.max(0, totalDistStaff - activeCount);
+            const activeCount = leaderboard.filter(s => (s.completed_bookings || 0) > 0).length
+                || (kpis.active_staff !== undefined ? kpis.active_staff : activeStaff);
+            const inactiveCount = Math.max(0, totalDistStaff - activeCount);
 
-            const activePct   = totalDistStaff > 0 ? Math.round((activeCount   / totalDistStaff) * 100) : 0;
+            const activePct = totalDistStaff > 0 ? Math.round((activeCount / totalDistStaff) * 100) : 0;
             const inactivePct = totalDistStaff > 0 ? Math.round((inactiveCount / totalDistStaff) * 100) : 0;
 
             const centerVal = document.getElementById('donutCenterValue');
@@ -566,7 +566,7 @@ async function renderStaffOverview(data, supabase) {
             if (centerLbl) centerLbl.textContent = 'Staff';
 
             const statusSlices = [
-                { label: 'Active Staff',   count: activeCount,   pct: activePct,   color: '#10b981' }, // Green
+                { label: 'Active Staff', count: activeCount, pct: activePct, color: '#10b981' }, // Green
                 { label: 'Inactive Staff', count: inactiveCount, pct: inactivePct, color: '#94a3b8' }  // Grey
             ];
 
@@ -635,10 +635,10 @@ async function renderStaffOverview(data, supabase) {
         }
 
         // Tab filter logic — no on_leave concept
-        const topPerformers  = staffList.filter(s => (s.total_revenue || 0) > 0)
+        const topPerformers = staffList.filter(s => (s.total_revenue || 0) > 0)
             .sort((a, b) => (b.total_revenue || 0) - (a.total_revenue || 0));
         const activeStaffTab = staffList.filter(s => (s.completed_bookings || 0) > 0);
-        const inactiveTab    = staffList.filter(s => (s.completed_bookings || 0) === 0);
+        const inactiveTab = staffList.filter(s => (s.completed_bookings || 0) === 0);
 
         tabBar.innerHTML = `
             <button class="report-tab-btn active" data-tab="all">
@@ -656,8 +656,8 @@ async function renderStaffOverview(data, supabase) {
         `;
 
         const buildRow = (s) => {
-            const initial     = (s.name || 'S').charAt(0).toUpperCase();
-            const isActive    = (s.completed_bookings || 0) > 0;
+            const initial = (s.name || 'S').charAt(0).toUpperCase();
+            const isActive = (s.completed_bookings || 0) > 0;
             const statusClass = isActive ? 'completed' : 'cancelled';
             const statusLabel = isActive ? 'Active' : 'Inactive';
 
@@ -672,13 +672,13 @@ async function renderStaffOverview(data, supabase) {
                 // 2. Bookings
                 `<strong style="color:#0f172a;">${s.completed_bookings || 0}</strong>`,
                 // 3. Service Rev
-                formatCurrency(s.service_revenue  || 0),
+                formatCurrency(s.service_revenue || 0),
                 // 4. Retail Sales
-                formatCurrency(s.retail_sales      || 0),
+                formatCurrency(s.retail_sales || 0),
                 // 5. Membership Sales
-                formatCurrency(s.membership_sales  || 0),
+                formatCurrency(s.membership_sales || 0),
                 // 6. Avg Ticket
-                formatCurrency(s.avg_ticket        || 0),
+                formatCurrency(s.avg_ticket || 0),
                 // 7. Total Revenue
                 `<strong style="color:#059669;">${formatCurrency(s.total_revenue || 0)}</strong>`,
                 // 8. Discount Given
@@ -776,11 +776,11 @@ async function renderStaffOverview(data, supabase) {
 async function renderStaffInsights(data, supabase) {
     console.log('[staff.js] Initializing Sub-Report 2: Staff 360° Insights');
 
-    const companyId    = resolveCompanyId();
-    const filterStart  = document.getElementById('filterStartDate');
-    const filterEnd    = document.getElementById('filterEndDate');
+    const companyId = resolveCompanyId();
+    const filterStart = document.getElementById('filterStartDate');
+    const filterEnd = document.getElementById('filterEndDate');
     const filterBranch = document.getElementById('filterBranch');
-    const btnApply     = document.getElementById('btnApplyFilters');
+    const btnApply = document.getElementById('btnApplyFilters');
 
     // Read target staffId from URL query string
     const urlParams = new URLSearchParams(window.location.search);
@@ -809,21 +809,21 @@ async function renderStaffInsights(data, supabase) {
         headerSearchWrap = document.createElement('div');
         headerSearchWrap.id = 'staffHeaderSearchWrap';
         headerSearchWrap.className = 'cust-search-bar-wrap';
-        headerSearchWrap.style.cssText = 'position:relative; min-width:220px; max-width:300px;';
+        headerSearchWrap.style.cssText = 'position:relative; min-width:160px; max-width:220px; flex:1 1 180px;';
         headerSearchWrap.innerHTML = `
-            <div class="cust-search-input-box" style="border:1px solid #e2e8f0; border-radius:8px; background:#fff; display:flex; align-items:center; gap:7px; padding:5px 10px; height:36px;">
+            <div class="cust-search-input-box" style="border:1px solid #cbd5e1; border-radius:9px; background:#fff; display:flex; align-items:center; gap:7px; padding:0 12px; height:38px; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
                 <i data-feather="search" style="width:14px;height:14px;color:#94a3b8;flex-shrink:0;"></i>
                 <input type="text" id="staffProfileSearchInput"
                     placeholder="Search staff..."
                     autocomplete="off"
-                    style="border:none; outline:none; font-size:0.82rem; color:#0f172a; background:transparent; width:100%;">
+                    style="border:none; outline:none; font-size:0.84rem; color:#0f172a; background:transparent; width:100%;">
             </div>
             <div class="cust-search-dropdown" id="staffSearchDropdown" style="display:none;"></div>
         `;
 
         // Prepend before the branch filter pill
         const headerActions = document.getElementById('headerRightActions');
-        const branchPill    = document.getElementById('branchFilterPill');
+        const branchPill = document.getElementById('branchFilterPill');
         if (headerActions && branchPill) {
             headerActions.insertBefore(headerSearchWrap, branchPill);
         } else if (headerActions) {
@@ -834,14 +834,14 @@ async function renderStaffInsights(data, supabase) {
 
     const loadStaffProfile = async (staffIdToLoad) => {
         const start = filterStart ? filterStart.value : ((new Date(Date.now() - 180 * 86400000)).toISOString().split('T')[0]);
-        const end   = filterEnd   ? filterEnd.value   : (new Date().toISOString().split('T')[0]);
-        const bid   = resolveBranchId(filterBranch);
+        const end = filterEnd ? filterEnd.value : (new Date().toISOString().split('T')[0]);
+        const bid = resolveBranchId(filterBranch);
 
         updateKPIs(
-            { label: 'Total Revenue by Staff',  value: 'Loading...' },
-            { label: 'Bookings Revenue',        value: 'Loading...' },
-            { label: 'Product Sales Revenue',   value: 'Loading...' },
-            { label: 'Membership Sales',        value: 'Loading...' }
+            { label: 'Total Revenue by Staff', value: 'Loading...' },
+            { label: 'Bookings Revenue', value: 'Loading...' },
+            { label: 'Product Sales Revenue', value: 'Loading...' },
+            { label: 'Membership Sales', value: 'Loading...' }
         );
 
         let report = await callStaff360Rpc(supabase, companyId, bid, start, end, staffIdToLoad);
@@ -854,7 +854,7 @@ async function renderStaffInsights(data, supabase) {
                 const newUrl = new URL(window.location.href);
                 newUrl.searchParams.set('staffId', targetStaffId);
                 window.history.replaceState({}, '', newUrl);
-            } catch (e) {}
+            } catch (e) { }
             return await loadStaffProfile(targetStaffId);
         }
 
@@ -867,7 +867,7 @@ async function renderStaffInsights(data, supabase) {
                     newUrl.searchParams.set('staffId', targetStaffId);
                     window.history.replaceState({}, '', newUrl);
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
 
         // Fallback demo/initial data if RPC not yet deployed
@@ -896,9 +896,9 @@ async function renderStaffInsights(data, supabase) {
                 },
                 monthly_trend: {
                     months: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
-                    bookings:    [7800, 8400, 9200, 8900, 9100, 9000],
-                    products:    [1500, 2000, 2400, 1800, 2100, 2200],
-                    memberships: [0,    1000, 0,    1000, 1000, 1000]
+                    bookings: [7800, 8400, 9200, 8900, 9100, 9000],
+                    products: [1500, 2000, 2400, 1800, 2100, 2200],
+                    memberships: [0, 1000, 0, 1000, 1000, 1000]
                 },
                 revenue_mix: {
                     total: 68400,
@@ -992,11 +992,11 @@ async function renderStaffInsights(data, supabase) {
             };
         }
 
-        const profile     = report.profile || {};
-        const kpis        = report.spend_kpis || {};
-        const trend       = report.monthly_trend || {};
-        const mix         = report.revenue_mix || {};
-        const ledger      = report.ledger || {};
+        const profile = report.profile || {};
+        const kpis = report.spend_kpis || {};
+        const trend = report.monthly_trend || {};
+        const mix = report.revenue_mix || {};
+        const ledger = report.ledger || {};
         const staffDirect = report.staff_directory || [];
 
         // 1. Render Top Search & Staff Dossier Header Card
@@ -1016,17 +1016,17 @@ async function renderStaffInsights(data, supabase) {
             {
                 label: 'Bookings Revenue',
                 value: formatCurrency(kpis.bookings_revenue || 0),
-                subHtml: `<span style="color:#3b82f6; font-weight:700;">${bksShare}% of staff's total revenue</span>`
+                subHtml: `<span style="color:#3b82f6; font-weight:700;">${bksShare}% of total booking revenue</span>`
             },
             {
                 label: 'Product Sales Revenue',
                 value: formatCurrency(kpis.products_revenue || 0),
-                subHtml: `<span style="color:#f59e0b; font-weight:700;">${prodsShare}% of staff's total revenue</span>`
+                subHtml: `<span style="color:#f59e0b; font-weight:700;">${prodsShare}% of total product sales revenue</span>`
             },
             {
                 label: 'Membership Sales',
                 value: formatCurrency(kpis.memberships_revenue || 0),
-                subHtml: `<span style="color:#8b5cf6; font-weight:700;">${memsShare}% of staff's total revenue</span>`
+                subHtml: `<span style="color:#8b5cf6; font-weight:700;">${memsShare}% of total membership sales revenue</span>`
             }
         );
 
@@ -1038,9 +1038,9 @@ async function renderStaffInsights(data, supabase) {
         if (leftCanvas) {
             trendChartInstance = destroyChart(trendChartInstance);
             const months = trend.months || ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
-            const bkData   = trend.bookings || [];
-            const prData   = trend.products || [];
-            const memData  = trend.memberships || [];
+            const bkData = trend.bookings || [];
+            const prData = trend.products || [];
+            const memData = trend.memberships || [];
 
             trendChartInstance = new Chart(leftCanvas, {
                 type: 'bar',
@@ -1123,8 +1123,8 @@ async function renderStaffInsights(data, supabase) {
             if (centerLbl) centerLbl.textContent = 'Total Sales';
 
             const personalSlices = [
-                { label: 'Booking Sales',    val: mix.bookings_val || 0,    pct: mix.bookings_pct || 0,    color: '#3b82f6' },
-                { label: 'Product Sales',    val: mix.products_val || 0,    pct: mix.products_pct || 0,    color: '#f59e0b' },
+                { label: 'Booking Sales', val: mix.bookings_val || 0, pct: mix.bookings_pct || 0, color: '#3b82f6' },
+                { label: 'Product Sales', val: mix.products_val || 0, pct: mix.products_pct || 0, color: '#f59e0b' },
                 { label: 'Membership Sales', val: mix.memberships_val || 0, pct: mix.memberships_pct || 0, color: '#8b5cf6' }
             ];
 
@@ -1185,37 +1185,36 @@ async function renderStaffInsights(data, supabase) {
 
         // Static demo data — backend integration to follow later
         const bk = {
-            completed_count:   42,  completed_rev:   52400,
-            cancelled_count:   8,   cancelled_missed: 9600,
-            noshow_count:      3,   noshow_missed:    3600,
-            refunded_count:    2,   refunded_amount:  1798,
-            discount_count:    5,   discount_amount:  100
+            completed_count: 42, completed_rev: 52400,
+            cancelled_count: 8, cancelled_missed: 9600,
+            noshow_count: 3, noshow_missed: 3600,
+            refunded_count: 2, refunded_amount: 1798,
+            discount_count: 5, discount_amount: 100
         };
         bk.gross = bk.completed_rev + bk.refunded_amount + bk.discount_amount;
-        bk.net   = bk.gross - bk.refunded_amount - bk.discount_amount;
+        bk.net = bk.gross - bk.refunded_amount - bk.discount_amount;
 
         const ps = {
-            sold_units:        24,  sold_rev:         8090,
-            refunded_units:    2,   refunded_amount:  0,
-            discount_sales:    3,   discount_amount:  0
+            sold_units: 24, sold_rev: 8090,
+            refunded_units: 2, refunded_amount: 0,
+            discount_sales: 3, discount_amount: 0
         };
         ps.gross = ps.sold_rev + ps.refunded_amount + ps.discount_amount;
-        ps.net   = ps.gross - ps.refunded_amount - ps.discount_amount;
+        ps.net = ps.gross - ps.refunded_amount - ps.discount_amount;
 
         const ms = {
-            sold_count:        0,   sold_rev:         0,
-            refunded_count:    0,   refunded_amount:  0,
-            discount_count:    0,   discount_amount:  0
+            sold_count: 0, sold_rev: 0,
+            refunded_count: 0, refunded_amount: 0,
+            discount_count: 0, discount_amount: 0
         };
         ms.gross = ms.sold_rev + ms.refunded_amount + ms.discount_amount;
-        ms.net   = ms.gross - ms.refunded_amount - ms.discount_amount;
+        ms.net = ms.gross - ms.refunded_amount - ms.discount_amount;
 
         // Helper to build one breakdown card
         const buildCard = (title, accentColor, iconName, rows, gross, net) => {
             const rowsHtml = rows.map(r => `
                 <div style="display:flex; justify-content:space-between; align-items:center;
                             padding:7px 0; border-bottom:1px solid #f1f5f9;">
-                    <!-- LHS Column: Dot + Label on left, Count Badge on right (balanced 50/50) -->
                     <div style="display:flex; align-items:center; justify-content:space-between;
                                 flex:1; min-width:0; padding-right:10px;">
                         <div style="display:flex; align-items:center; gap:6px; min-width:0;">
@@ -1230,8 +1229,6 @@ async function renderStaffInsights(data, supabase) {
                                            min-width:22px; text-align:center; flex-shrink:0; margin-left:4px;">${r.count}</span>`
                             : ''}
                     </div>
-
-                    <!-- RHS Column: Metric Description on left, Rupee Value on right (balanced 50/50) -->
                     <div style="display:flex; align-items:center; justify-content:space-between;
                                 flex:1; min-width:0; padding-left:10px; border-left:1px solid #f1f5f9;">
                         <span style="font-size:0.76rem; color:#64748b; font-weight:500;
@@ -1246,7 +1243,6 @@ async function renderStaffInsights(data, supabase) {
                 <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px;
                             border-top:3.5px solid ${accentColor}; padding:18px 16px;
                             flex:1; min-width:280px; display:flex; flex-direction:column; gap:0;">
-                    <!-- Card Header -->
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
                         <div style="width:32px; height:32px; border-radius:8px;
                                     background:${accentColor}18; display:flex; align-items:center;
@@ -1255,9 +1251,7 @@ async function renderStaffInsights(data, supabase) {
                         </div>
                         <h4 style="font-size:0.88rem; font-weight:700; color:#0f172a; margin:0;">${title}</h4>
                     </div>
-                    <!-- Row Items -->
                     <div style="flex:1;">${rowsHtml}</div>
-                    <!-- Gross & Net Summary -->
                     <div style="margin-top:12px; padding-top:10px; border-top:2px solid #e2e8f0; display:flex; flex-direction:column; gap:5px;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span style="font-size:0.8rem; font-weight:600; color:#334155;">Gross Revenue</span>
@@ -1288,9 +1282,9 @@ async function renderStaffInsights(data, supabase) {
         const retailCard = buildCard(
             'Retail Sales Breakdown', '#f59e0b', 'shopping-bag',
             [
-                { dot: '#10b981', label: 'Products Sold',      count: `${ps.sold_units} units`,     metric: 'Revenue Gen.',    value: ps.sold_rev,       valueColor: '#059669' },
-                { dot: '#dc2626', label: 'Refunded Products',  count: `${ps.refunded_units} units`, metric: 'Refunded amt.',   value: ps.refunded_amount,valueColor: '#dc2626' },
-                { dot: '#8b5cf6', label: 'Discounts Given',    count: `${ps.discount_sales} sales`, metric: 'Discounted amt.', value: ps.discount_amount,valueColor: '#7c3aed' }
+                { dot: '#10b981', label: 'Products Sold',      count: `${ ps.sold_units } units`,     metric: 'Revenue Gen.',    value: ps.sold_rev,       valueColor: '#059669' },
+                { dot: '#dc2626', label: 'Refunded Products',  count: `${ ps.refunded_units } units`, metric: 'Refunded amt.',   value: ps.refunded_amount,valueColor: '#dc2626' },
+                { dot: '#8b5cf6', label: 'Discounts Given',    count: `${ ps.discount_sales } sales`, metric: 'Discounted amt.', value: ps.discount_amount,valueColor: '#7c3aed' }
             ],
             ps.gross, ps.net
         );
@@ -1324,30 +1318,30 @@ async function renderStaffInsights(data, supabase) {
 
         // Dossier card only — search bar is now in the header filter row
         topWrap.innerHTML = `
-            <!-- Staff 360 Dossier Header Card -->
-            <div class="cust-profile-dossier">
-                <div class="cust-dossier-left">
-                    <div class="cust-dossier-avatar" style="background: linear-gradient(135deg, #f59e0b, #d97706);">${initial}</div>
-                    <div>
-                        <h3 class="cust-dossier-name">${profile.name || 'Staff Member'}</h3>
-                        <div class="cust-dossier-meta">
-                            <span><i data-feather="briefcase" style="width:12px;height:12px;"></i> ${profile.role || 'Stylist'}</span>
-                            <span><i data-feather="phone" style="width:12px;height:12px;"></i> ${profile.phone || '—'}</span>
-                            <span><i data-feather="mail" style="width:12px;height:12px;"></i> ${profile.email || '—'}</span>
-                            <span><i data-feather="calendar" style="width:12px;height:12px;"></i> Joined: ${profile.joined || '—'}</span>
-                        </div>
+    < !--Staff 360 Dossier Header Card-- >
+        <div class="cust-profile-dossier">
+            <div class="cust-dossier-left">
+                <div class="cust-dossier-avatar" style="background: linear-gradient(135deg, #f59e0b, #d97706);">${initial}</div>
+                <div>
+                    <h3 class="cust-dossier-name">${profile.name || 'Staff Member'}</h3>
+                    <div class="cust-dossier-meta">
+                        <span><i data-feather="briefcase" style="width:12px;height:12px;"></i> ${profile.role || 'Stylist'}</span>
+                        <span><i data-feather="phone" style="width:12px;height:12px;"></i> ${profile.phone || '—'}</span>
+                        <span><i data-feather="mail" style="width:12px;height:12px;"></i> ${profile.email || '—'}</span>
+                        <span><i data-feather="calendar" style="width:12px;height:12px;"></i> Joined: ${profile.joined || '—'}</span>
                     </div>
                 </div>
-                <div class="cust-dossier-right">
-                    <span class="status-pill completed" style="font-size:0.8rem; padding:4px 14px;">
-                        ${(profile.status || 'Active').toUpperCase()}
-                    </span>
-                    <span class="badge-discounts-used" style="background:#eef2ff; border-color:#c7d2fe; color:#3730a3;">
-                        <i data-feather="scissors"></i> ${profile.services_offered || 'All Services'}
-                    </span>
-                </div>
             </div>
-        `;
+            <div class="cust-dossier-right">
+                <span class="status-pill completed" style="font-size:0.8rem; padding:4px 14px;">
+                    ${(profile.status || 'Active').toUpperCase()}
+                </span>
+                <span class="badge-discounts-used" style="background:#eef2ff; border-color:#c7d2fe; color:#3730a3;">
+                    <i data-feather="scissors"></i> ${profile.services_offered || 'All Services'}
+                </span>
+            </div>
+        </div>
+`;
 
         if (window.feather) feather.replace();
 
@@ -1371,22 +1365,22 @@ async function renderStaffInsights(data, supabase) {
                 );
 
                 if (matches.length === 0) {
-                    dropdown.innerHTML = `<div style="padding:12px 16px;color:#94a3b8;font-size:0.85rem;">No staff matches found for "${q}"</div>`;
+                    dropdown.innerHTML = `< div style = "padding:12px 16px;color:#94a3b8;font-size:0.85rem;" > No staff matches found for "${q}"</div > `;
                     dropdown.style.display = 'block';
                     return;
                 }
 
                 dropdown.innerHTML = matches.slice(0, 8).map(s => `
-                    <div class="cust-search-item" data-id="${s.id}">
-                        <div class="cust-search-left">
-                            <div class="cust-avatar-circle" style="background:#fef3c7; color:#92400e;">${(s.name || 'S').charAt(0).toUpperCase()}</div>
-                            <div class="cust-info-text">
-                                <strong>${s.name} <span style="display:inline-block;margin-left:4px;padding:1px 8px;border-radius:10px;font-size:0.7rem;font-weight:700;background:#e0e7ff;color:#3730a3;">${s.role || 'Staff'}</span></strong>
-                                <span>${s.phone || '—'} • ${s.email || '—'}</span>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
+    < div class="cust-search-item" data - id="${s.id}" >
+        <div class="cust-search-left">
+            <div class="cust-avatar-circle" style="background:#fef3c7; color:#92400e;">${(s.name || 'S').charAt(0).toUpperCase()}</div>
+            <div class="cust-info-text">
+                <strong>${s.name} <span style="display:inline-block;margin-left:4px;padding:1px 8px;border-radius:10px;font-size:0.7rem;font-weight:700;background:#e0e7ff;color:#3730a3;">${s.role || 'Staff'}</span></strong>
+                <span>${s.phone || '—'} • ${s.email || '—'}</span>
+            </div>
+        </div>
+                    </div >
+    `).join('');
 
                 dropdown.style.display = 'block';
 
@@ -1434,111 +1428,111 @@ async function renderStaffInsights(data, supabase) {
         const rawMemberships = ledger.memberships || [];
 
         tabBar.innerHTML = `
-            <button class="report-tab-btn active" data-tab="bookings">
-                Booking Sales <span class="tab-badge">${rawBookings.length}</span>
-            </button>
+    < button class="report-tab-btn active" data - tab="bookings" >
+        Booking Sales < span class="tab-badge" > ${ rawBookings.length }</span >
+            </button >
             <button class="report-tab-btn" data-tab="products">
                 Product Sales <span class="tab-badge">${rawProducts.length}</span>
             </button>
             <button class="report-tab-btn" data-tab="memberships">
                 Membership Sales <span class="tab-badge">${rawMemberships.length}</span>
             </button>
-        `;
+`;
 
         const tabConfigs = {
             bookings: {
-                title: `${profile.name || 'Staff Member'}'s Completed Booking Appointments`,
-                headers: ['Date & Time', 'Service', 'Customer', 'Gross Amount', 'Discount', 'Final Paid', 'Payment Mode', 'Status'],
-                unitName: 'bookings',
-                reportFileName: `${(profile.name || 'Staff').replace(/\s+/g, '_')}_Bookings`,
-                rows: rawBookings.map(b => [
-                    b.col_datetime,
-                    `<span class="status-pill active" style="background:#e0e7ff;color:#3730a3;">${b.col_service}</span>`,
-                    b.col_customer,
-                    formatCurrency(b.col_gross),
-                    (b.col_discount && b.col_discount.startsWith('-')) ? `<span style="color:#e11d48;font-weight:600;">${b.col_discount}</span>` : (b.col_discount || '—'),
-                    `<strong>${formatCurrency(b.col_final)}</strong>`,
-                    b.col_payment || 'Paid',
-                    `<span class="status-pill ${(b.col_status || '').toLowerCase() === 'completed' ? 'completed' : 'active'}">${b.col_status || 'Completed'}</span>`
-                ])
+                title: `${ profile.name || 'Staff Member' } 's Completed Booking Appointments`,
+headers: ['Date & Time', 'Service', 'Customer', 'Gross Amount', 'Discount', 'Final Paid', 'Payment Mode', 'Status'],
+    unitName: 'bookings',
+        reportFileName: `${(profile.name || 'Staff').replace(/\s+/g, '_')}_Bookings`,
+            rows: rawBookings.map(b => [
+                b.col_datetime,
+                `<span class="status-pill active" style="background:#e0e7ff;color:#3730a3;">${b.col_service}</span>`,
+                b.col_customer,
+                formatCurrency(b.col_gross),
+                (b.col_discount && b.col_discount.startsWith('-')) ? `<span style="color:#e11d48;font-weight:600;">${b.col_discount}</span>` : (b.col_discount || '—'),
+                `<strong>${formatCurrency(b.col_final)}</strong>`,
+                b.col_payment || 'Paid',
+                `<span class="status-pill ${(b.col_status || '').toLowerCase() === 'completed' ? 'completed' : 'active'}">${b.col_status || 'Completed'}</span>`
+            ])
             },
-            products: {
-                title: `${profile.name || 'Staff Member'}'s Retail POS Product Sales`,
-                headers: ['Sale Date', 'Sale Ref #', 'Customer', 'Product(s)', 'Category', 'Qty', 'Gross Total', 'Discount', 'Final Amount', 'Payment Mode'],
-                unitName: 'product sales',
+products: {
+    title: `${profile.name || 'Staff Member'}'s Retail POS Product Sales`,
+        headers: ['Sale Date', 'Sale Ref #', 'Customer', 'Product(s)', 'Category', 'Qty', 'Gross Total', 'Discount', 'Final Amount', 'Payment Mode'],
+            unitName: 'product sales',
                 reportFileName: `${(profile.name || 'Staff').replace(/\s+/g, '_')}_Retail_Sales`,
-                rows: rawProducts.map(p => [
-                    p.col_date,
-                    p.col_sale_ref || '—',
-                    p.col_customer,
-                    p.col_products,
-                    p.col_categories,
-                    p.col_qty,
-                    formatCurrency(p.col_gross),
-                    (p.col_discount && p.col_discount.startsWith('-')) ? `<span style="color:#e11d48;font-weight:600;">${p.col_discount}</span>` : (p.col_discount || '—'),
-                    `<strong>${formatCurrency(p.col_final)}</strong>`,
-                    p.col_payment || 'Cash'
-                ])
-            },
-            memberships: {
-                title: `${profile.name || 'Staff Member'}'s Membership Plan Sales`,
-                headers: ['Purchase Date', 'Plan Name', 'Customer', 'Duration', 'Expiry Date', 'Plan Price', 'Discount', 'Final Paid', 'Payment Mode', 'Status'],
-                unitName: 'membership sales',
+                    rows: rawProducts.map(p => [
+                        p.col_date,
+                        p.col_sale_ref || '—',
+                        p.col_customer,
+                        p.col_products,
+                        p.col_categories,
+                        p.col_qty,
+                        formatCurrency(p.col_gross),
+                        (p.col_discount && p.col_discount.startsWith('-')) ? `<span style="color:#e11d48;font-weight:600;">${p.col_discount}</span>` : (p.col_discount || '—'),
+                        `<strong>${formatCurrency(p.col_final)}</strong>`,
+                        p.col_payment || 'Cash'
+                    ])
+},
+memberships: {
+    title: `${profile.name || 'Staff Member'}'s Membership Plan Sales`,
+        headers: ['Purchase Date', 'Plan Name', 'Customer', 'Duration', 'Expiry Date', 'Plan Price', 'Discount', 'Final Paid', 'Payment Mode', 'Status'],
+            unitName: 'membership sales',
                 reportFileName: `${(profile.name || 'Staff').replace(/\s+/g, '_')}_Membership_Sales`,
-                rows: rawMemberships.map(m => [
-                    m.col_purchase_date,
-                    m.col_plan,
-                    m.col_customer,
-                    m.col_duration,
-                    m.col_expiry_date,
-                    formatCurrency(m.col_plan_price),
-                    (m.col_discount && m.col_discount.startsWith('-')) ? `<span style="color:#e11d48;font-weight:600;">${m.col_discount}</span>` : (m.col_discount || '—'),
-                    `<strong>${formatCurrency(m.col_final)}</strong>`,
-                    m.col_payment || 'UPI',
-                    `<span class="status-pill ${(m.col_status || '').toLowerCase() === 'active' ? 'completed' : 'cancelled'}">${m.col_status || 'Active'}</span>`
-                ])
-            }
+                    rows: rawMemberships.map(m => [
+                        m.col_purchase_date,
+                        m.col_plan,
+                        m.col_customer,
+                        m.col_duration,
+                        m.col_expiry_date,
+                        formatCurrency(m.col_plan_price),
+                        (m.col_discount && m.col_discount.startsWith('-')) ? `<span style="color:#e11d48;font-weight:600;">${m.col_discount}</span>` : (m.col_discount || '—'),
+                        `<strong>${formatCurrency(m.col_final)}</strong>`,
+                        m.col_payment || 'UPI',
+                        `<span class="status-pill ${(m.col_status || '').toLowerCase() === 'active' ? 'completed' : 'cancelled'}">${m.col_status || 'Active'}</span>`
+                    ])
+}
         };
 
-        const activateTab = (tabKey) => {
-            tabBar.querySelectorAll('.report-tab-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-tab') === tabKey);
-            });
+const activateTab = (tabKey) => {
+    tabBar.querySelectorAll('.report-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === tabKey);
+    });
 
-            const config = tabConfigs[tabKey] || tabConfigs.bookings;
-            const titleEl = document.getElementById('tableTitleText');
-            if (titleEl) titleEl.textContent = config.title;
+    const config = tabConfigs[tabKey] || tabConfigs.bookings;
+    const titleEl = document.getElementById('tableTitleText');
+    if (titleEl) titleEl.textContent = config.title;
 
-            setupReportTable(config.headers, config.rows, {
-                unitName: config.unitName,
-                reportFileName: config.reportFileName,
-                searchPlaceholder: 'Search within selected ledger tab...',
-                pageSize: 10
-            });
-        };
+    setupReportTable(config.headers, config.rows, {
+        unitName: config.unitName,
+        reportFileName: config.reportFileName,
+        searchPlaceholder: 'Search within selected ledger tab...',
+        pageSize: 10
+    });
+};
 
-        tabBar.querySelectorAll('.report-tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tabKey = btn.getAttribute('data-tab');
-                activateTab(tabKey);
-            });
-        });
+tabBar.querySelectorAll('.report-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tabKey = btn.getAttribute('data-tab');
+        activateTab(tabKey);
+    });
+});
 
-        activateTab('bookings');
+activateTab('bookings');
     };
 
-    if (btnApply) {
-        btnApply.onclick = () => loadStaffProfile(targetStaffId);
-    }
+if (btnApply) {
+    btnApply.onclick = () => loadStaffProfile(targetStaffId);
+}
 
-    await loadStaffProfile(targetStaffId);
+await loadStaffProfile(targetStaffId);
 }
 
 // ── Shared Module Dispatcher ────────────────────────────────────────────────
 const handlers = {
     'staff-overview': renderStaffOverview,
     'staff-insights': renderStaffInsights,
-    'staff':          renderStaffOverview
+    'staff': renderStaffOverview
 };
 
 export async function render(data, supabase, type = data?.type) {
