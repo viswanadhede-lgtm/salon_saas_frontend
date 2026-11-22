@@ -559,33 +559,56 @@ BEGIN
         v_total_net    := v_bk_net + v_ps_net + v_ms_net;
 
         -- ── B.7  LEDGER: BOOKING SALES (ALL statuses) ─────────────────────────
+        -- Note: bookings_for_business_transaction has no payment_method column;
+        --       join business_transactions to get it (same pattern as payment_history_view).
+        --       Use DISTINCT ON booking_id to prevent duplicate rows from multi-staff bookings
+        --       and from multiple business_transaction rows per booking.
         SELECT COALESCE(jsonb_agg(
             jsonb_build_object(
-                'col_datetime',   TO_CHAR(b.booking_date, 'DD Mon YYYY') || ', ' ||
-                                  TO_CHAR(b.start_time::interval, 'HH12:MI AM'),
-                'col_service',    COALESCE(b.service_name, '—'),
-                'col_customer',   COALESCE(b.customer_name, '—'),
-                'col_gross',      COALESCE(b.total_price, b.final_amount, 0),
+                'col_datetime',   TO_CHAR(bk.booking_date, 'DD Mon YYYY') || ', ' ||
+                                  TO_CHAR(bk.start_time, 'HH12:MI AM'),
+                'col_service',    COALESCE(bk.service_name, '—'),
+                'col_customer',   COALESCE(bk.customer_name, '—'),
+                'col_gross',      COALESCE(bk.total_price, bk.final_amount, 0),
                 'col_discount',   CASE
-                                    WHEN COALESCE(b.discount_amount, 0) > 0
-                                    THEN '-₹' || ROUND(b.discount_amount)::text ||
-                                         CASE WHEN b.discount_name IS NOT NULL
-                                              THEN ' (' || b.discount_name || ')'
+                                    WHEN COALESCE(bk.discount_amount, 0) > 0
+                                    THEN '-₹' || ROUND(bk.discount_amount)::text ||
+                                         CASE WHEN bk.discount_name IS NOT NULL
+                                              THEN ' (' || bk.discount_name || ')'
                                               ELSE '' END
                                     ELSE '—'
                                   END,
-                'col_final',      COALESCE(b.final_amount, 0),
-                'col_payment',    INITCAP(COALESCE(b.payment_method, 'Cash')),
-                'col_status',     INITCAP(COALESCE(b.booking_status, 'Completed'))
+                'col_final',      COALESCE(bk.final_amount, 0),
+                'col_payment',    INITCAP(COALESCE(bk.payment_method, 'Cash')),
+                'col_status',     INITCAP(COALESCE(bk.booking_status, 'Completed'))
             )
-        ORDER BY b.booking_date DESC, b.start_time DESC), '[]'::jsonb)
+        ORDER BY bk.booking_date DESC, bk.start_time DESC), '[]'::jsonb)
         INTO v_ledger_bookings
-        FROM app.bookings_for_business_transaction b,
-             LATERAL unnest(string_to_array(replace(b.staff_id, ' ', ''), ',')) AS staff_elem
-        WHERE b.company_id = p_company_id
-          AND (p_branch_id IS NULL OR b.branch_id = p_branch_id)
-          AND b.booking_date BETWEEN v_start_date AND v_end_date
-          AND staff_elem::uuid = p_staff_id;
+        FROM (
+            SELECT DISTINCT ON (b.booking_id)
+                b.booking_id,
+                b.booking_date,
+                b.start_time,
+                b.service_name,
+                b.customer_name,
+                b.total_price,
+                b.final_amount,
+                b.discount_amount,
+                b.discount_name,
+                b.booking_status,
+                bt.payment_method
+            FROM app.bookings_for_business_transaction b
+            JOIN LATERAL unnest(string_to_array(replace(b.staff_id, ' ', ''), ',')) AS staff_elem ON TRUE
+            LEFT JOIN app.business_transactions bt
+                ON bt.reference_id = b.booking_id
+               AND bt.reference_type = 'booking'
+               AND bt.status = b.payment_status
+            WHERE b.company_id = p_company_id
+              AND (p_branch_id IS NULL OR b.branch_id = p_branch_id)
+              AND b.booking_date BETWEEN v_start_date AND v_end_date
+              AND staff_elem::uuid = p_staff_id
+            ORDER BY b.booking_id, bt.paid_at DESC NULLS LAST
+        ) bk;
 
         -- ── B.8  LEDGER: PRODUCT SALES (ALL statuses) ─────────────────────────
         SELECT COALESCE(jsonb_agg(
