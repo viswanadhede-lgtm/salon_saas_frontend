@@ -1545,23 +1545,40 @@ async function renderStaffInsights(data, supabase) {
             ])
             },
 products: {
-    title: `${profile.name || 'Staff Member'}'s Retail POS Product Sales`,
-        headers: ['Sale Date', 'Sale Ref #', 'Customer', 'Product(s)', 'Category', 'Qty', 'Gross Total', 'Discount', 'Final Amount', 'Payment Mode'],
+            title: `${profile.name || 'Staff Member'}'s Retail POS Product Sales`,
+            headers: ['Sale Date', 'Customer', 'Product(s)', 'Qty', 'Gross Total', 'Discount', 'Final Amount', 'Payment Mode'],
             unitName: 'product sales',
-                reportFileName: `${(profile.name || 'Staff').replace(/\s+/g, '_')}_Retail_Sales`,
-                    rows: rawProducts.map(p => [
-                        p.col_date,
-                        p.col_sale_ref || '—',
-                        p.col_customer,
-                        p.col_products,
-                        p.col_categories,
-                        p.col_qty,
-                        formatCurrency(p.col_gross),
-                        (p.col_discount && p.col_discount.startsWith('-')) ? `<span style="color:#e11d48;font-weight:600;">${p.col_discount}</span>` : (p.col_discount || '—'),
-                        `<strong>${formatCurrency(p.col_final)}</strong>`,
-                        p.col_payment || 'Cash'
-                    ])
-},
+            reportFileName: `${(profile.name || 'Staff').replace(/\s+/g, '_')}_Retail_Sales`,
+            rows: rawProducts.map(p => {
+                // Build truncated product display: "First Product +N more" if multiple
+                const productsRaw = p.col_products || '—';
+                const productList = typeof productsRaw === 'string'
+                    ? productsRaw.split(',').map(s => s.trim()).filter(Boolean)
+                    : [productsRaw];
+                let productCell;
+                if (productList.length <= 1) {
+                    productCell = productList[0] || '—';
+                } else {
+                    const remaining = productList.length - 1;
+                    productCell = `${productList[0]} <span title="${productList.slice(1).join(', ')}"
+                        style="display:inline-block; margin-left:5px; padding:1px 7px; border-radius:5px;
+                               background:#e0e7ff; color:#3730a3; font-size:0.75rem; font-weight:700;
+                               cursor:pointer; white-space:nowrap;"
+                        onclick="this.closest('td').querySelector('.prod-expanded')?.remove() || this.insertAdjacentHTML('afterend', '<span class=\\'prod-expanded\\' style=\\'display:block;font-size:0.75rem;color:#475569;margin-top:3px;\\'>${productList.slice(1).join(', ')}</span>')"
+                        >+${remaining} more</span>`;
+                }
+                return [
+                    p.col_date,
+                    p.col_customer,
+                    productCell,
+                    p.col_qty,
+                    formatCurrency(p.col_gross),
+                    (p.col_discount && p.col_discount.startsWith('-')) ? `<span style="color:#e11d48;font-weight:600;">${p.col_discount}</span>` : (p.col_discount || '—'),
+                    `<strong>${formatCurrency(p.col_final)}</strong>`,
+                    p.col_payment || 'Cash'
+                ];
+            })
+        },
 memberships: {
     title: `${profile.name || 'Staff Member'}'s Membership Plan Sales`,
         headers: ['Purchase Date', 'Plan Name', 'Customer', 'Duration', 'Expiry Date', 'Plan Price', 'Discount', 'Final Paid', 'Payment Mode', 'Status'],
