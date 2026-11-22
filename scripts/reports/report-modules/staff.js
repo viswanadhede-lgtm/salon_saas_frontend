@@ -1318,7 +1318,6 @@ async function renderStaffInsights(data, supabase) {
 
         // Dossier card only — search bar is now in the header filter row
         topWrap.innerHTML = `
-    < !--Staff 360 Dossier Header Card-- >
         <div class="cust-profile-dossier">
             <div class="cust-dossier-left">
                 <div class="cust-dossier-avatar" style="background: linear-gradient(135deg, #f59e0b, #d97706);">${initial}</div>
