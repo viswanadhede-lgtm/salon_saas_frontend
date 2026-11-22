@@ -660,27 +660,38 @@ async function renderStaffOverview(data, supabase) {
             const statusLabel = isActive ? 'Active' : 'Inactive';
 
             return [
+                // 1. Staff Member
                 `<div style="display:flex; align-items:center; gap:9px;">
                     <span style="width:30px; height:30px; border-radius:50%; background:#e0e7ff; color:#3730a3; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8rem;">${initial}</span>
                     <div>
                         <strong style="color:#0f172a; display:block;">${s.name}</strong>
                     </div>
                 </div>`,
-                `<span class="status-pill active" style="background:#f1f5f9; color:#475569; font-weight:600;">${s.role || 'Staff'}</span>`,
+                // 2. Bookings
                 `<strong style="color:#0f172a;">${s.completed_bookings || 0}</strong>`,
+                // 3. Service Rev
                 formatCurrency(s.service_revenue  || 0),
+                // 4. Retail Sales
                 formatCurrency(s.retail_sales      || 0),
+                // 5. Membership Sales
                 formatCurrency(s.membership_sales  || 0),
-                `<strong style="color:#059669;">${formatCurrency(s.total_revenue || 0)}</strong>`,
-                (s.total_refunds || 0) > 0
-                    ? `<span style="color:#dc2626; font-weight:600;">−${formatCurrency(s.total_refunds)}</span>`
-                    : `<span style="color:#94a3b8;">—</span>`,
-                `<strong style="color:#0369a1;">${formatCurrency(s.net_revenue   || 0)}</strong>`,
+                // 6. Avg Ticket
                 formatCurrency(s.avg_ticket        || 0),
+                // 7. Total Revenue
+                `<strong style="color:#059669;">${formatCurrency(s.total_revenue || 0)}</strong>`,
+                // 8. Discount Given
                 (s.total_discounts || 0) > 0
                     ? `<span style="color:#dc2626; font-weight:600;">${formatCurrency(s.total_discounts)}</span>`
                     : `<span style="color:#94a3b8;">—</span>`,
+                // 9. Total Refunds
+                (s.total_refunds || 0) > 0
+                    ? `<span style="color:#dc2626; font-weight:600;">−${formatCurrency(s.total_refunds)}</span>`
+                    : `<span style="color:#94a3b8;">—</span>`,
+                // 10. Net Revenue
+                `<strong style="color:#0369a1;">${formatCurrency(s.net_revenue || 0)}</strong>`,
+                // 11. Status
                 `<span class="status-pill ${statusClass}">${statusLabel}</span>`,
+                // 12. Action
                 `<a href="report-detail.html?type=staff-insights&staffId=${s.id}&cat=staff" class="btn-view-360">
                     View 360° <i data-feather="arrow-right"></i>
                 </a>`
@@ -688,10 +699,11 @@ async function renderStaffOverview(data, supabase) {
         };
 
         const headers = [
-            'Staff Member', 'Role', 'Bookings',
+            'Staff Member', 'Bookings',
             'Service Rev', 'Retail Sales', 'Membership Sales',
-            'Total Revenue', 'Total Refunds', 'Net Revenue', 'Avg Ticket',
-            'Discount Given', 'Status', 'Action'
+            'Avg Ticket', 'Total Revenue',
+            'Discount Given', 'Total Refunds', 'Net Revenue',
+            'Status', 'Action'
         ];
 
         const tabDatasets = {
