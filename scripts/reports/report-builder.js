@@ -559,7 +559,7 @@ const REPORT_TYPES = {
         subtitle: 'Full Staff Profile',
         icon: 'award',
         backCat: 'staff',
-        leftChartTitle: 'Monthly Revenue Breakdown by Stream',
+        leftChartTitle: 'Net Revenue Breakdown by Stream',
         rightChartTitle: 'Personal Revenue Contribution Mix',
         kpi1: { label: 'Total Revenue by Staff',  value: 'Loading...' },
         kpi2: { label: 'Bookings Revenue',        value: 'Loading...' },

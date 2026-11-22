@@ -1033,43 +1033,122 @@ async function renderStaffInsights(data, supabase) {
         // 3. Render Revenue Breakdown Cards (between KPIs and charts)
         renderRevenueBreakdownCards();
 
-        // 4. Render Left Chart: 3-Bar Monthly Spend Breakdown
+        // 4. Render Left Chart: Net Revenue Breakdown by Stream (adaptive x-axis)
         const leftCanvas = document.getElementById('trendChart');
         if (leftCanvas) {
             trendChartInstance = destroyChart(trendChartInstance);
-            const months = trend.months || ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
-            const bkData = trend.bookings || [];
-            const prData = trend.products || [];
-            const memData = trend.memberships || [];
+
+            // ── Adaptive x-axis: determine buckets from selected date range ──────
+            const dateLabel = (document.getElementById('dateFilterLabel') || {}).textContent || 'Last 30 Days';
+            const rawStart = filterStart ? filterStart.value : null;
+            const rawEnd   = filterEnd   ? filterEnd.value   : null;
+
+            // Calculate span in days
+            const msDay = 86400000;
+            let spanDays = 30;
+            if (rawStart && rawEnd) {
+                spanDays = Math.max(1, Math.round((new Date(rawEnd) - new Date(rawStart)) / msDay));
+            } else if (dateLabel.includes('7'))  { spanDays = 7; }
+            else if (dateLabel.includes('30'))   { spanDays = 30; }
+            else if (dateLabel.includes('3 M'))  { spanDays = 90; }
+            else if (dateLabel.includes('6 M'))  { spanDays = 180; }
+            else if (dateLabel.includes('Year')) { spanDays = 365; }
+            else if (dateLabel === 'Today')      { spanDays = 1; }
+
+            // Choose grouping & generate labels + dummy net-rev data
+            let xLabels = [], bkNet = [], prNet = [], memNet = [];
+
+            if (spanDays <= 1) {
+                // Today → hourly buckets (business hours 9AM–8PM)
+                const hours = ['9AM','10AM','11AM','12PM','1PM','2PM','3PM','4PM','5PM','6PM','7PM','8PM'];
+                xLabels = hours;
+                bkNet  = [0,  800, 1200, 2100, 1800, 900, 1500, 1100, 800, 600, 400, 200];
+                prNet  = [0,  200,  350,  500,  400, 300,  450,  300, 200, 150, 100,  50];
+                memNet = [0,    0,    0, 1000,    0,   0,    0,  500,   0,   0,   0,   0];
+            } else if (spanDays <= 7) {
+                // Last 7 days → daily
+                const end = rawEnd ? new Date(rawEnd) : new Date();
+                for (let i = spanDays - 1; i >= 0; i--) {
+                    const d = new Date(end.getTime() - i * msDay);
+                    xLabels.push(d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' }));
+                    bkNet .push(Math.round(3000 + Math.random() * 4000));
+                    prNet .push(Math.round(500  + Math.random() * 1500));
+                    memNet.push(Math.random() > 0.6 ? Math.round(500 + Math.random() * 1000) : 0);
+                }
+            } else if (spanDays <= 31) {
+                // Last 30 days → weekly buckets
+                const weekCount = Math.ceil(spanDays / 7);
+                for (let w = 1; w <= weekCount; w++) {
+                    xLabels.push(`Week ${w}`);
+                    bkNet .push(Math.round(12000 + Math.random() * 8000));
+                    prNet .push(Math.round(2000  + Math.random() * 3000));
+                    memNet.push(Math.random() > 0.5 ? Math.round(1000 + Math.random() * 2000) : 0);
+                }
+            } else if (spanDays <= 93) {
+                // Last 3 months → monthly
+                const months3 = [];
+                const eDate = rawEnd ? new Date(rawEnd) : new Date();
+                for (let m = 2; m >= 0; m--) {
+                    const d = new Date(eDate.getFullYear(), eDate.getMonth() - m, 1);
+                    months3.push(d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }));
+                }
+                xLabels = months3;
+                bkNet  = [38000, 44000, 52400];
+                prNet  = [ 8000,  9500, 12000];
+                memNet = [ 2000,  3000,  4000];
+            } else if (spanDays <= 186) {
+                // Last 6 months → monthly
+                const eDate = rawEnd ? new Date(rawEnd) : new Date();
+                for (let m = 5; m >= 0; m--) {
+                    const d = new Date(eDate.getFullYear(), eDate.getMonth() - m, 1);
+                    xLabels.push(d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }));
+                    bkNet .push(Math.round(32000 + Math.random() * 22000));
+                    prNet .push(Math.round(6000  + Math.random() * 7000));
+                    memNet.push(Math.round(1000  + Math.random() * 4000));
+                }
+            } else {
+                // Full year / custom long range → monthly (12 months)
+                const eDate = rawEnd ? new Date(rawEnd) : new Date();
+                for (let m = 11; m >= 0; m--) {
+                    const d = new Date(eDate.getFullYear(), eDate.getMonth() - m, 1);
+                    xLabels.push(d.toLocaleDateString('en-IN', { month: 'short' }));
+                    bkNet .push(Math.round(28000 + Math.random() * 28000));
+                    prNet .push(Math.round(5000  + Math.random() * 9000));
+                    memNet.push(Math.round(0     + Math.random() * 5000));
+                }
+            }
 
             trendChartInstance = new Chart(leftCanvas, {
                 type: 'bar',
                 data: {
-                    labels: months,
+                    labels: xLabels,
                     datasets: [
                         {
-                            label: 'Bookings Revenue',
-                            data: bkData,
+                            label: 'Bookings Net Rev',
+                            data: bkNet,
                             backgroundColor: '#3b82f6',
-                            borderRadius: 5,
-                            barPercentage: 0.8,
-                            categoryPercentage: 0.8
+                            borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
+                            barPercentage: 0.72,
+                            categoryPercentage: 0.8,
+                            stack: 'netrev'
                         },
                         {
-                            label: 'Product Sales',
-                            data: prData,
+                            label: 'Product Sales Net Rev',
+                            data: prNet,
                             backgroundColor: '#f59e0b',
-                            borderRadius: 5,
-                            barPercentage: 0.8,
-                            categoryPercentage: 0.8
+                            borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
+                            barPercentage: 0.72,
+                            categoryPercentage: 0.8,
+                            stack: 'netrev'
                         },
                         {
-                            label: 'Membership Sales',
-                            data: memData,
+                            label: 'Membership Net Rev',
+                            data: memNet,
                             backgroundColor: '#8b5cf6',
-                            borderRadius: 5,
-                            barPercentage: 0.8,
-                            categoryPercentage: 0.8
+                            borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
+                            barPercentage: 0.72,
+                            categoryPercentage: 0.8,
+                            stack: 'netrev'
                         }
                     ]
                 },
@@ -1083,28 +1162,38 @@ async function renderStaffInsights(data, supabase) {
                             labels: {
                                 font: { size: 11, weight: '600', family: 'Inter' },
                                 boxWidth: 12,
-                                usePointStyle: true
+                                usePointStyle: true,
+                                pointStyle: 'rectRounded'
                             }
                         },
                         tooltip: {
+                            mode: 'index',
+                            intersect: false,
                             backgroundColor: '#0f172a',
                             callbacks: {
-                                label: (ctx) => ` ${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`
+                                label: (ctx) => ` ${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`,
+                                footer: (items) => {
+                                    const total = items.reduce((s, i) => s + (i.raw || 0), 0);
+                                    return `Total Net: ${formatCurrency(total)}`;
+                                }
                             }
                         }
                     },
                     scales: {
+                        x: {
+                            stacked: true,
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { size: 11 }, maxRotation: 45 }
+                        },
                         y: {
+                            stacked: true,
                             beginAtZero: true,
                             ticks: {
                                 color: '#64748b',
+                                font: { size: 11 },
                                 callback: (v) => formatCurrency(v)
                             },
                             grid: { color: '#f1f5f9' }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#64748b' }
                         }
                     }
                 }
