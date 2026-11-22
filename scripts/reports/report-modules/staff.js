@@ -1030,7 +1030,10 @@ async function renderStaffInsights(data, supabase) {
             }
         );
 
-        // 3. Render Left Chart: 3-Bar Monthly Spend Breakdown
+        // 3. Render Revenue Breakdown Cards (between KPIs and charts)
+        renderRevenueBreakdownCards();
+
+        // 4. Render Left Chart: 3-Bar Monthly Spend Breakdown
         const leftCanvas = document.getElementById('trendChart');
         if (leftCanvas) {
             trendChartInstance = destroyChart(trendChartInstance);
@@ -1172,6 +1175,137 @@ async function renderStaffInsights(data, supabase) {
 
         // 5. Render 3 Activity Tabs (Booking Sales, Product Sales, Membership Sales)
         renderStaffActivityTabs(profile, ledger);
+    };
+
+    // ── Revenue Breakdown Cards (3 stream cards between KPIs and charts) ─────
+    const renderRevenueBreakdownCards = () => {
+        // Remove any existing breakdown row so it's always fresh on re-render
+        const existing = document.getElementById('staffRevenueBreakdownRow');
+        if (existing) existing.remove();
+
+        // Static demo data — backend integration to follow later
+        const bk = {
+            completed_count:   42,  completed_rev:   52400,
+            cancelled_count:   8,   cancelled_missed: 9600,
+            noshow_count:      3,   noshow_missed:    3600,
+            refunded_count:    2,   refunded_amount:  1798,
+            discount_count:    5,   discount_amount:  100
+        };
+        bk.gross = bk.completed_rev + bk.refunded_amount + bk.discount_amount;
+        bk.net   = bk.gross - bk.refunded_amount - bk.discount_amount;
+
+        const ps = {
+            sold_units:        24,  sold_rev:         8090,
+            refunded_units:    2,   refunded_amount:  0,
+            discount_sales:    3,   discount_amount:  0
+        };
+        ps.gross = ps.sold_rev + ps.refunded_amount + ps.discount_amount;
+        ps.net   = ps.gross - ps.refunded_amount - ps.discount_amount;
+
+        const ms = {
+            sold_count:        0,   sold_rev:         0,
+            refunded_count:    0,   refunded_amount:  0,
+            discount_count:    0,   discount_amount:  0
+        };
+        ms.gross = ms.sold_rev + ms.refunded_amount + ms.discount_amount;
+        ms.net   = ms.gross - ms.refunded_amount - ms.discount_amount;
+
+        // Helper to build one breakdown card
+        const buildCard = (title, accentColor, iconName, rows, gross, net) => {
+            const rowsHtml = rows.map(r => `
+                <div style="display:flex; justify-content:space-between; align-items:center;
+                            padding:7px 0; border-bottom:1px solid #f1f5f9;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="width:7px; height:7px; border-radius:50%;
+                                     background:${r.dot}; display:inline-block; flex-shrink:0;"></span>
+                        <span style="font-size:0.8rem; color:#475569; font-weight:500;">${r.label}</span>
+                        ${r.count !== undefined
+                            ? `<span style="font-size:0.75rem; background:#f1f5f9; color:#64748b;
+                                           font-weight:600; padding:1px 7px; border-radius:10px;">${r.count}</span>`
+                            : ''}
+                    </div>
+                    <div style="text-align:right; flex-shrink:0; margin-left:12px;">
+                        <span style="font-size:0.78rem; color:#64748b; font-weight:500;">${r.metric}</span>
+                        <span style="font-size:0.82rem; font-weight:700; color:${r.valueColor}; margin-left:5px;">${formatCurrency(r.value)}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            return `
+                <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px;
+                            border-top:3.5px solid ${accentColor}; padding:18px 20px;
+                            flex:1; min-width:280px; display:flex; flex-direction:column; gap:0;">
+                    <!-- Card Header -->
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+                        <div style="width:32px; height:32px; border-radius:8px;
+                                    background:${accentColor}18; display:flex; align-items:center;
+                                    justify-content:center; flex-shrink:0;">
+                            <i data-feather="${iconName}" style="width:16px; height:16px; color:${accentColor};"></i>
+                        </div>
+                        <h4 style="font-size:0.88rem; font-weight:700; color:#0f172a; margin:0;">${title}</h4>
+                    </div>
+                    <!-- Row Items -->
+                    <div style="flex:1;">${rowsHtml}</div>
+                    <!-- Gross & Net Summary -->
+                    <div style="margin-top:12px; padding-top:10px; border-top:2px solid #e2e8f0; display:flex; flex-direction:column; gap:5px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:0.8rem; font-weight:600; color:#334155;">Gross Revenue</span>
+                            <span style="font-size:0.85rem; font-weight:700; color:#059669;">${formatCurrency(gross)}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;
+                                    background:#f0f9ff; padding:5px 10px; border-radius:8px;">
+                            <span style="font-size:0.8rem; font-weight:700; color:#0369a1;">Net Revenue</span>
+                            <span style="font-size:0.9rem; font-weight:800; color:#0369a1;">${formatCurrency(net)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        const bookingsCard = buildCard(
+            'Bookings Revenue Breakdown', '#3b82f6', 'calendar',
+            [
+                { dot: '#10b981', label: 'Completed Bookings', count: bk.completed_count, metric: 'Revenue Generated', value: bk.completed_rev,    valueColor: '#059669' },
+                { dot: '#f59e0b', label: 'Cancelled Bookings', count: bk.cancelled_count, metric: 'Revenue Missed',    value: bk.cancelled_missed,  valueColor: '#d97706' },
+                { dot: '#f97316', label: 'No-show Bookings',   count: bk.noshow_count,    metric: 'Revenue Missed',    value: bk.noshow_missed,     valueColor: '#ea580c' },
+                { dot: '#dc2626', label: 'Refunded Bookings',  count: bk.refunded_count,  metric: 'Refunded Amount',   value: bk.refunded_amount,   valueColor: '#dc2626' },
+                { dot: '#8b5cf6', label: 'Discounts Given',    count: bk.discount_count,  metric: 'Discounted Amount', value: bk.discount_amount,   valueColor: '#7c3aed' }
+            ],
+            bk.gross, bk.net
+        );
+
+        const retailCard = buildCard(
+            'Retail Sales Breakdown', '#f59e0b', 'shopping-bag',
+            [
+                { dot: '#10b981', label: 'Products Sold',      count: `${ps.sold_units} units`,     metric: 'Revenue Generated', value: ps.sold_rev,       valueColor: '#059669' },
+                { dot: '#dc2626', label: 'Refunded Products',  count: `${ps.refunded_units} units`, metric: 'Refunded Amount',   value: ps.refunded_amount,valueColor: '#dc2626' },
+                { dot: '#8b5cf6', label: 'Discounts Given',    count: `${ps.discount_sales} sales`, metric: 'Discounted Amount', value: ps.discount_amount,valueColor: '#7c3aed' }
+            ],
+            ps.gross, ps.net
+        );
+
+        const memberCard = buildCard(
+            'Membership Sales Breakdown', '#8b5cf6', 'credit-card',
+            [
+                { dot: '#10b981', label: 'Memberships Sold',     count: ms.sold_count,     metric: 'Revenue Generated', value: ms.sold_rev,        valueColor: '#059669' },
+                { dot: '#dc2626', label: 'Refunded Memberships', count: ms.refunded_count, metric: 'Refunded Amount',   value: ms.refunded_amount, valueColor: '#dc2626' },
+                { dot: '#8b5cf6', label: 'Discounts Given',      count: ms.discount_count, metric: 'Discounted Amount', value: ms.discount_amount, valueColor: '#7c3aed' }
+            ],
+            ms.gross, ms.net
+        );
+
+        // Create the wrapper row and inject before .charts-grid
+        const row = document.createElement('div');
+        row.id = 'staffRevenueBreakdownRow';
+        row.style.cssText = 'display:flex; gap:16px; flex-wrap:wrap; margin:16px 0;';
+        row.innerHTML = bookingsCard + retailCard + memberCard;
+
+        const chartsGrid = document.querySelector('.charts-grid');
+        if (chartsGrid && chartsGrid.parentElement) {
+            chartsGrid.parentElement.insertBefore(row, chartsGrid);
+        }
+
+        if (window.feather) feather.replace();
     };
 
     const renderTopSearchAndDossier = (profile, staffDirectory) => {
