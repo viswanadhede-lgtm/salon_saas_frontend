@@ -55,8 +55,8 @@ function unwrapRpcResult(data) {
     return (res && typeof res === 'object') ? res : {};
 }
 
-// Helper: Call the Master RPC
-async function callStaffRpc(supabase, companyId, branchId, start, end, staffId = null) {
+// Helper: Call Staff 360° RPC (individual staff dossier — dedicated to Staff 360° Insights page)
+async function callStaff360Rpc(supabase, companyId, branchId, start, end, staffId = null) {
     const cid = (companyId && companyId !== 'null' && companyId !== 'undefined' && companyId !== 'all') ? companyId : null;
     const bid = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== 'all') ? branchId : null;
 
@@ -71,12 +71,37 @@ async function callStaffRpc(supabase, companyId, branchId, start, end, staffId =
         });
 
         if (error) {
-            console.warn('[staff] get_staff_revenue_stats_across_three_modules RPC returned error or not yet installed:', error.message);
+            console.warn('[staff] get_staff_revenue_stats_across_three_modules error:', error.message);
             return null;
         }
         return unwrapRpcResult(data);
     } catch (err) {
         console.warn('[staff] Error executing get_staff_revenue_stats_across_three_modules RPC:', err.message);
+        return null;
+    }
+}
+
+// Helper: Call Staff Overview RPC (fleet-wide — Staff Overview page only)
+async function callStaffOverviewRpc(supabase, companyId, branchId, start, end) {
+    const cid = (companyId && companyId !== 'null' && companyId !== 'undefined' && companyId !== 'all') ? companyId : null;
+    const bid = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== 'all') ? branchId : null;
+
+    console.log('[staff] Calling get_staff_reports with:', { cid, bid, start, end });
+    try {
+        const { data, error } = await supabase.rpc('get_staff_reports', {
+            p_company_id: cid,
+            p_branch_id:  bid,
+            p_start_date: start,
+            p_end_date:   end
+        });
+
+        if (error) {
+            console.warn('[staff] get_staff_reports error:', error.message);
+            return null;
+        }
+        return unwrapRpcResult(data);
+    } catch (err) {
+        console.warn('[staff] Error executing get_staff_reports RPC:', err.message);
         return null;
     }
 }
@@ -311,204 +336,70 @@ async function renderStaffOverview(data, supabase) {
         );
         applyStaffCardColors();
 
-        let report = await callStaffRpc(supabase, companyId, bid, start, end, null);
+        // Call the dedicated Staff Overview RPC
+        let report = await callStaffOverviewRpc(supabase, companyId, bid, start, end);
 
-        // Fallback demo/initial dataset if RPC returns null or empty
-        if (!report || (!report.kpis && !report.staff_leaderboard && !report.totals_across_modules)) {
+        // Fallback demo dataset aligned to get_staff_reports shape if RPC returns null
+        if (!report || (!report.overview_kpis && !report.staff_leaderboard)) {
             report = {
-                kpis: {
-                    total_staff: 20,
-                    active_staff: 12,
-                    on_leave_staff: 4,
-                    inactive_staff: 4,
+                overview_kpis: {
+                    total_staff: 7,
+                    active_staff: 4,
+                    inactive_staff: 3,
+                    activity_window_days: 30,
+                    total_completed_bookings: 143,
+                    avg_bookings_per_staff: 20.4,
+                    gross_total_revenue: 243000,
+                    avg_revenue_per_staff: 34714,
                     top_performer_name: 'Priya Sharma',
                     top_performer_revenue: 68400,
-                    top_performer_bookings: 42,
-                    avg_bookings_per_staff: 14.5
+                    top_performer_pct: 28
                 },
-                capacity_trend: {
-                    months: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
-                    active_staff: [10, 11, 11, 12, 12, 12],
-                    on_leave: [2, 3, 1, 4, 3, 4],
-                    new_joined: [1, 2, 0, 1, 1, 0]
-                },
-                status_distribution: {
-                    total: 20,
-                    active: 12,
-                    active_pct: 60,
-                    on_leave: 4,
-                    on_leave_pct: 20,
-                    inactive: 4,
-                    inactive_pct: 20
-                },
-                staff_directory: [
-                    {
-                        id: 's-001',
-                        name: 'Priya Sharma',
-                        role: 'Master Stylist',
-                        phone: '+91 98765 43210',
-                        email: 'priya.s@salon.com',
-                        completed_bookings: 42,
-                        service_revenue: 52400,
-                        retail_sales: 12000,
-                        membership_sales: 4000,
-                        total_revenue: 68400,
-                        avg_ticket: 1248,
-                        status: 'active'
-                    },
-                    {
-                        id: 's-002',
-                        name: 'Rahul Verma',
-                        role: 'Senior Barber',
-                        phone: '+91 98450 12345',
-                        email: 'rahul.v@salon.com',
-                        completed_bookings: 38,
-                        service_revenue: 41800,
-                        retail_sales: 7500,
-                        membership_sales: 2000,
-                        total_revenue: 51300,
-                        avg_ticket: 1100,
-                        status: 'active'
-                    },
-                    {
-                        id: 's-003',
-                        name: 'Ananya Sen',
-                        role: 'Senior Colorist',
-                        phone: '+91 97112 34567',
-                        email: 'ananya.sen@salon.com',
-                        completed_bookings: 29,
-                        service_revenue: 38900,
-                        retail_sales: 6200,
-                        membership_sales: 0,
-                        total_revenue: 45100,
-                        avg_ticket: 1341,
-                        status: 'active'
-                    },
-                    {
-                        id: 's-004',
-                        name: 'Kavita Nair',
-                        role: 'Esthetician',
-                        phone: '+91 96543 21098',
-                        email: 'kavita.n@salon.com',
-                        completed_bookings: 24,
-                        service_revenue: 28400,
-                        retail_sales: 8900,
-                        membership_sales: 3000,
-                        total_revenue: 40300,
-                        avg_ticket: 1183,
-                        status: 'active'
-                    },
-                    {
-                        id: 's-005',
-                        name: 'Vikram Joshi',
-                        role: 'Hair Stylist',
-                        phone: '+91 98101 23456',
-                        email: 'vikram.j@salon.com',
-                        completed_bookings: 18,
-                        service_revenue: 19500,
-                        retail_sales: 2400,
-                        membership_sales: 0,
-                        total_revenue: 21900,
-                        avg_ticket: 1083,
-                        status: 'on-leave'
-                    },
-                    {
-                        id: 's-006',
-                        name: 'Sneha Patel',
-                        role: 'Nail Technician',
-                        phone: '+91 99234 56789',
-                        email: 'sneha.p@salon.com',
-                        completed_bookings: 12,
-                        service_revenue: 14200,
-                        retail_sales: 1800,
-                        membership_sales: 0,
-                        total_revenue: 16000,
-                        avg_ticket: 1183,
-                        status: 'on-leave'
-                    },
-                    {
-                        id: 's-007',
-                        name: 'Amit Deshmukh',
-                        role: 'Stylist Assistant',
-                        phone: '+91 91234 56780',
-                        email: 'amit.d@salon.com',
-                        completed_bookings: 0,
-                        service_revenue: 0,
-                        retail_sales: 0,
-                        membership_sales: 0,
-                        total_revenue: 0,
-                        avg_ticket: 0,
-                        status: 'inactive'
-                    }
+                staff_leaderboard: [
+                    { id: 's-001', name: 'Priya Sharma',   role: 'Master Stylist',    status: 'active',   completed_bookings: 42, service_revenue: 52400, retail_sales: 12000, membership_sales: 4000, total_revenue: 68400, net_revenue: 61560, total_refunds: 0, total_discounts: 6840, avg_ticket: 1248 },
+                    { id: 's-002', name: 'Rahul Verma',    role: 'Senior Barber',     status: 'active',   completed_bookings: 38, service_revenue: 41800, retail_sales: 7500,  membership_sales: 2000, total_revenue: 51300, net_revenue: 46170, total_refunds: 0, total_discounts: 5130, avg_ticket: 1100 },
+                    { id: 's-003', name: 'Ananya Sen',     role: 'Senior Colorist',   status: 'active',   completed_bookings: 29, service_revenue: 38900, retail_sales: 6200,  membership_sales: 0,    total_revenue: 45100, net_revenue: 40590, total_refunds: 0, total_discounts: 4510, avg_ticket: 1341 },
+                    { id: 's-004', name: 'Kavita Nair',    role: 'Esthetician',       status: 'active',   completed_bookings: 24, service_revenue: 28400, retail_sales: 8900,  membership_sales: 3000, total_revenue: 40300, net_revenue: 36270, total_refunds: 0, total_discounts: 4030, avg_ticket: 1183 },
+                    { id: 's-005', name: 'Vikram Joshi',   role: 'Hair Stylist',      status: 'active',   completed_bookings: 10, service_revenue: 19500, retail_sales: 2400,  membership_sales: 0,    total_revenue: 21900, net_revenue: 19710, total_refunds: 0, total_discounts: 2190, avg_ticket: 1083 },
+                    { id: 's-006', name: 'Sneha Patel',    role: 'Nail Technician',   status: 'inactive', completed_bookings: 0,  service_revenue: 0,     retail_sales: 0,     membership_sales: 0,    total_revenue: 0,     net_revenue: 0,     total_refunds: 0, total_discounts: 0,    avg_ticket: 0    },
+                    { id: 's-007', name: 'Amit Deshmukh',  role: 'Stylist Assistant', status: 'inactive', completed_bookings: 0,  service_revenue: 0,     retail_sales: 0,     membership_sales: 0,    total_revenue: 0,     net_revenue: 0,     total_refunds: 0, total_discounts: 0,    avg_ticket: 0    }
                 ]
             };
         }
 
-        const staffDirect = (report.staff_leaderboard && report.staff_leaderboard.length > 0)
-            ? report.staff_leaderboard
-            : (report.staff_directory || []);
+        // Extract the two top-level keys from get_staff_reports
+        const kpis        = report.overview_kpis   || {};
+        const leaderboard = report.staff_leaderboard || [];
 
-        const bookingsModule    = report.bookings_module || {};
-        const posModule         = report.pos_module || {};
-        const membershipsModule = report.memberships_module || {};
-        const totalsAcross      = report.totals_across_modules || {};
-        const kpis              = report.kpis || {};
-        const trend             = report.capacity_trend || {};
-        const dist              = report.status_distribution || {};
+        // ── STAT CARD 1: Total Staff — fixed 30-day activity window ──────────
+        const totalStaff    = kpis.total_staff    !== undefined ? kpis.total_staff    : leaderboard.length;
+        const activeStaff   = kpis.active_staff   !== undefined ? kpis.active_staff   : leaderboard.filter(s => (s.completed_bookings || 0) > 0).length;
+        const inactiveStaff = kpis.inactive_staff !== undefined ? kpis.inactive_staff : Math.max(0, totalStaff - activeStaff);
 
-        // -------------------------------------------------------------
-        // STAT CARD 1: Total Staff
-        // Total staff = total number of staff with status is not deleted
-        // Active staff = staff that has atleast one booking in the last 30 days
-        // Inactive staff = staff that has no bookings in the last 30 days and the status is not deleted
-        // -------------------------------------------------------------
-        const totalStaff = kpis.total_staff !== undefined
-            ? kpis.total_staff
-            : staffDirect.length;
+        // ── STAT CARD 2: Average Bookings / Staff ────────────────────────────
+        const totalCompletedBookings = kpis.total_completed_bookings !== undefined
+            ? kpis.total_completed_bookings
+            : leaderboard.reduce((sum, s) => sum + (s.completed_bookings || 0), 0);
 
-        const activeStaff = kpis.active_staff !== undefined
-            ? kpis.active_staff
-            : staffDirect.filter(s => (s.completed_bookings || 0) > 0 || (s.status || '').toLowerCase() === 'active').length;
+        const avgBookingsPerStaff = kpis.avg_bookings_per_staff !== undefined
+            ? parseFloat(kpis.avg_bookings_per_staff).toFixed(1)
+            : (totalStaff > 0 ? (totalCompletedBookings / totalStaff).toFixed(1) : '0');
 
-        const inactiveStaff = kpis.inactive_staff !== undefined
-            ? kpis.inactive_staff
-            : Math.max(0, totalStaff - activeStaff);
+        // ── STAT CARD 3: Total Revenue Generated ─────────────────────────────
+        const totalRevenue = kpis.gross_total_revenue !== undefined
+            ? kpis.gross_total_revenue
+            : leaderboard.reduce((sum, s) => sum + (s.total_revenue || 0), 0);
 
-        // -------------------------------------------------------------
-        // STAT CARD 2: Average Bookings for staff
-        // Average Bookings for staff = total completed bookings / total number of staff
-        // Total completed bookings obtained from RPC get_staff_revenue_stats_across_three_modules
-        // -------------------------------------------------------------
-        const totalCompletedBookings = bookingsModule.case_1_completed?.completed_bookings_count
-            ?? (kpis.total_completed_bookings ?? staffDirect.reduce((sum, s) => sum + (s.completed_bookings || 0), 0));
+        const avgRevenuePerStaff = kpis.avg_revenue_per_staff !== undefined
+            ? kpis.avg_revenue_per_staff
+            : (totalStaff > 0 ? Math.round(totalRevenue / totalStaff) : 0);
 
-        const avgBookingsPerStaff = totalStaff > 0
-            ? (totalCompletedBookings / totalStaff).toFixed(1)
-            : '0';
-
-        // -------------------------------------------------------------
-        // STAT CARD 3: Total revenue Generated
-        // Total revenue Generated = revenue generated by all staff across all 3 revenue modules (Bookings + POS + Memberships) for the selected period
-        // Description - Average Revenue Per Staff = amount
-        // -------------------------------------------------------------
-        const totalRevenue = totalsAcross.gross_total_revenue
-            ?? (kpis.total_revenue ?? staffDirect.reduce((sum, s) => sum + (s.total_revenue || 0), 0));
-
-        const avgRevenuePerStaff = totalStaff > 0
-            ? Math.round(totalRevenue / totalStaff)
-            : 0;
-
-        // -------------------------------------------------------------
-        // STAT CARD 4: Top Performer
-        // Top performer = staff name
-        // description = amount & % of total revenue example ₹1,25,000 · 22.5% of total sales
-        // -------------------------------------------------------------
-        const topStaff = staffDirect.length > 0 ? staffDirect[0] : null;
-        const topPerformerName = topStaff ? topStaff.name : (kpis.top_performer_name || '—');
-        const topPerformerRevenue = topStaff ? (topStaff.total_revenue || 0) : (kpis.top_performer_revenue || 0);
-        const topPct = totalRevenue > 0
-            ? ((topPerformerRevenue / totalRevenue) * 100).toFixed(1) + '%'
-            : '0%';
+        // ── STAT CARD 4: Top Performer ────────────────────────────────────────
+        const topPerformerName    = kpis.top_performer_name    || (leaderboard[0] ? leaderboard[0].name           : '—');
+        const topPerformerRevenue = kpis.top_performer_revenue !== undefined ? kpis.top_performer_revenue : (leaderboard[0] ? leaderboard[0].total_revenue || 0 : 0);
+        const topPerformerPct     = kpis.top_performer_pct     !== undefined
+            ? kpis.top_performer_pct
+            : (totalRevenue > 0 ? ((topPerformerRevenue / totalRevenue) * 100).toFixed(1) : 0);
 
         // 1. Update 4 Stat Cards with vibrant, distinctive colors and pill badges
         updateKPIs(
@@ -548,13 +439,13 @@ async function renderStaffOverview(data, supabase) {
             {
                 label: 'Top Performer',
                 value: topPerformerName,
-                subHtml: (topStaff || topPerformerRevenue > 0)
+                subHtml: topPerformerRevenue > 0
                     ? `
                         <span style="display:inline-flex; align-items:center; gap:4px; background:#fef3c7; color:#92400e; font-weight:700; padding:2px 8px; border-radius:6px; font-size:0.75rem; border:1px solid #fde68a;">
                             <i data-feather="dollar-sign" style="width:12px; height:12px;"></i>${formatCurrency(topPerformerRevenue)}
                         </span>
                         <span style="display:inline-flex; align-items:center; background:#f3e8ff; color:#6b21a8; font-weight:700; padding:2px 8px; border-radius:6px; font-size:0.73rem; border:1px solid #e9d5ff;">
-                            ${topPct} of total sales
+                            ${topPerformerPct}% of total sales
                         </span>
                       `
                     : `<span style="color:#94a3b8; font-size:0.75rem;">No sales recorded</span>`
@@ -564,51 +455,42 @@ async function renderStaffOverview(data, supabase) {
         // Re-apply colorful borders, gradients, and icons
         applyStaffCardColors();
 
-        // 2. Render Left Chart: Staff Capacity & Headcount Trend (3 Lines)
+        // 2. Render Left Chart: Revenue Performance Stacked Bar — Top 10 Staff
         const leftCanvas = document.getElementById('trendChart');
         if (leftCanvas) {
             trendChartInstance = destroyChart(trendChartInstance);
-            const months = trend.months || ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
-            const activeLine = trend.active_staff || [10, 11, 11, 12, 12, 12];
-            const leaveLine  = trend.on_leave || [2, 3, 1, 4, 3, 4];
-            const newJoinLine = trend.new_joined || [1, 2, 0, 1, 1, 0];
+
+            const top10        = leaderboard.slice(0, 10);
+            const barLabels    = top10.map(s => s.name);
+            const serviceData  = top10.map(s => s.service_revenue   || 0);
+            const retailData   = top10.map(s => s.retail_sales       || 0);
+            const memberData   = top10.map(s => s.membership_sales   || 0);
 
             trendChartInstance = new Chart(leftCanvas, {
-                type: 'line',
+                type: 'bar',
                 data: {
-                    labels: months,
+                    labels: barLabels,
                     datasets: [
                         {
-                            label: 'Total Active Staff',
-                            data: activeLine,
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.08)',
-                            borderWidth: 2.5,
-                            fill: true,
-                            tension: 0.35,
-                            pointRadius: 4,
-                            pointBackgroundColor: '#10b981'
+                            label: 'Service Revenue',
+                            data: serviceData,
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 3,
+                            stack: 'revenue'
                         },
                         {
-                            label: 'Staff on Leave',
-                            data: leaveLine,
-                            borderColor: '#f59e0b',
-                            backgroundColor: 'transparent',
-                            borderWidth: 2,
-                            borderDash: [4, 4],
-                            tension: 0.35,
-                            pointRadius: 3.5,
-                            pointBackgroundColor: '#f59e0b'
+                            label: 'Retail Sales',
+                            data: retailData,
+                            backgroundColor: '#f59e0b',
+                            borderRadius: 3,
+                            stack: 'revenue'
                         },
                         {
-                            label: 'New Staff Joined',
-                            data: newJoinLine,
-                            borderColor: '#6366f1',
-                            backgroundColor: 'transparent',
-                            borderWidth: 2,
-                            tension: 0.35,
-                            pointRadius: 3.5,
-                            pointBackgroundColor: '#6366f1'
+                            label: 'Membership Sales',
+                            data: memberData,
+                            backgroundColor: '#8b5cf6',
+                            borderRadius: 3,
+                            stack: 'revenue'
                         }
                     ]
                 },
@@ -626,37 +508,55 @@ async function renderStaffOverview(data, supabase) {
                             }
                         },
                         tooltip: {
-                            backgroundColor: '#0f172a'
+                            backgroundColor: '#0f172a',
+                            callbacks: {
+                                label: (ctx) => ` ${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Revenue Performance by Staff — Top 10',
+                            font: { size: 13, weight: '600', family: 'Inter' },
+                            color: '#334155',
+                            padding: { bottom: 8 }
                         }
                     },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { stepSize: 2, color: '#64748b' },
-                            grid: { color: '#f1f5f9' }
-                        },
                         x: {
+                            stacked: true,
                             grid: { display: false },
-                            ticks: { color: '#64748b' }
+                            ticks: {
+                                color: '#64748b',
+                                maxRotation: 30,
+                                font: { size: 10 }
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#64748b',
+                                callback: (v) => formatCurrency(v)
+                            },
+                            grid: { color: '#f1f5f9' }
                         }
                     }
                 }
             });
         }
 
-        // 3. Render Right Chart: Staff Status Distribution Donut Chart (Exact match to User Screenshot)
+        // 3. Render Right Chart: Staff Status Distribution Donut — 2 slices: Active / Inactive
         const distCanvas = document.getElementById('distributionChart');
         if (distCanvas) {
             distChartInstance = destroyChart(distChartInstance);
 
-            const totalDistStaff = dist.total || totalStaff || 20;
-            const activeCount    = dist.active !== undefined ? dist.active : activeStaff;
-            const leaveCount     = dist.on_leave !== undefined ? dist.on_leave : (kpis.on_leave_staff || staffDirect.filter(s => (s.status || '').toLowerCase().includes('leave')).length);
-            const inactiveCount  = dist.inactive !== undefined ? dist.inactive : inactiveStaff;
+            const totalDistStaff = kpis.total_staff || leaderboard.length || totalStaff;
+            const activeCount    = leaderboard.filter(s => (s.completed_bookings || 0) > 0).length
+                                   || (kpis.active_staff !== undefined ? kpis.active_staff : activeStaff);
+            const inactiveCount  = Math.max(0, totalDistStaff - activeCount);
 
-            const activePct   = totalDistStaff > 0 ? Math.round((activeCount / totalDistStaff) * 100) : 60;
-            const leavePct    = totalDistStaff > 0 ? Math.round((leaveCount / totalDistStaff) * 100) : 20;
-            const inactivePct = totalDistStaff > 0 ? Math.round((inactiveCount / totalDistStaff) * 100) : 20;
+            const activePct   = totalDistStaff > 0 ? Math.round((activeCount   / totalDistStaff) * 100) : 0;
+            const inactivePct = totalDistStaff > 0 ? Math.round((inactiveCount / totalDistStaff) * 100) : 0;
 
             const centerVal = document.getElementById('donutCenterValue');
             const centerLbl = document.getElementById('donutCenterLabel');
@@ -665,7 +565,6 @@ async function renderStaffOverview(data, supabase) {
 
             const statusSlices = [
                 { label: 'Active Staff',   count: activeCount,   pct: activePct,   color: '#10b981' }, // Green
-                { label: 'Staff on Leave', count: leaveCount,    pct: leavePct,    color: '#f59e0b' }, // Amber
                 { label: 'Inactive Staff', count: inactiveCount, pct: inactivePct, color: '#94a3b8' }  // Grey
             ];
 
@@ -697,7 +596,7 @@ async function renderStaffOverview(data, supabase) {
                 }
             });
 
-            // Render Donut Legend (Matching layout from User Screenshot)
+            // Render Donut Legend (2 items — Active & Inactive)
             const legendEl = document.getElementById('donutLegend');
             if (legendEl) {
                 legendEl.innerHTML = statusSlices.map(d => `
@@ -714,8 +613,8 @@ async function renderStaffOverview(data, supabase) {
             }
         }
 
-        // 4. Render Table with 4 Cohort Tabs
-        renderStaffOverviewTabs(staffDirect);
+        // 4. Render Table with Cohort Tabs
+        renderStaffOverviewTabs(leaderboard);
     };
 
     const renderStaffOverviewTabs = (staffList) => {
@@ -733,30 +632,32 @@ async function renderStaffOverview(data, supabase) {
             }
         }
 
-        const topStylists = staffList.filter(s => (s.completed_bookings || 0) > 0 || (s.total_revenue || 0) > 0)
+        // Tab filter logic — no on_leave concept
+        const topPerformers  = staffList.filter(s => (s.total_revenue || 0) > 0)
             .sort((a, b) => (b.total_revenue || 0) - (a.total_revenue || 0));
-        const activeStaff = staffList.filter(s => (s.status || '').toLowerCase() === 'active');
-        const leaveOrInactive = staffList.filter(s => (s.status || '').toLowerCase() !== 'active');
+        const activeStaffTab = staffList.filter(s => (s.completed_bookings || 0) > 0);
+        const inactiveTab    = staffList.filter(s => (s.completed_bookings || 0) === 0);
 
         tabBar.innerHTML = `
             <button class="report-tab-btn active" data-tab="all">
                 All Staff <span class="tab-badge">${staffList.length}</span>
             </button>
             <button class="report-tab-btn" data-tab="top">
-                Top Performers <span class="tab-badge">${topStylists.length}</span>
+                Top Performers <span class="tab-badge">${topPerformers.length}</span>
             </button>
             <button class="report-tab-btn" data-tab="active">
-                Active Staff <span class="tab-badge">${activeStaff.length}</span>
+                Active Staff <span class="tab-badge">${activeStaffTab.length}</span>
             </button>
             <button class="report-tab-btn" data-tab="inactive">
-                On Leave / Inactive <span class="tab-badge">${leaveOrInactive.length}</span>
+                Inactive <span class="tab-badge">${inactiveTab.length}</span>
             </button>
         `;
 
         const buildRow = (s) => {
-            const initial = (s.name || 'S').charAt(0).toUpperCase();
-            const statusClass = (s.status || '').toLowerCase() === 'active' ? 'completed' : ((s.status || '').toLowerCase().includes('leave') ? 'pending' : 'cancelled');
-            const statusLabel = (s.status || 'Active').charAt(0).toUpperCase() + (s.status || 'Active').slice(1);
+            const initial     = (s.name || 'S').charAt(0).toUpperCase();
+            const isActive    = (s.completed_bookings || 0) > 0;
+            const statusClass = isActive ? 'completed' : 'cancelled';
+            const statusLabel = isActive ? 'Active' : 'Inactive';
 
             return [
                 `<div style="display:flex; align-items:center; gap:9px;">
@@ -766,15 +667,15 @@ async function renderStaffOverview(data, supabase) {
                     </div>
                 </div>`,
                 `<span class="status-pill active" style="background:#f1f5f9; color:#475569; font-weight:600;">${s.role || 'Staff'}</span>`,
-                `<div style="font-size:0.8rem; color:#64748b;">${s.phone || '—'}<br>${s.email || '—'}</div>`,
                 `<strong style="color:#0f172a;">${s.completed_bookings || 0}</strong>`,
-                formatCurrency(s.service_revenue || 0),
-                formatCurrency(s.retail_sales || 0),
-                formatCurrency(s.membership_sales || 0),
+                formatCurrency(s.service_revenue  || 0),
+                formatCurrency(s.retail_sales      || 0),
+                formatCurrency(s.membership_sales  || 0),
                 `<strong style="color:#059669;">${formatCurrency(s.total_revenue || 0)}</strong>`,
-                formatCurrency(s.avg_ticket || 0),
-                (s.discount_given || s.total_discounts || 0) > 0
-                    ? `<span style="color:#dc2626; font-weight:600;">${formatCurrency(s.discount_given || s.total_discounts)}</span>`
+                `<strong style="color:#0369a1;">${formatCurrency(s.net_revenue   || 0)}</strong>`,
+                formatCurrency(s.avg_ticket        || 0),
+                (s.total_discounts || 0) > 0
+                    ? `<span style="color:#dc2626; font-weight:600;">${formatCurrency(s.total_discounts)}</span>`
                     : `<span style="color:#94a3b8;">—</span>`,
                 `<span class="status-pill ${statusClass}">${statusLabel}</span>`,
                 `<a href="report-detail.html?type=staff-insights&staffId=${s.id}&cat=staff" class="btn-view-360">
@@ -783,11 +684,16 @@ async function renderStaffOverview(data, supabase) {
             ];
         };
 
-        const headers = ['Staff Member', 'Role', 'Contact', 'Bookings', 'Service Rev', 'Retail Sales', 'Membership Sales', 'Total Revenue', 'Avg Ticket', 'Discount Given', 'Status', 'Action'];
+        const headers = [
+            'Staff Member', 'Role', 'Bookings',
+            'Service Rev', 'Retail Sales', 'Membership Sales',
+            'Total Revenue', 'Net Revenue', 'Avg Ticket',
+            'Discount Given', 'Status', 'Action'
+        ];
 
         const tabDatasets = {
             all: {
-                title: 'All Staff Members Directory',
+                title: 'All Staff Members — Full Leaderboard',
                 unitName: 'staff members',
                 fileName: 'All_Staff_Report',
                 rows: staffList.map(buildRow)
@@ -796,19 +702,19 @@ async function renderStaffOverview(data, supabase) {
                 title: 'Top Performing Staff Leaderboard',
                 unitName: 'top performers',
                 fileName: 'Top_Staff_Leaderboard',
-                rows: topStylists.map(buildRow)
+                rows: topPerformers.map(buildRow)
             },
             active: {
-                title: 'Currently Active Staff',
+                title: 'Active Staff (Had Bookings in Period)',
                 unitName: 'active staff',
                 fileName: 'Active_Staff_Report',
-                rows: activeStaff.map(buildRow)
+                rows: activeStaffTab.map(buildRow)
             },
             inactive: {
-                title: 'Staff On Leave & Inactive',
-                unitName: 'on-leave / inactive staff',
+                title: 'Inactive Staff (No Bookings in Period)',
+                unitName: 'inactive staff',
                 fileName: 'Inactive_Staff_Report',
-                rows: leaveOrInactive.map(buildRow)
+                rows: inactiveTab.map(buildRow)
             }
         };
 
@@ -892,7 +798,7 @@ async function renderStaffInsights(data, supabase) {
             { label: 'Membership Sales',        value: 'Loading...' }
         );
 
-        let report = await callStaffRpc(supabase, companyId, bid, start, end, staffIdToLoad);
+        let report = await callStaff360Rpc(supabase, companyId, bid, start, end, staffIdToLoad);
 
         // If no staffId was passed (or no profile in report), auto-select top staff from directory and load their 360 profile
         if ((!staffIdToLoad || !report || !report.profile) && report && Array.isArray(report.staff_directory) && report.staff_directory.length > 0) {
