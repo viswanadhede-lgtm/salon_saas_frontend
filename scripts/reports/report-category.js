@@ -140,7 +140,7 @@ const CATEGORIES = {
             },
             {
                 type: 'cust-insights',
-                label: 'Customer 360Â° Insights',
+                label: 'Customer 360° Insights',
                 desc: 'Individual customer dossier, multi-channel spend & activity history',
                 icon: 'user-check',
                 colorClass: 'bg-purple'
@@ -149,21 +149,21 @@ const CATEGORIES = {
     },
     staff: {
         title: 'Staff Performance',
-        subtitle: 'Staff headcount, capacity timeline, service volume, revenue generation and individual performance 360Â°',
+        subtitle: '',
         icon: 'user-check',
         colorClass: 'bg-amber',
         subReports: [
             {
                 type: 'staff-overview',
                 label: 'Staff Overview',
-                desc: 'Staff headcount, capacity timeline, status distribution & team performance leaderboard',
+                desc: '',
                 icon: 'users',
                 colorClass: 'bg-amber'
             },
             {
                 type: 'staff-insights',
-                label: 'Staff 360Â° Insights',
-                desc: 'Individual staff profile, service bookings, retail POS sales, membership sales & revenue contribution share',
+                label: 'Staff 360° Insights',
+                desc: '',
                 icon: 'award',
                 colorClass: 'bg-indigo'
             }
@@ -333,8 +333,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (bannerIcon)  bannerIcon.className  = `category-banner-icon ${config.colorClass}`;
-    if (bannerTitle) bannerTitle.textContent = `${config.title} Reports`;
-    if (bannerSub)   bannerSub.textContent  = config.subtitle;
+    if (bannerTitle) {
+        bannerTitle.textContent = `${config.title} Reports`;
+        bannerTitle.style.margin = config.subtitle ? '' : '0';
+    }
+    if (bannerSub) {
+        if (config.subtitle) {
+            bannerSub.textContent = config.subtitle;
+            bannerSub.style.display = '';
+        } else {
+            bannerSub.textContent = '';
+            bannerSub.style.display = 'none';
+        }
+    }
 
     // Re-render the feather icon inside the banner
     if (bannerIcon) {
@@ -351,8 +362,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <i data-feather="${sr.icon}"></i>
             </div>
             <div class="sub-report-details">
-                <h3>${sr.label}</h3>
-                <p>${sr.desc}</p>
+                <h3 style="${!sr.desc ? 'margin:0;' : ''}">${sr.label}</h3>
+                ${sr.desc ? `<p>${sr.desc}</p>` : ''}
             </div>
             <i data-feather="chevron-right" class="arrow"></i>
         </a>

@@ -1,4 +1,4 @@
-﻿// scripts/reports/report-modules/staff.js
+// scripts/reports/report-modules/staff.js
 // 360-Degree Staff Performance & Intelligence Module
 // Sub-Report 1: Staff Overview (Fleet-Wide Team Performance & HR Capacity)
 // Sub-Report 2: Staff 360° Insights (Individual Staff Dossier, 3-Stream Revenue & Activity Ledgers)
