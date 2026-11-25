@@ -602,7 +602,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (btnSave) {
-        btnSave.addEventListener('click', savePreferences);
+        btnSave.addEventListener('click', () => {
+            const pane = document.getElementById('pane-notifications');
+            if (pane && !pane.classList.contains('active')) return;
+            savePreferences();
+        });
     }
 
     window.cancelNotificationSettings = function () {

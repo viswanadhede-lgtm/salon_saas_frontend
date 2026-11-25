@@ -34,14 +34,12 @@
 
         .settings-cards-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            max-width: 1050px;
         }
 
-        @media (max-width: 1100px) {
-            .settings-cards-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (max-width: 680px) {
+        @media (max-width: 768px) {
             .settings-cards-grid { grid-template-columns: 1fr; }
         }
 
@@ -51,13 +49,14 @@
             background: #fff;
             border: 1px solid #e2e8f0;
             border-radius: 14px;
-            padding: 24px;
+            padding: 28px 24px;
             cursor: pointer;
             text-decoration: none !important;
             color: inherit;
             display: flex;
+            flex-direction: column;
             align-items: flex-start;
-            gap: 18px;
+            gap: 16px;
             transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
@@ -73,14 +72,17 @@
         .settings-card:hover,
         .settings-card:focus,
         .settings-card:active {
-            box-shadow: 0 8px 30px rgba(30, 58, 138, 0.10);
+            box-shadow: 0 10px 30px rgba(30, 58, 138, 0.08);
             transform: translateY(-2px);
-            border-color: #c7d7f4;
+            border-color: #cbd5e1;
             text-decoration: none !important;
             color: inherit;
         }
         .settings-card:hover::after {
             border-color: #3b82f6;
+        }
+        .settings-card.card-branch:hover::after {
+            border-color: #0d9488;
         }
         .settings-card *,
         .settings-card:hover * {
@@ -88,47 +90,41 @@
         }
 
         .settings-card-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
             flex-shrink: 0;
+        }
+        .settings-card-icon i,
+        .settings-card-icon svg {
+            width: 22px;
+            height: 22px;
         }
 
         .settings-card-body {
-            flex: 1;
-            min-width: 0;
+            width: 100%;
         }
         .settings-card-title {
-            font-size: 1rem;
-            font-weight: 650;
+            font-size: 1.15rem;
+            font-weight: 700;
             color: #0f172a;
-            margin: 0 0 5px 0;
+            margin: 0 0 6px 0;
+            letter-spacing: -0.01em;
         }
         .settings-card-desc {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             color: #64748b;
             margin: 0;
             line-height: 1.5;
-        }
-
-        .settings-card-arrow {
-            align-self: center;
-            color: #cbd5e1;
-            flex-shrink: 0;
-            transition: color 0.2s, transform 0.2s;
-        }
-        .settings-card:hover .settings-card-arrow {
-            color: #3b82f6;
-            transform: translateX(3px);
+            font-weight: 450;
         }
 
         /* Card accent colors */
-        .icon-blue   { background: #eff6ff; color: #3b82f6; }
-        .icon-teal   { background: #f0fdfa; color: #14b8a6; }
+        .icon-blue   { background: #eff6ff; color: #2563eb; }
+        .icon-teal   { background: #f0fdfa; color: #0d9488; }
         .icon-amber  { background: #fffbeb; color: #f59e0b; }
         .icon-green  { background: #f0fdf4; color: #22c55e; }
         .icon-violet { background: #f5f3ff; color: #8b5cf6; }
@@ -161,84 +157,35 @@
 
             <div class="settings-cards-grid">
 
-                <!-- 1. Business -->
-                <a href="settings-business.html" class="settings-card" id="card-business" data-sub-feature="settings_business">
-                    <div class="settings-card-icon icon-blue"><i data-feather="briefcase"></i></div>
-                    <div class="settings-card-body">
-                        <p class="settings-card-title">Business</p>
-                        <p class="settings-card-desc">Business information, branding, category and online presence</p>
+                <!-- 1. Company Settings -->
+                <a href="settings-company.html" class="settings-card" id="card-company-settings">
+                    <div class="settings-card-icon icon-blue">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 21h18"></path>
+                            <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
+                            <path d="M9 7h1"></path>
+                            <path d="M9 11h1"></path>
+                            <path d="M9 15h1"></path>
+                            <path d="M14 7h1"></path>
+                            <path d="M14 11h1"></path>
+                            <path d="M14 15h1"></path>
+                        </svg>
                     </div>
-                    <i data-feather="chevron-right" class="settings-card-arrow"></i>
+                    <div class="settings-card-body">
+                        <p class="settings-card-title">Company Settings</p>
+                        <p class="settings-card-desc">Business &middot; Contact &middot; Tax</p>
+                    </div>
                 </a>
 
-                <!-- 2. Contact -->
-                <a href="settings-contact.html" class="settings-card" id="card-contact" data-sub-feature="settings_contact">
-                    <div class="settings-card-icon icon-teal"><i data-feather="phone"></i></div>
-                    <div class="settings-card-body">
-                        <p class="settings-card-title">Contact</p>
-                        <p class="settings-card-desc">Communication channels, business address and primary contact person</p>
+                <!-- 2. Branch Settings -->
+                <a href="settings-branch.html" class="settings-card card-branch" id="card-branch-settings">
+                    <div class="settings-card-icon icon-teal">
+                        <i data-feather="map-pin"></i>
                     </div>
-                    <i data-feather="chevron-right" class="settings-card-arrow"></i>
-                </a>
-
-                <!-- 3. Tax -->
-                <a href="settings-tax.html" class="settings-card" id="card-tax" data-sub-feature="settings_tax">
-                    <div class="settings-card-icon icon-amber"><i data-feather="file-text"></i></div>
                     <div class="settings-card-body">
-                        <p class="settings-card-title">Tax</p>
-                        <p class="settings-card-desc">GSTIN, PAN, registration number and tax settings</p>
+                        <p class="settings-card-title">Branch Settings</p>
+                        <p class="settings-card-desc">Hours &middot; Invoice &middot; Payments &middot; Notifications &middot; Branch Details</p>
                     </div>
-                    <i data-feather="chevron-right" class="settings-card-arrow"></i>
-                </a>
-
-                <!-- 4. Invoice -->
-                <a href="settings-invoice.html" class="settings-card" id="card-invoice" data-sub-feature="settings_billing">
-                    <div class="settings-card-icon icon-green"><i data-feather="clipboard"></i></div>
-                    <div class="settings-card-body">
-                        <p class="settings-card-title">Invoice</p>
-                        <p class="settings-card-desc">Configure your invoices for bookings, POS sales and memberships</p>
-                    </div>
-                    <i data-feather="chevron-right" class="settings-card-arrow"></i>
-                </a>
-
-                <!-- 5. Hours -->
-                <a href="settings-hours.html" class="settings-card" id="card-hours" data-sub-feature="settings_hours">
-                    <div class="settings-card-icon icon-violet"><i data-feather="clock"></i></div>
-                    <div class="settings-card-body">
-                        <p class="settings-card-title">Hours</p>
-                        <p class="settings-card-desc">Opening hours, breaks, holidays and special hours</p>
-                    </div>
-                    <i data-feather="chevron-right" class="settings-card-arrow"></i>
-                </a>
-
-                <!-- 6. Payments -->
-                <a href="settings-payments.html" class="settings-card" id="card-payments" data-sub-feature="settings_payments">
-                    <div class="settings-card-icon icon-indigo"><i data-feather="credit-card"></i></div>
-                    <div class="settings-card-body">
-                        <p class="settings-card-title">Payments</p>
-                        <p class="settings-card-desc">Cash, UPI, cards, online payments and payment defaults</p>
-                    </div>
-                    <i data-feather="chevron-right" class="settings-card-arrow"></i>
-                </a>
-
-                <!-- 7. Notifications -->
-                <a href="settings-notifications.html" class="settings-card" id="card-notifications" data-sub-feature="settings_notifications">
-                    <div class="settings-card-icon icon-orange"><i data-feather="bell"></i></div>
-                    <div class="settings-card-body">
-                        <p class="settings-card-title">Notifications</p>
-                        <p class="settings-card-desc">System, customer and marketing notifications</p>
-                    </div>
-                    <i data-feather="chevron-right" class="settings-card-arrow"></i>
-                </a>
-
-                <!-- 8. Branches -->
-                <a href="branches.html" class="settings-card" id="card-branches" data-feature="branch_management">
-                    <div class="settings-card-icon icon-slate"><i data-feather="map-pin"></i></div>
-                    <div class="settings-card-body">
-                        <p class="settings-card-title">Branches</p>
-                        <p class="settings-card-desc">Add and manage your business locations</p>
-                    </div>
-                    <i data-feather="chevron-right" class="settings-card-arrow"></i>
                 </a>
 
             </div>

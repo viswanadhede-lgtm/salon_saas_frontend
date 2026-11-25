@@ -552,3 +552,62 @@ html, body.dashboard-body {
     }
 }
 
+/* -- Settings Tab Navigation System ------------------- */
+.settings-tabs-wrapper {
+    margin-bottom: 24px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.settings-tabs-nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 0px;
+    scrollbar-width: none;
+}
+.settings-tabs-nav::-webkit-scrollbar {
+    display: none;
+}
+.settings-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 18px;
+    border: none;
+    background: transparent;
+    font-size: 0.92rem;
+    font-weight: 550;
+    color: #64748b;
+    border-bottom: 2.5px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    border-radius: 6px 6px 0 0;
+}
+.settings-tab-btn:hover {
+    color: #1e293b;
+    background: #f8fafc;
+}
+.settings-tab-btn.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+    font-weight: 650;
+    background: transparent;
+}
+.settings-tab-btn i,
+.settings-tab-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.settings-tab-pane {
+    display: none;
+}
+.settings-tab-pane.active {
+    display: block;
+    animation: settingsFadeIn 0.2s ease-in-out;
+}
+@keyframes settingsFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
