@@ -554,6 +554,7 @@ html, body.dashboard-body {
 
 /* -- Settings Tab Navigation System ------------------- */
 .settings-tabs-wrapper {
+    margin-top: 14px;
     margin-bottom: 24px;
     border-bottom: 1px solid #e2e8f0;
 }
