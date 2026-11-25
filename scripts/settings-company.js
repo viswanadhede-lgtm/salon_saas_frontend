@@ -195,7 +195,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <span class="input-prefix"><i data-feather="hash" style="width:14px;height:14px;"></i></span>
                         <input type="text" class="form-input with-prefix gst-number-input" placeholder="e.g., 29ABCDE1234F1Z5" maxlength="15" value="${gstin}" style="text-transform:uppercase;">
                     </div>
-                    <p class="form-hint">15-digit alphanumeric GSTIN</p>
                 </div>
                 <div class="form-group" style="margin-bottom:0;">
                     <label class="form-label">GST Registration State <span class="required">*</span></label>
@@ -203,7 +202,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <option value="">Select State</option>
                         ${INDIAN_STATES.map(s => `<option value="${s}" ${s.toLowerCase() === state.toLowerCase() ? 'selected' : ''}>${s}</option>`).join('')}
                     </select>
-                    <p class="form-hint">State where this GSTIN is registered</p>
                 </div>
             </div>
         `;
