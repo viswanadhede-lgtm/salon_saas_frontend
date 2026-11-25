@@ -612,3 +612,159 @@ html, body.dashboard-body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* -- Redesigned Company Settings UI Styles ------------- */
+.readonly-input {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #64748b !important;
+    cursor: not-allowed !important;
+}
+
+/* Billing Contact Wrap */
+.billing-toggle-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    transition: all 0.2s ease;
+}
+.billing-toggle-card:hover {
+    border-color: #cbd5e1;
+}
+.billing-toggle-info h4 {
+    margin: 0 0 3px 0;
+    font-size: 0.95rem;
+    font-weight: 650;
+    color: #0f172a;
+}
+.billing-toggle-info p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: #64748b;
+    line-height: 1.4;
+}
+
+.billing-inherit-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 18px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    color: #1e40af;
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 1.45;
+}
+.billing-inherit-banner i,
+.billing-inherit-banner svg {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+    color: #2563eb;
+}
+
+/* Multiple GST Registrations UI */
+.gst-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.gst-card-row {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px 18px;
+    transition: all 0.2s ease;
+    position: relative;
+}
+.gst-card-row:hover {
+    border-color: #cbd5e1;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+.gst-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f1f5f9;
+}
+.gst-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.88rem;
+    font-weight: 650;
+    color: #1e293b;
+}
+.gst-badge-index {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+.btn-remove-gst {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: #94a3b8;
+    padding: 4px 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+.btn-remove-gst:hover {
+    background: #fee2e2;
+    border-color: #fecaca;
+    color: #dc2626;
+}
+.btn-remove-gst i,
+.btn-remove-gst svg {
+    width: 13px;
+    height: 13px;
+}
+
+.btn-add-gst {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: #ffffff;
+    border: 1.5px dashed #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #2563eb;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.btn-add-gst:hover {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    border-style: solid;
+}
+.btn-add-gst i,
+.btn-add-gst svg {
+    width: 14px;
+    height: 14px;
+}
+
+
