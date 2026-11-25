@@ -193,51 +193,7 @@
             <!-- ============================================================ -->
             <div class="settings-tab-pane active" id="pane-business">
 
-                <!-- 1. Basic Information -->
-                <div class="sp-card">
-                    <div class="sp-card-header">
-                        <h2><i data-feather="briefcase" style="width:18px;height:18px;color:#3b82f6;"></i> Basic Information</h2>
-                        <p>Core company identity, business name and registered entity details</p>
-                    </div>
-                    <div class="sp-card-body">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label" for="companyName">Legal Business Name <span class="required">*</span></label>
-                                <input type="text" id="companyName" class="form-input" placeholder="e.g., Shubha Beauty Salon Pvt Ltd" required>
-                                <p class="form-hint">Official registered name used on legal and billing documents</p>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="displayName">Display / Brand Name <span class="required">*</span></label>
-                                <input type="text" id="displayName" class="form-input" placeholder="e.g., Shubha Salon & Spa" required>
-                                <p class="form-hint">Customer-facing business name displayed across customer bookings</p>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="businessCategory">Business Category <span class="required">*</span></label>
-                            <select id="businessCategory" class="form-select" required>
-                                <option value="salon_spa">Salon & Spa</option>
-                                <option value="hair_salon">Hair Salon</option>
-                                <option value="nail_salon">Nail Studio</option>
-                                <option value="beauty_parlour">Beauty Parlour</option>
-                                <option value="barbershop">Barbershop</option>
-                                <option value="skincare_clinic">Skincare Clinic</option>
-                                <option value="wellness_center">Wellness & Massage</option>
-                                <option value="makeup_studio">Makeup Studio</option>
-                                <option value="other">Other</option>
-                            </select>
-                            <p class="form-hint">Primary industry category your business operates under</p>
-                        </div>
-
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label class="form-label" for="businessDescription">About the Business <span class="optional">(Optional)</span></label>
-                            <textarea id="businessDescription" class="form-input form-textarea" placeholder="Tell customers about your salon services, experience, specialties, and ambiance..."></textarea>
-                            <p class="form-hint">Short summary shown on customer booking portals and directory pages</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 2. Branding (Logo & Cover Image) -->
+                <!-- 1. Branding (Logo & Cover Image) -->
                 <div class="sp-card">
                     <div class="sp-card-header">
                         <h2><i data-feather="image" style="width:18px;height:18px;color:#3b82f6;"></i> Branding</h2>
@@ -296,6 +252,50 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Basic Information -->
+                <div class="sp-card">
+                    <div class="sp-card-header">
+                        <h2><i data-feather="briefcase" style="width:18px;height:18px;color:#3b82f6;"></i> Basic Information</h2>
+                        <p>Core company identity, business name and registered entity details</p>
+                    </div>
+                    <div class="sp-card-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="companyName">Legal Business Name <span class="required">*</span></label>
+                                <input type="text" id="companyName" class="form-input" placeholder="e.g., Shubha Beauty Salon Pvt Ltd" required>
+                                <p class="form-hint">Official registered name used on legal and billing documents</p>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="displayName">Display / Brand Name <span class="required">*</span></label>
+                                <input type="text" id="displayName" class="form-input" placeholder="e.g., Shubha Salon & Spa" required>
+                                <p class="form-hint">Customer-facing business name displayed across customer bookings</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="businessCategory">Business Category <span class="required">*</span></label>
+                            <select id="businessCategory" class="form-select" required>
+                                <option value="salon_spa">Salon & Spa</option>
+                                <option value="hair_salon">Hair Salon</option>
+                                <option value="nail_salon">Nail Studio</option>
+                                <option value="beauty_parlour">Beauty Parlour</option>
+                                <option value="barbershop">Barbershop</option>
+                                <option value="skincare_clinic">Skincare Clinic</option>
+                                <option value="wellness_center">Wellness & Massage</option>
+                                <option value="makeup_studio">Makeup Studio</option>
+                                <option value="other">Other</option>
+                            </select>
+                            <p class="form-hint">Primary industry category your business operates under</p>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label" for="businessDescription">About the Business <span class="optional">(Optional)</span></label>
+                            <textarea id="businessDescription" class="form-input form-textarea" placeholder="Tell customers about your salon services, experience, specialties, and ambiance..."></textarea>
+                            <p class="form-hint">Short summary shown on customer booking portals and directory pages</p>
                         </div>
                     </div>
                 </div>
