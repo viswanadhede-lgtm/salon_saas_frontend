@@ -188,6 +188,9 @@ export const SUB_FEATURES = {
     BRANCH_DELETE:                       'branch_delete',
     BRANCH_SWITCH:                       'branch_switch',
 
+    // ── Unified Company Settings (settings-company.html) ─────────────────────
+    SAVE_COMPANY_SETTINGS:               'save_company_settings',
+
     // ── Page 30: Business Settings (settings-business.html) ──────────────────
     SAVE_BUSINESS_SETTINGS:              'save_business_settings',
 

@@ -540,10 +540,10 @@ export async function loadBusinessPreviewData() {
         if (!companyId) return;
         const branchId = await getBranchId(companyId);
 
-        // 1. Company Settings
+        // 1. Company Settings (Consolidated in shared.company_settings)
         const { data: cSettings } = await supabase.schema('shared')
             .from('company_settings')
-            .select('display_name, legal_business_name, website, logo_url')
+            .select('display_name, legal_business_name, website, logo_url, pan, gst_registrations, primary_phone, primary_email, address_line_1, city, state, pin_code')
             .eq('company_id', companyId)
             .maybeSingle();
 
@@ -552,6 +552,19 @@ export async function loadBusinessPreviewData() {
             if (cSettings.legal_business_name) SAMPLE_COMPANY.legalName = cSettings.legal_business_name;
             if (cSettings.website) SAMPLE_COMPANY.website = cSettings.website;
             if (cSettings.logo_url) SAMPLE_COMPANY.logoUrl = cSettings.logo_url;
+            if (cSettings.pan) SAMPLE_COMPANY.pan = cSettings.pan;
+            if (cSettings.primary_email) SAMPLE_COMPANY.email = cSettings.primary_email;
+            if (cSettings.primary_phone && !SAMPLE_COMPANY.phone) SAMPLE_COMPANY.phone = cSettings.primary_phone;
+
+            // Extract primary GSTIN from gst_registrations array
+            if (Array.isArray(cSettings.gst_registrations) && cSettings.gst_registrations.length > 0) {
+                const primaryGst = cSettings.gst_registrations[0]?.gstin;
+                if (primaryGst) SAMPLE_COMPANY.gstin = primaryGst;
+            }
+
+            if (cSettings.address_line_1 && !SAMPLE_COMPANY.address) {
+                SAMPLE_COMPANY.address = [cSettings.address_line_1, cSettings.city, cSettings.state, cSettings.pin_code].filter(Boolean).join(', ');
+            }
         }
 
         // 2. Branch Info
@@ -567,33 +580,6 @@ export async function loadBusinessPreviewData() {
                 const addr = bData.branch_address || [bData.address_line_1, bData.city, bData.state].filter(Boolean).join(', ');
                 if (addr) SAMPLE_COMPANY.address = addr;
                 if (bData.branch_phone) SAMPLE_COMPANY.phone = bData.branch_phone;
-            }
-        }
-
-        // 3. Tax Settings
-        const { data: tData } = await supabase.schema('shared')
-            .from('company_tax_settings')
-            .select('gstin, pan')
-            .eq('company_id', companyId)
-            .maybeSingle();
-
-        if (tData) {
-            if (tData.gstin) SAMPLE_COMPANY.gstin = tData.gstin;
-            if (tData.pan) SAMPLE_COMPANY.pan = tData.pan;
-        }
-
-        // 4. Company Contacts
-        const { data: ctData } = await supabase.schema('shared')
-            .from('company_contacts')
-            .select('phone_number, email, address_line1, city, state, postal_code')
-            .eq('company_id', companyId)
-            .maybeSingle();
-
-        if (ctData) {
-            if (ctData.phone_number && !SAMPLE_COMPANY.phone) SAMPLE_COMPANY.phone = ctData.phone_number;
-            if (ctData.email) SAMPLE_COMPANY.email = ctData.email;
-            if (ctData.address_line1 && !SAMPLE_COMPANY.address) {
-                SAMPLE_COMPANY.address = [ctData.address_line1, ctData.city, ctData.state, ctData.postal_code].filter(Boolean).join(', ');
             }
         }
     } catch (e) {

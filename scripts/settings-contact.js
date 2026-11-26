@@ -24,15 +24,15 @@ export async function loadContactData() {
     }
 
     try {
-        // 1. Fetch from company_contacts table
+        // 1. Fetch from company_settings table (consolidated)
         const { data: contactData, error: contactErr } = await supabase.schema('shared')
-            .from('company_contacts')
+            .from('company_settings')
             .select('*')
             .eq('company_id', companyId)
             .maybeSingle();
 
         if (contactErr) {
-            console.error('[settings-contact] Error loading company_contacts:', contactErr);
+            console.error('[settings-contact] Error loading company_settings:', contactErr);
         }
 
         if (contactData) {
@@ -63,7 +63,7 @@ export async function loadContactData() {
             setVal('primaryContactPhone',   contactData.contact_person_phone || '');
             setVal('primaryContactEmail',   contactData.contact_person_email || '');
         } else {
-            // Fallback: row not yet created in company_contacts, prefill defaults from companies table
+            // Fallback: row not yet created in company_settings, prefill defaults from companies table
             const { data: comp, error: compErr } = await supabase.schema('shared')
                 .from('companies')
                 .select('*')
@@ -193,13 +193,14 @@ window.saveContactSettings = async function () {
             contact_person_email: getVal('primaryContactEmail') || null
         };
 
-        const { data: rpcRes, error: rpcErr } = await supabase.rpc('save_contact_settings', {
+        const { data: rpcRes, error: rpcErr } = await supabase.rpc('save_company_settings', {
             p_company_id: companyId,
+            p_section: 'contact',
             p_data: payload
         });
 
         if (rpcErr) {
-            console.error('[settings-contact] save_contact_settings RPC error:', rpcErr);
+            console.error('[settings-contact] save_company_settings RPC error:', rpcErr);
             throw new Error(rpcErr.message || 'Failed to save contact settings via RPC');
         }
 

@@ -50,39 +50,34 @@ export async function loadTaxData() {
 
         setVal('companyName', legalBusinessName);
 
-        // 2. Fetch from company_tax_settings table
+        // 2. Fetch from company_settings table (consolidated)
         const { data: taxData, error: taxErr } = await supabase.schema('shared')
-            .from('company_tax_settings')
+            .from('company_settings')
             .select('*')
             .eq('company_id', companyId)
             .maybeSingle();
 
         if (taxErr) {
-            console.error('[settings-tax] error loading company_tax_settings:', taxErr);
+            console.error('[settings-tax] error loading company_settings:', taxErr);
         }
 
         if (taxData) {
             setVal('regNumber',      taxData.business_registration_number || '');
-            setVal('gstin',          taxData.gstin || '');
+            const gstArray = Array.isArray(taxData.gst_registrations) ? taxData.gst_registrations : [];
+            const primaryGst = gstArray[0]?.gstin || taxData.gstin || '';
+            const primaryState = gstArray[0]?.state || taxData.gst_registration_state || taxData.state || '';
+            setVal('gstin',          primaryGst);
             setVal('pan',            taxData.pan || '');
-            setVal('taxState',       taxData.gst_registration_state || '');
+            setVal('taxState',       primaryState);
             setVal('defaultTaxRate', taxData.default_tax_rate != null ? taxData.default_tax_rate : '');
             setVal('taxLabel',       taxData.tax_label || 'GST');
             setChecked('taxInclusive',     taxData.prices_include_tax ?? false);
             setChecked('showTaxBreakdown', taxData.show_tax_breakdown ?? true);
         } else {
-            // Row not yet created in company_tax_settings: prefill defaults
-            // Prefill state from company_contacts if available
-            const { data: contact } = await supabase.schema('shared')
-                .from('company_contacts')
-                .select('state')
-                .eq('company_id', companyId)
-                .maybeSingle();
-
             setVal('regNumber', '');
             setVal('gstin', '');
             setVal('pan', '');
-            setVal('taxState', contact?.state || '');
+            setVal('taxState', '');
             setVal('defaultTaxRate', '');
             setVal('taxLabel', 'GST');
             setChecked('taxInclusive', false);
@@ -132,28 +127,15 @@ window.saveTaxSettings = async function () {
         const rateNum = defaultTaxRate !== '' && !isNaN(Number(defaultTaxRate)) ? Number(defaultTaxRate) : null;
 
         const payload = {
-            company_id:                   companyId,
-            business_registration_number: regNumber || null,
-            gstin:                        gstin || null,
             pan:                          pan || null,
-            gst_registration_state:       taxState,
-            default_tax_rate:             rateNum,
-            tax_label:                    taxLabel,
-            prices_include_tax:           taxInclusive,
-            show_tax_breakdown:           showTaxBreakdown,
-            updated_at:                   new Date().toISOString()
+            business_registration_number: regNumber || null,
+            gst_registrations:            gstin ? [{ gstin: gstin, state: taxState }] : []
         };
 
-        const { data: rpcRes, error: upsertErr } = await supabase.rpc('save_company_tax_settings_atomic', {
-            p_company_id:                   companyId,
-            p_business_registration_number: payload.business_registration_number,
-            p_gstin:                        payload.gstin,
-            p_pan:                          payload.pan,
-            p_gst_registration_state:       payload.gst_registration_state,
-            p_default_tax_rate:             payload.default_tax_rate,
-            p_tax_label:                    payload.tax_label,
-            p_prices_include_tax:           payload.prices_include_tax,
-            p_show_tax_breakdown:           payload.show_tax_breakdown
+        const { data: rpcRes, error: upsertErr } = await supabase.rpc('save_company_settings', {
+            p_company_id: companyId,
+            p_section:    'tax',
+            p_data:       payload
         });
         if (rpcRes && rpcRes.success === false) throw new Error(rpcRes.message || 'Failed to save tax settings');
 

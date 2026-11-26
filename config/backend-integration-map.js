@@ -824,7 +824,7 @@
 
 // 1. BUSINESS SETTINGS
 
-// Upon Clicking on Save changes - frontend will trigger this RPC FUNCTION - save_business_settings.
+// Unified Company Settings: All tabs trigger save_company_settings RPC (p_company_id, p_section, p_data).
 
 // What This RPC FUNCTION -  save_business_settings does:
 
@@ -835,11 +835,11 @@
 
 // 2. CONTACT SETTINGS
 
-// Upon Clicking on Save changes - frontend will trigger this RPC FUNCTION - save_contact_settings.
+// Upon Clicking on Save changes - frontend will trigger this RPC FUNCTION - save_company_settings (p_section = 'contact').
 
 // What This RPC FUNCTION -  save_contact_settings does:
 
-// This RPC will write into the company_contacts Table and sync with companies table.
+// This RPC will write into shared.company_settings and sync with companies table.
 
 
 
@@ -908,7 +908,7 @@
           // What this Funciton does and what tables does it update ??
              
               //   1. company_billing_information (Primary Target Table) - Updates All Columns
-              //   2. company_tax_settings (Synchronized Table 1) - Update [gstin, pan, gst_registration_state, updated_at], INSERT (if row not created yet)-[company_id, gstin,pan, gst_registration_state, updated_at]
+              //   2. company_settings (Synchronized Table 1) - Update [gstin, pan, gst_registration_state, updated_at], INSERT (if row not created yet)-[company_id, gstin,pan, gst_registration_state, updated_at]
               //   3. companies (Synchronized Table 2) - Update [company_name (updated to legal_business_name), updated_at ]
 
 
