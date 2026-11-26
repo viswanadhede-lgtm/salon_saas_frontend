@@ -568,23 +568,21 @@ export async function runGlobalAuthGuard() {
         // 5-7. AUTHORITATIVE BACKEND GATE EVALUATION (Single get_session_context RPC)
         const { subProfile, planProfile, rbacProfile, sessionCtx } = await fetchAuthoritativeSessionContext(userRow, company);
 
-        // ── Safety net: if get_session_context returned empty plan_features (e.g. RPC
-        //    fallback fired with anon token), force a token refresh and retry ONCE before
-        //    blocking the user. This prevents "Access Restricted" on valid sessions where
-        //    the token expired mid-cold-start.
+        // ── Safety net: if get_session_context returned empty plan_features or
+        //    permissions (network blip, token edge case), force a token refresh
+        //    and retry ONCE before blocking anyone — owner or not.
         const planFeaturesEmpty = !planProfile?.features || planProfile.features.length === 0;
         const permissionsEmpty  = !rbacProfile?.permissions || rbacProfile.permissions.length === 0;
         const isOwnerByName     = (userRow.role_name || '').toLowerCase() === 'owner';
 
-        if ((planFeaturesEmpty || permissionsEmpty) && !isOwnerByName) {
+        if (planFeaturesEmpty || permissionsEmpty) {
             console.warn('[Auth Guard] Empty plan_features or permissions from RPC — forcing token refresh and retry...');
             const retryOk = await silentTokenRefresh();
             if (retryOk) {
-                // Re-fetch session context with fresh token
                 const retryCtx = await fetchAuthoritativeSessionContext(userRow, company);
-                Object.assign(planProfile,  retryCtx.planProfile  || {});
-                Object.assign(rbacProfile,  retryCtx.rbacProfile  || {});
-                Object.assign(subProfile,   retryCtx.subProfile   || {});
+                if (retryCtx.planProfile?.features?.length)  Object.assign(planProfile,  retryCtx.planProfile);
+                if (retryCtx.rbacProfile?.permissions?.length) Object.assign(rbacProfile, retryCtx.rbacProfile);
+                if (retryCtx.subProfile)                      Object.assign(subProfile,   retryCtx.subProfile);
             }
         }
 
@@ -597,7 +595,8 @@ export async function runGlobalAuthGuard() {
             }
         }
 
-        if (!hasRolePermission(featureKey, rbacProfile)) {
+        // Gate 2: RBAC — owners always bypass (role_name from DB is authoritative)
+        if (!isOwnerByName && !hasRolePermission(featureKey, rbacProfile)) {
             removeAuthSpinner();
             showAuthBlockModal('FEATURE_NOT_ALLOWED',
                 "You do not have permission to access this page. Please contact your salon administrator.",
@@ -605,9 +604,9 @@ export async function runGlobalAuthGuard() {
             return;
         }
 
-        // Sub-route check (nested settings pages)
+        // Sub-route check (nested settings pages) — owners bypass
         const requiredSubFeature = SUB_ROUTE_MAP[filename];
-        if (requiredSubFeature && !hasRolePermission(requiredSubFeature, rbacProfile)) {
+        if (!isOwnerByName && requiredSubFeature && !hasRolePermission(requiredSubFeature, rbacProfile)) {
             removeAuthSpinner();
             showAuthBlockModal('FEATURE_NOT_ALLOWED',
                 "Your role does not have permission to access this settings section.",
