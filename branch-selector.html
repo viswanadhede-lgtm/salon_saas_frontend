@@ -91,7 +91,7 @@
             justify-content: space-between;
             gap: 16px;
             padding: 24px 32px;
-            min-block-size: 72px;
+            min-block-size: 86px;
             text-decoration: none;
             color: #0f172a;
             background: #ffffff;
@@ -118,10 +118,12 @@
         }
 
         .branch-row-name {
-            font-size: 1.02rem;
+            font-size: 1.18rem;
             font-weight: 600;
             color: #0f172a;
-            letter-spacing: -0.01em;
+            line-height: 1.15;
+            letter-spacing: -0.015em;
+            margin: 0;
         }
 
         .branch-status-badge {
@@ -185,8 +187,8 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 36px;
-            height: 36px;
+            min-width: 38px;
+            height: 38px;
             border-radius: 10px;
             background: #f1f5f9;
             color: #475569;
@@ -200,13 +202,16 @@
         .branch-text-group {
             display: flex;
             flex-direction: column;
+            justify-content: center;
             gap: 2px;
             min-width: 0;
         }
 
         .branch-row-address {
-            font-size: 0.82rem;
+            font-size: 0.84rem;
             color: #94a3b8;
+            line-height: 1.15;
+            margin: 0;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
