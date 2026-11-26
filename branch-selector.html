@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Select a Branch - Choose which branch you want to configure or add a new branch location.">
+    <title>Select a Branch - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <link rel="stylesheet" href="styles/global-layout.css">
+    <link rel="stylesheet" href="settings-shared.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        /* Branch Selector Card */
+        .branch-selector-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            max-width: 920px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .branch-selector-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            padding: 24px 28px 20px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .branch-selector-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 4px 0;
+            letter-spacing: -0.015em;
+        }
+
+        .branch-selector-subtitle {
+            font-size: 0.92rem;
+            color: #64748b;
+            margin: 0;
+        }
+
+        .branch-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .branch-list-item {
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .branch-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .branch-row-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 20px 28px;
+            min-block-size: 62px;
+            text-decoration: none;
+            color: #0f172a;
+            background: #ffffff;
+            transition: background-color 0.15s ease;
+        }
+
+        .branch-row-link:hover {
+            background-color: #f8fafc;
+        }
+
+        .branch-row-link:focus-visible {
+            outline: 2px solid #2563eb;
+            outline-offset: -2px;
+            background-color: #f8fafc;
+        }
+
+        .branch-row-main {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+
+        .branch-row-name {
+            font-size: 1.02rem;
+            font-weight: 600;
+            color: #0f172a;
+            letter-spacing: -0.01em;
+        }
+
+        .branch-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 9px;
+            border-radius: 9999px;
+            font-size: 0.74rem;
+            font-weight: 600;
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .branch-status-badge .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #94a3b8;
+        }
+
+        .branch-row-chevron {
+            width: 18px;
+            height: 18px;
+            color: #475569;
+            flex-shrink: 0;
+            transition: transform 0.15s ease, color 0.15s ease;
+        }
+
+        .branch-row-link:hover .branch-row-chevron {
+            transform: translateX(3px);
+            color: #0f172a;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .branch-row-link,
+            .branch-row-chevron {
+                transition: none;
+            }
+            .branch-row-link:hover .branch-row-chevron {
+                transform: none;
+            }
+        }
+
+        .branch-empty-state {
+            padding: 48px 28px;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.94rem;
+        }
+
+        /* Native Add Branch Dialog */
+        dialog.branch-dialog {
+            padding: 0;
+            border: none;
+            border-radius: 16px;
+            width: min(960px, 95vw);
+            max-height: 92vh;
+            margin: auto;
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.22);
+            overflow: hidden;
+            flex-direction: column;
+        }
+
+        dialog.branch-dialog[open] {
+            display: flex;
+        }
+
+        dialog.branch-dialog:modal {
+            overscroll-behavior: contain;
+        }
+
+        dialog.branch-dialog::backdrop {
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(4px);
+            overflow: hidden;
+            overscroll-behavior: contain;
+        }
+
+        .branch-dialog-form {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            max-height: 92vh;
+        }
+
+        .branch-dialog-header {
+            padding: 1.4rem 2rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            flex-shrink: 0;
+        }
+
+        .branch-dialog-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+        }
+
+        .branch-dialog-subtitle {
+            margin: 4px 0 0;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        .branch-dialog-close {
+            background: none;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            min-width: 36px;
+            min-height: 36px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .branch-dialog-close:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .branch-dialog-close:focus-visible {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
+        }
+
+        .branch-dialog-body {
+            padding: 1.5rem 2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .branch-dialog-section {
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 1.5rem;
+        }
+
+        .branch-dialog-section:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .branch-section-heading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1.25rem;
+        }
+
+        .branch-step-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #eff6ff;
+            color: #2563eb;
+            font-size: 0.85rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .branch-section-heading h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .branch-section-heading p {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin: 2px 0 0 0;
+            line-height: 1.2;
+        }
+
+        .branch-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+        }
+
+        .branch-info-grid .span-2 {
+            grid-column: span 2;
+        }
+
+        @media (max-width: 700px) {
+            .branch-info-grid {
+                grid-template-columns: 1fr;
+            }
+            .branch-info-grid .span-2 {
+                grid-column: span 1;
+            }
+            .branch-selector-header,
+            .branch-row-link {
+                padding-inline: 20px;
+            }
+        }
+
+        .status-toggle-wrapper {
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            border-radius: 12px;
+            padding: 1.1rem 1.4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .status-toggle-wrapper h3 {
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .status-toggle-wrapper p {
+            margin: 4px 0 0 0;
+            font-size: 0.82rem;
+            color: #64748b;
+        }
+
+        .switch input:focus-visible + .slider {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
+        }
+
+        .branch-dialog-footer {
+            padding: 1.25rem 2rem;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background-color: #ffffff;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+
+<body class="dashboard-body">
+
+    <!-- Global Sidebar Shell Placeholder -->
+    <div id="global-sidebar"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper" id="mainWrapper">
+
+        <!-- Global Header Shell Placeholder -->
+        <div id="global-header"></div>
+
+        <!-- Page Content -->
+        <main class="content-area">
+
+            <!-- Breadcrumbs -->
+            <div class="sp-breadcrumb">
+                <a href="company.html" class="sp-back">
+                    <i data-feather="arrow-left" aria-hidden="true"></i> Company Settings
+                </a>
+                <span class="sp-sep" aria-hidden="true">/</span>
+                <span class="sp-current">Branch Settings</span>
+            </div>
+
+            <!-- Branch Selector Card -->
+            <section class="branch-selector-card" aria-labelledby="branchSelectorHeading">
+                <div class="branch-selector-header">
+                    <div>
+                        <h1 id="branchSelectorHeading" class="branch-selector-title">Select a Branch</h1>
+                        <p id="branchSelectorSubtitle" class="branch-selector-subtitle">Choose which branch you want to configure.</p>
+                    </div>
+                    <button type="button" class="qa-btn qa-primary" id="btnAddBranch" data-sub-feature="branch_create">
+                        <i data-feather="plus" class="qa-icon" aria-hidden="true"></i>
+                        <span>Add Branch</span>
+                    </button>
+                </div>
+
+                <div id="branchListRegion">
+                    <ul id="branchSelectorList" class="branch-list" role="list" aria-label="Company Branches">
+                        <li class="branch-empty-state">Loading branches...</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Toast Notification -->
+            <div id="toastNotification" class="sp-toast" role="status" aria-live="polite"></div>
+
+        </main>
+    </div>
+
+    <!-- Native Modal Dialog: Add Branch -->
+    <dialog id="branchDialog" class="branch-dialog" closedby="any" aria-labelledby="panelTitle">
+        <form id="branchCreateForm" class="branch-dialog-form" novalidate>
+            <div class="branch-dialog-header">
+                <div>
+                    <h1 id="panelTitle" class="branch-dialog-title">Add Branch</h1>
+                    <p id="panelSubtitle" class="branch-dialog-subtitle">Create a new physical location.</p>
+                </div>
+                <button type="button" id="btnClosePanel" class="branch-dialog-close" aria-label="Close Add Branch modal">
+                    <i data-feather="x" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div class="branch-dialog-body">
+                <!-- Section 1: Branch Information -->
+                <div class="branch-dialog-section">
+                    <div class="branch-section-heading">
+                        <span class="branch-step-badge" aria-hidden="true">1</span>
+                        <div>
+                            <h2>Branch Information</h2>
+                            <p>Basic details about this branch.</p>
+                        </div>
+                    </div>
+
+                    <div class="branch-info-grid">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="branchName">Branch Name <span class="required" aria-hidden="true">*</span></label>
+                            <input type="text" id="branchName" name="branch_name" class="form-input" placeholder="e.g., Downtown Branch" required autofocus>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="branchCode">Branch Code <span class="optional">(Optional)</span></label>
+                            <input type="text" id="branchCode" name="branch_code" class="form-input" placeholder="e.g., BLR-01" autocorrect="off" autocapitalize="characters" spellcheck="false">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="branchManager">Manager <span class="optional">(Optional)</span></label>
+                            <select id="branchManager" name="manager_user_id" class="form-select">
+                                <option value="" selected>Unassigned / None</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="branchPhone">Phone Number <span class="required" aria-hidden="true">*</span></label>
+                            <input type="tel" id="branchPhone" name="branch_phone" class="form-input" placeholder="+91 0000 000000" autocomplete="tel" inputmode="tel" required>
+                        </div>
+                        <div class="form-group span-2" style="margin-bottom: 0;">
+                            <label class="form-label" for="branchEmail">Email <span class="optional">(Optional)</span></label>
+                            <input type="email" id="branchEmail" name="branch_email" class="form-input" placeholder="branch@example.com" autocomplete="email" inputmode="email" autocorrect="off" autocapitalize="none" spellcheck="false">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Branch Address -->
+                <div class="branch-dialog-section">
+                    <div class="branch-section-heading">
+                        <span class="branch-step-badge" aria-hidden="true">2</span>
+                        <div>
+                            <h2>Branch Address</h2>
+                            <p>Location details for this branch.</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="branchAddressLine1">Address Line 1 <span class="required" aria-hidden="true">*</span></label>
+                        <input type="text" id="branchAddressLine1" name="address_line_1" class="form-input" placeholder="Flat / Door / Building No., Street, Road" autocomplete="address-line1" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="branchAddressLine2">Address Line 2 <span class="optional">(Optional)</span></label>
+                            <input type="text" id="branchAddressLine2" name="address_line_2" class="form-input" placeholder="Suite, Floor, Complex" autocomplete="address-line2">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="branchLocality">Locality / Area <span class="optional">(Optional)</span></label>
+                            <input type="text" id="branchLocality" name="locality_area" class="form-input" placeholder="e.g., Indiranagar, Koramangala">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="branchLandmark">Landmark <span class="optional">(Optional)</span></label>
+                            <input type="text" id="branchLandmark" name="landmark" class="form-input" placeholder="e.g., Near Metro Station, Opp. City Mall">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="branchCity">City <span class="required" aria-hidden="true">*</span></label>
+                            <input type="text" id="branchCity" name="city" class="form-input" placeholder="e.g., Bengaluru" autocomplete="address-level2" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="branchDistrict">District <span class="optional">(Optional)</span></label>
+                            <input type="text" id="branchDistrict" name="district" class="form-input" placeholder="e.g., Bengaluru Urban">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="branchState">State <span class="required" aria-hidden="true">*</span></label>
+                            <input type="text" id="branchState" name="state" class="form-input" placeholder="e.g., Karnataka" autocomplete="address-level1" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="branchPincode">PIN Code <span class="required" aria-hidden="true">*</span></label>
+                            <input type="text" id="branchPincode" name="pin_code" class="form-input" placeholder="e.g., 560038" maxlength="10" autocomplete="postal-code" inputmode="numeric" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="branchCountry">Country <span class="required" aria-hidden="true">*</span></label>
+                            <input type="text" id="branchCountry" name="country" class="form-input" value="India" readonly style="background-color: #f8fafc; color: #475569; cursor: default;">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="branchMapLink">Google Maps URL <span class="optional">(Optional)</span></label>
+                        <div class="input-prefix-wrap">
+                            <span class="input-prefix" aria-hidden="true"><i data-feather="map-pin" style="width:14px;height:14px;"></i></span>
+                            <input type="url" id="branchMapLink" name="google_maps_url" class="form-input with-prefix" placeholder="https://maps.google.com/?q=..." autocomplete="url" autocorrect="off" autocapitalize="none" spellcheck="false" aria-describedby="branchMapHint">
+                        </div>
+                        <p id="branchMapHint" class="form-hint">Google Maps link shown to customers for directions</p>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="branchLatitude">Latitude <span class="optional">(Optional)</span></label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix" aria-hidden="true"><i data-feather="crosshair" style="width:14px;height:14px;"></i></span>
+                                <input type="number" step="any" id="branchLatitude" name="latitude" class="form-input with-prefix" placeholder="e.g., 12.9716" inputmode="decimal" aria-describedby="branchLatHint">
+                            </div>
+                            <p id="branchLatHint" class="form-hint">Location latitude</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="branchLongitude">Longitude <span class="optional">(Optional)</span></label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix" aria-hidden="true"><i data-feather="crosshair" style="width:14px;height:14px;"></i></span>
+                                <input type="number" step="any" id="branchLongitude" name="longitude" class="form-input with-prefix" placeholder="e.g., 77.5946" inputmode="decimal" aria-describedby="branchLngHint">
+                            </div>
+                            <p id="branchLngHint" class="form-hint">Location longitude</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Branch Status -->
+                <div class="branch-dialog-section">
+                    <div class="branch-section-heading">
+                        <span class="branch-step-badge" aria-hidden="true">3</span>
+                        <div>
+                            <h2>Branch Status</h2>
+                            <p>Set the operational status for this branch.</p>
+                        </div>
+                    </div>
+                    <div class="status-toggle-wrapper">
+                        <div>
+                            <h3><label for="branchStatusToggle" style="cursor:pointer;">Active Branch</label></h3>
+                            <p>Inactive branches cannot accept new bookings or transactions.</p>
+                        </div>
+                        <label class="switch" style="margin-left: 1rem; flex-shrink: 0;">
+                            <input type="checkbox" id="branchStatusToggle" name="status" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="branch-dialog-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelBranch" style="padding: 0.75rem 1.75rem;">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="btnSaveBranch" style="flex: 1; justify-content: center; padding: 0.75rem 1.75rem;">Save Branch</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="logout.js"></script>
+    <script src="change-password.js"></script>
+    <script type="module" src="scripts/app-shell.js"></script>
+    <script type="module" src="scripts/global-auth-guard.js"></script>
+    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
+    <script type="module" src="scripts/branch-selector.js"></script>
+</body>
+
+</html>

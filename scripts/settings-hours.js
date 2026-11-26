@@ -34,6 +34,9 @@ export function getCompanyId() {
 }
 
 export async function getBranchId() {
+    const urlBranchId = new URLSearchParams(window.location.search).get('branch_id');
+    if (urlBranchId && urlBranchId !== 'all') return urlBranchId;
+
     const saved = localStorage.getItem('active_branch_id');
     const select = document.getElementById('branchSelect');
     if (saved && saved !== 'all') return saved;
@@ -163,10 +166,11 @@ export async function loadHoursData(overrideBranchId = null) {
         return;
     }
 
-    // Sync header branchSelect value if present
+    // Sync header branchSelect value if present and matching option exists
     const branchSelect = document.getElementById('branchSelect');
     if (branchSelect && branchSelect.value !== branchId) {
-        branchSelect.value = branchId;
+        const hasOption = Array.from(branchSelect.options).some(opt => opt.value === branchId);
+        if (hasOption) branchSelect.value = branchId;
     }
 
     try {

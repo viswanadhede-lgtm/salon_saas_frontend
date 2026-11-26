@@ -1,11 +1,13 @@
 // scripts/settings/settings-invoice-common-ui.js - Common invoice settings UI bindings
 
         import { 
+            getBranchId,
             getInvoiceConfig, 
             loadInvoiceSettingsFromDB, 
             saveInvoiceSettingsToDB, 
             renderLiveInvoicePreview, 
-            loadBusinessPreviewData 
+            loadBusinessPreviewData,
+            syncInvoiceBranchLinks
         } from '../invoice-state.js';
 
         let config = getInvoiceConfig();
@@ -144,7 +146,13 @@
 
         async function reloadForBranch(branchId) {
             currentBranchId = branchId;
-            await loadBusinessPreviewData();
+            syncInvoiceBranchLinks(branchId);
+            const url = new URL(window.location.href);
+            if (url.searchParams.has('branch_id')) {
+                url.searchParams.set('branch_id', branchId);
+                window.history.replaceState({}, '', url.toString());
+            }
+            await loadBusinessPreviewData(branchId);
             config = await loadInvoiceSettingsFromDB('common', branchId);
             syncUIFromConfig();
             document.getElementById('savebar')?.classList.remove('visible');
@@ -210,6 +218,13 @@
                 });
             }
 
+            window.addEventListener('branch:changed', async (e) => {
+                const bId = e.detail?.branchId;
+                if (bId && bId !== currentBranchId) {
+                    await reloadForBranch(bId);
+                }
+            });
+
             window.addEventListener('storage', async (e) => {
                 if (e.key === 'active_branch_id' && e.newValue && e.newValue !== currentBranchId) {
                     await reloadForBranch(e.newValue);
@@ -223,10 +238,13 @@ window.cancelCommonConfig = cancelCommonConfig;
 
 export async function initInvoiceCommon() {
     if (typeof feather !== 'undefined') feather.replace();
-    
+
+    currentBranchId = await getBranchId();
+    syncInvoiceBranchLinks(currentBranchId);
+
     // Load live company info for preview and settings from Supabase
-    await loadBusinessPreviewData();
-    config = await loadInvoiceSettingsFromDB('common');
+    await loadBusinessPreviewData(currentBranchId);
+    config = await loadInvoiceSettingsFromDB('common', currentBranchId);
     syncUIFromConfig();
 
     document.querySelectorAll('.form-input, .form-textarea, input[type=checkbox]').forEach(el => {

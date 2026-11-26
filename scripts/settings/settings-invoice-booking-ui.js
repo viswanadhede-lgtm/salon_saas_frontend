@@ -1,12 +1,14 @@
 // scripts/settings/settings-invoice-booking-ui.js - Booking invoice settings UI bindings
 
 import { 
+    getBranchId,
     getInvoiceConfig, 
     saveInvoiceConfig, 
     renderLiveInvoicePreview,
     loadInvoiceSettingsFromDB,
     saveInvoiceSettingsToDB,
-    loadBusinessPreviewData
+    loadBusinessPreviewData,
+    syncInvoiceBranchLinks
 } from '../invoice-state.js';
 
 let config = getInvoiceConfig();
@@ -52,7 +54,13 @@ function renderPreview() {
 
 async function reloadForBranch(branchId) {
     currentBranchId = branchId;
-    await loadBusinessPreviewData();
+    syncInvoiceBranchLinks(branchId);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('branch_id')) {
+        url.searchParams.set('branch_id', branchId);
+        window.history.replaceState({}, '', url.toString());
+    }
+    await loadBusinessPreviewData(branchId);
     config = await loadInvoiceSettingsFromDB('booking', branchId);
     syncUIFromConfig();
     document.getElementById('savebar')?.classList.remove('visible');
@@ -118,6 +126,13 @@ function initBranchSwitcher() {
         });
     }
 
+    window.addEventListener('branch:changed', async (e) => {
+        const bId = e.detail?.branchId;
+        if (bId && bId !== currentBranchId) {
+            await reloadForBranch(bId);
+        }
+    });
+
     window.addEventListener('storage', async (e) => {
         if (e.key === 'active_branch_id' && e.newValue && e.newValue !== currentBranchId) {
             await reloadForBranch(e.newValue);
@@ -131,9 +146,12 @@ window.cancelBookingConfig = cancelBookingConfig;
 
 export async function initInvoiceBooking() {
     if (typeof feather !== 'undefined') feather.replace();
-    
-    await loadBusinessPreviewData();
-    config = await loadInvoiceSettingsFromDB('booking');
+
+    currentBranchId = await getBranchId();
+    syncInvoiceBranchLinks(currentBranchId);
+
+    await loadBusinessPreviewData(currentBranchId);
+    config = await loadInvoiceSettingsFromDB('booking', currentBranchId);
     syncUIFromConfig();
 
     document.querySelectorAll('.form-input, .form-textarea, input[type=checkbox]').forEach(el => {

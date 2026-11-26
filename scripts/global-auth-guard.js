@@ -126,6 +126,8 @@ const ROUTE_MAP = {
 
     // Company & Settings sub-pages
     '/branches.html':                   FEATURES.BRANCH_MANAGEMENT,                // 29. branches.html
+    '/branch-selector.html':            FEATURES.BRANCH_MANAGEMENT,                // branch-selector.html
+    '/settings-branch.html':            FEATURES.BRANCH_MANAGEMENT,                // settings-branch.html
     '/settings-business.html':          FEATURES.SETTINGS_BUSINESS,                // 30. settings-business.html
     '/settings-contact.html':           FEATURES.SETTINGS_CONTACT,                 // 31. settings-contact.html
     '/settings-hours.html':             FEATURES.SETTINGS_HOURS,                   // 32. settings-hours.html

@@ -20,6 +20,9 @@ export function getCompanyId() {
 
 export async function getBranchId(companyId) {
     try {
+        const urlBranchId = new URLSearchParams(window.location.search).get('branch_id');
+        if (urlBranchId && urlBranchId !== 'all') return urlBranchId;
+
         const saved = localStorage.getItem('active_branch_id');
         if (saved && saved !== 'all' && saved !== 'Downtown Branch') return saved;
 
@@ -534,11 +537,11 @@ export async function saveInvoiceSettingsToDB(invoiceType, config, targetBranchI
     return true;
 }
 
-export async function loadBusinessPreviewData() {
+export async function loadBusinessPreviewData(targetBranchId = null) {
     try {
         const companyId = getCompanyId();
         if (!companyId) return;
-        const branchId = await getBranchId(companyId);
+        const branchId = targetBranchId || await getBranchId(companyId);
 
         // 1. Company Settings (Consolidated in shared.company_settings)
         const { data: cSettings } = await supabase.schema('shared')
@@ -932,6 +935,40 @@ export function generateInvoiceHTML(type = 'common', config = null) {
             ${footerHTML}
         </div>
     `;
+}
+
+/**
+ * Preserves scoped ?branch_id= and ?from=settings-branch navigation across
+ * invoice sub-page breadcrumbs and cross-links, and syncs #branchSelect if valid.
+ */
+export function syncInvoiceBranchLinks(branchId) {
+    if (!branchId) return;
+    const params = new URLSearchParams(window.location.search);
+    const fromSettingsBranch = params.get('from') === 'settings-branch';
+    const hasUrlBranch = params.has('branch_id');
+
+    if (fromSettingsBranch) {
+        const backToInvoiceTab = document.querySelector('.sp-breadcrumb a[href^="settings-invoice.html"], .sp-breadcrumb a[href^="settings-branch.html"]');
+        if (backToInvoiceTab) {
+            backToInvoiceTab.setAttribute('href', `settings-branch.html?branch_id=${encodeURIComponent(branchId)}&tab=invoice`);
+            backToInvoiceTab.textContent = 'Branch Settings';
+        }
+    }
+
+    if (hasUrlBranch || fromSettingsBranch) {
+        document.querySelectorAll('a[href^="settings-invoice-common.html"]').forEach(link => {
+            const linkParams = new URLSearchParams();
+            linkParams.set('branch_id', branchId);
+            if (fromSettingsBranch) linkParams.set('from', 'settings-branch');
+            link.setAttribute('href', `settings-invoice-common.html?${linkParams.toString()}`);
+        });
+    }
+
+    const select = document.getElementById('branchSelect');
+    if (select && select.value !== branchId) {
+        const hasOption = Array.from(select.options).some(opt => opt.value === branchId);
+        if (hasOption) select.value = branchId;
+    }
 }
 
 // ── Render Function for Pages ───────────────────────────────────────────────

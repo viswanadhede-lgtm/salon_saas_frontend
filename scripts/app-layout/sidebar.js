@@ -54,6 +54,9 @@ export const ROUTE_NAV_MAP = {
 
     // Settings section
     'company.html':                 { route: 'settings', subroute: 'company' },
+    'branch-selector.html':         { route: 'settings', subroute: 'company' },
+    'settings-branch.html':         { route: 'settings', subroute: 'company' },
+    'settings-company.html':        { route: 'settings', subroute: 'company' },
     'settings-business.html':       { route: 'settings', subroute: 'company' },
     'settings-contact.html':        { route: 'settings', subroute: 'company' },
     'settings-hours.html':          { route: 'settings', subroute: 'company' },

@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Helper to get branch ID (with fallback to context and branches table) ──
     async function getBranchId(companyId) {
         try {
+            const urlBranchId = new URLSearchParams(window.location.search).get('branch_id');
+            if (urlBranchId && urlBranchId !== 'all') return urlBranchId;
+
             const saved = localStorage.getItem('active_branch_id');
             if (saved && saved !== 'all' && saved !== 'Downtown Branch') return saved;
 
@@ -183,8 +186,14 @@ document.addEventListener('DOMContentLoaded', () => {
     initCustomerMatrixEvents();
     initMarketingMatrixEvents();
 
-    function showSaveBar() { if (savebar) savebar.classList.add('visible'); }
-    function hideSaveBar() { if (savebar) savebar.classList.remove('visible'); }
+    function showSaveBar() {
+        window.isDirty = true;
+        if (savebar) savebar.classList.add('visible');
+    }
+    function hideSaveBar() {
+        window.isDirty = false;
+        if (savebar) savebar.classList.remove('visible');
+    }
 
     // ── Default Preferences (Clean Initial State) ────────────────────────────
     const defaultPrefs = {
@@ -468,10 +477,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             currentBranchId = branchId;
 
-            // Sync header branch dropdown if present
+            // Sync header branch dropdown if present and matching option exists
             const branchSelect = document.getElementById('branchSelect');
             if (branchSelect && branchSelect.value !== branchId) {
-                branchSelect.value = branchId;
+                const hasOption = Array.from(branchSelect.options).some(opt => opt.value === branchId);
+                if (hasOption) branchSelect.value = branchId;
             }
 
             // Fetch single row for this company and branch
@@ -601,7 +611,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    if (btnSave) {
+    // Standalone settings-notifications.html binds btnSave directly; settings-branch.js handles tabbed #btnSave
+    if (btnSave && !document.getElementById('pane-branches')) {
         btnSave.addEventListener('click', () => {
             const pane = document.getElementById('pane-notifications');
             if (pane && !pane.classList.contains('active')) return;
