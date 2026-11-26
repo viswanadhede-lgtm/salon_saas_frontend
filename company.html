@@ -80,8 +80,9 @@
         .card-top-row {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 18px;
+            justify-content: flex-start;
+            gap: 16px;
+            margin-bottom: 20px;
         }
 
         .card-icon-box {
@@ -91,6 +92,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
             transition: transform 0.2s ease;
         }
 
@@ -143,7 +145,7 @@
             font-size: 1.25rem;
             font-weight: 700;
             color: #0f172a;
-            margin: 0 0 20px 0;
+            margin: 0;
             letter-spacing: -0.01em;
         }
 
@@ -301,20 +303,18 @@
 
                 <!-- 1. Company Settings -->
                 <div class="settings-modern-card card-company" id="card-company-settings" onclick="window.location.href='settings-company.html'">
-                    <div>
-                        <div class="card-top-row">
-                            <div class="card-icon-box icon-blue">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M3 21h18"></path>
-                                    <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
-                                    <path d="M9 7h1"></path>
-                                    <path d="M9 11h1"></path>
-                                    <path d="M9 15h1"></path>
-                                    <path d="M14 7h1"></path>
-                                    <path d="M14 11h1"></path>
-                                    <path d="M14 15h1"></path>
-                                </svg>
-                            </div>
+                    <div class="card-top-row">
+                        <div class="card-icon-box icon-blue">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 21h18"></path>
+                                <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
+                                <path d="M9 7h1"></path>
+                                <path d="M9 11h1"></path>
+                                <path d="M9 15h1"></path>
+                                <path d="M14 7h1"></path>
+                                <path d="M14 11h1"></path>
+                                <path d="M14 15h1"></path>
+                            </svg>
                         </div>
                         <h2 class="card-title-text">Company Settings</h2>
                     </div>
@@ -328,11 +328,9 @@
 
                 <!-- 2. Branch Settings -->
                 <div class="settings-modern-card card-branch" id="card-branch-settings" onclick="window.location.href='branch-selector.html'">
-                    <div>
-                        <div class="card-top-row">
-                            <div class="card-icon-box icon-teal">
-                                <i data-feather="map-pin"></i>
-                            </div>
+                    <div class="card-top-row">
+                        <div class="card-icon-box icon-teal">
+                            <i data-feather="map-pin"></i>
                         </div>
                         <h2 class="card-title-text">Branch Settings</h2>
                     </div>
