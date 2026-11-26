@@ -127,8 +127,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             nameSpan.textContent = branch.branch_name || 'Unnamed Branch';
             textGroup.appendChild(nameSpan);
 
-            // Grey address line
-            const addressText = branch.branch_address || branch.city || '';
+            // Grey address line: address_line_1 · locality_area · city
+            const addressParts = [branch.address_line_1, branch.locality_area, branch.city].filter(Boolean);
+            const addressText = addressParts.join(' · ');
             if (addressText) {
                 const addrSpan = document.createElement('span');
                 addrSpan.className = 'branch-row-address';
@@ -229,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const { data, error } = await supabase.schema('shared')
                 .from('branches')
-                .select('branch_id, branch_name, status, created_at, city, branch_address')
+                .select('branch_id, branch_name, status, created_at, address_line_1, locality_area, city')
                 .eq('company_id', companyId)
                 .neq('status', 'deleted')
                 .order('created_at', { ascending: true });
