@@ -90,9 +90,10 @@
         .branch-row-main {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 14px;
             flex-wrap: wrap;
             min-width: 0;
+            flex: 1;
         }
 
         .branch-row-name {
@@ -149,6 +150,38 @@
             text-align: center;
             color: #64748b;
             font-size: 0.94rem;
+        }
+
+        /* Branch number badge */
+        .branch-num-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            flex-shrink: 0;
+        }
+
+        /* Name + address stacked */
+        .branch-text-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .branch-row-address {
+            font-size: 0.82rem;
+            color: #94a3b8;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         /* Native Add Branch Dialog */

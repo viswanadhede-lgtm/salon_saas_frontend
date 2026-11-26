@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const fragment = document.createDocumentFragment();
-        branchesData.forEach(branch => {
+        branchesData.forEach((branch, idx) => {
             const li = document.createElement('li');
             li.className = 'branch-list-item';
 
@@ -112,10 +112,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             const mainSpan = document.createElement('span');
             mainSpan.className = 'branch-row-main';
 
+            // Number badge
+            const numBadge = document.createElement('span');
+            numBadge.className = 'branch-num-badge';
+            numBadge.textContent = `#${idx + 1}`;
+            numBadge.setAttribute('aria-hidden', 'true');
+
+            // Name + address stacked
+            const textGroup = document.createElement('span');
+            textGroup.className = 'branch-text-group';
+
             const nameSpan = document.createElement('span');
             nameSpan.className = 'branch-row-name';
             nameSpan.textContent = branch.branch_name || 'Unnamed Branch';
-            mainSpan.appendChild(nameSpan);
+            textGroup.appendChild(nameSpan);
+
+            // Grey address line
+            const addressText = branch.branch_address || branch.city || '';
+            if (addressText) {
+                const addrSpan = document.createElement('span');
+                addrSpan.className = 'branch-row-address';
+                addrSpan.textContent = addressText;
+                textGroup.appendChild(addrSpan);
+            }
+
+            mainSpan.appendChild(numBadge);
+            mainSpan.appendChild(textGroup);
 
             if (branch.status && branch.status !== 'active') {
                 const badge = document.createElement('span');
@@ -207,7 +229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const { data, error } = await supabase.schema('shared')
                 .from('branches')
-                .select('branch_id, branch_name, status, created_at')
+                .select('branch_id, branch_name, status, created_at, city, branch_address')
                 .eq('company_id', companyId)
                 .neq('status', 'deleted')
                 .order('created_at', { ascending: true });
