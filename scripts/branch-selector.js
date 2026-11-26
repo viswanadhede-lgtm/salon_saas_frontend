@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const subtitleEl = document.getElementById('branchSelectorSubtitle');
     if (subtitleEl && targetTab && TAB_LABELS[targetTab]) {
-        subtitleEl.textContent = `Choose which branch you want to configure (${TAB_LABELS[targetTab]}).`;
+        subtitleEl.textContent = `Click on the branch you want to update (${TAB_LABELS[targetTab]}).`;
     }
 
     const listEl = document.getElementById('branchSelectorList');
