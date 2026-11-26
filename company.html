@@ -141,6 +141,10 @@
         .card-badge .dot-teal { background: #10b981; }
 
         /* Card Content */
+        .card-title-group {
+            min-width: 0;
+        }
+
         .card-title-text {
             font-size: 1.25rem;
             font-weight: 700;
@@ -150,10 +154,10 @@
         }
 
         .card-desc-text {
-            font-size: 0.88rem;
+            font-size: 0.86rem;
             color: #64748b;
-            line-height: 1.48;
-            margin: 0 0 18px 0;
+            line-height: 1.4;
+            margin: 3px 0 0 0;
         }
 
         /* Feature Chips */
@@ -316,7 +320,10 @@
                                 <path d="M14 15h1"></path>
                             </svg>
                         </div>
-                        <h2 class="card-title-text">Company Settings</h2>
+                        <div class="card-title-group">
+                            <h2 class="card-title-text">Company Settings</h2>
+                            <p class="card-desc-text">Manage your company profile</p>
+                        </div>
                     </div>
                     <div class="card-action-row">
                         <span class="action-link-text">Configure Company Settings</span>
@@ -332,7 +339,10 @@
                         <div class="card-icon-box icon-teal">
                             <i data-feather="map-pin"></i>
                         </div>
-                        <h2 class="card-title-text">Branch Settings</h2>
+                        <div class="card-title-group">
+                            <h2 class="card-title-text">Branch Settings</h2>
+                            <p class="card-desc-text">Manage your branch settings</p>
+                        </div>
                     </div>
                     <div class="card-action-row">
                         <span class="action-link-text">Manage Branch Settings</span>
