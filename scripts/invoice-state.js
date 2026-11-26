@@ -543,7 +543,7 @@ export async function loadBusinessPreviewData() {
         // 1. Company Settings (Consolidated in shared.company_settings)
         const { data: cSettings } = await supabase.schema('shared')
             .from('company_settings')
-            .select('display_name, legal_business_name, website, logo_url, pan, gst_registrations, primary_phone, primary_email, address_line_1, city, state, pin_code')
+            .select('*')
             .eq('company_id', companyId)
             .maybeSingle();
 
@@ -552,9 +552,15 @@ export async function loadBusinessPreviewData() {
             if (cSettings.legal_business_name) SAMPLE_COMPANY.legalName = cSettings.legal_business_name;
             if (cSettings.website) SAMPLE_COMPANY.website = cSettings.website;
             if (cSettings.logo_url) SAMPLE_COMPANY.logoUrl = cSettings.logo_url;
-            if (cSettings.pan) SAMPLE_COMPANY.pan = cSettings.pan;
-            if (cSettings.primary_email) SAMPLE_COMPANY.email = cSettings.primary_email;
-            if (cSettings.primary_phone && !SAMPLE_COMPANY.phone) SAMPLE_COMPANY.phone = cSettings.primary_phone;
+            
+            const panVal = cSettings.pan_number || cSettings.pan;
+            if (panVal) SAMPLE_COMPANY.pan = panVal;
+
+            const emailVal = cSettings.primary_contact_email || cSettings.primary_email || cSettings.email;
+            if (emailVal) SAMPLE_COMPANY.email = emailVal;
+
+            const phoneVal = cSettings.primary_contact_phone || cSettings.primary_phone || cSettings.phone;
+            if (phoneVal && !SAMPLE_COMPANY.phone) SAMPLE_COMPANY.phone = phoneVal;
 
             // Extract primary GSTIN from gst_registrations array
             if (Array.isArray(cSettings.gst_registrations) && cSettings.gst_registrations.length > 0) {
@@ -562,8 +568,13 @@ export async function loadBusinessPreviewData() {
                 if (primaryGst) SAMPLE_COMPANY.gstin = primaryGst;
             }
 
-            if (cSettings.address_line_1 && !SAMPLE_COMPANY.address) {
-                SAMPLE_COMPANY.address = [cSettings.address_line_1, cSettings.city, cSettings.state, cSettings.pin_code].filter(Boolean).join(', ');
+            const addr1 = cSettings.registered_address_line1 || cSettings.address_line_1;
+            const city = cSettings.registered_city || cSettings.city;
+            const state = cSettings.registered_state || cSettings.state;
+            const pin = cSettings.registered_pin_code || cSettings.pin_code;
+
+            if (addr1 && !SAMPLE_COMPANY.address) {
+                SAMPLE_COMPANY.address = [addr1, city, state, pin].filter(Boolean).join(', ');
             }
         }
 

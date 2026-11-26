@@ -456,23 +456,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
 
                     sectionPayload = {
-                        primary_contact_name:    primaryName,
-                        designation:             document.getElementById('contactDesignation')?.value.trim() || null,
-                        primary_email:           primaryEmail,
-                        primary_phone:           primaryPhone,
-                        alternate_phone:         document.getElementById('contactAlternatePhone')?.value.trim() || null,
-                        same_as_primary_contact: isSameAsPrimary,
-                        billing_contact_name:    billingName,
-                        billing_email:           billingEmail,
-                        billing_phone:           billingPhone,
-                        address_line_1:          addrLine1,
-                        address_line_2:          document.getElementById('addressLine2')?.value.trim() || null,
-                        locality_area:           document.getElementById('addressLocality')?.value.trim() || null,
-                        landmark:                document.getElementById('addressLandmark')?.value.trim() || null,
-                        city:                    addrCity,
-                        state:                   addrState,
-                        pin_code:                addrPincode,
-                        country:                 addrCountry
+                        primary_contact_name:        primaryName,
+                        primary_contact_designation: document.getElementById('contactDesignation')?.value.trim() || null,
+                        primary_contact_email:       primaryEmail,
+                        primary_contact_phone:       primaryPhone,
+                        alternate_contact_phone:     document.getElementById('contactAlternatePhone')?.value.trim() || null,
+                        billing_same_as_primary:     isSameAsPrimary,
+                        billing_contact_name:        billingName,
+                        billing_contact_email:       billingEmail,
+                        billing_contact_phone:       billingPhone,
+                        registered_address_line1:    addrLine1,
+                        registered_address_line2:    document.getElementById('addressLine2')?.value.trim() || null,
+                        registered_locality:         document.getElementById('addressLocality')?.value.trim() || null,
+                        registered_landmark:         document.getElementById('addressLandmark')?.value.trim() || null,
+                        registered_city:             addrCity,
+                        registered_state:            addrState,
+                        registered_pin_code:         addrPincode,
+                        registered_country:          addrCountry
                     };
                 }
 
@@ -492,7 +492,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const gstin = r.querySelector('.gst-number-input')?.value.trim().toUpperCase() || '';
                         const state = r.querySelector('.gst-state-select')?.value.trim() || '';
                         if (gstin || state) {
-                            if (gstin && gstin.length !== 15) {
+                            if (!gstin) {
+                                throw new Error(`Please enter GSTIN for registration with state "${state}".`);
+                            }
+                            if (!state) {
+                                throw new Error(`Please select a registration state for GSTIN "${gstin}".`);
+                            }
+                            if (gstin.length !== 15) {
                                 throw new Error(`GSTIN "${gstin}" must be exactly 15 characters.`);
                             }
                             gstList.push({ gstin, state });
@@ -500,9 +506,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
 
                     sectionPayload = {
-                        pan:                          panValue,
+                        pan_number:                   panValue,
                         business_registration_number: document.getElementById('regNumber')?.value.trim() || null,
-                        registration_type:            document.getElementById('registrationType')?.value || null,
+                        business_registration_type:   document.getElementById('registrationType')?.value || null,
                         gst_registrations:            gstList
                     };
                 }
@@ -648,17 +654,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             // B. Populate Contact Tab
             // -----------------------------------------------------------------
             const contactName = compSettings?.primary_contact_name || compSettings?.contact_person_name || comp?.owner_name || '';
-            const contactEmail = compSettings?.primary_email || compSettings?.email || comp?.owner_email || '';
-            const contactPhone = compSettings?.primary_phone || compSettings?.phone || comp?.owner_phone || '';
+            const contactEmail = compSettings?.primary_contact_email || compSettings?.primary_email || compSettings?.email || comp?.owner_email || '';
+            const contactPhone = compSettings?.primary_contact_phone || compSettings?.primary_phone || compSettings?.phone || comp?.owner_phone || '';
 
             if (document.getElementById('primaryContactName')) document.getElementById('primaryContactName').value = contactName;
-            if (document.getElementById('contactDesignation')) document.getElementById('contactDesignation').value = compSettings?.designation || '';
+            if (document.getElementById('contactDesignation')) {
+                document.getElementById('contactDesignation').value = compSettings?.primary_contact_designation || compSettings?.designation || '';
+            }
             if (document.getElementById('contactEmail')) document.getElementById('contactEmail').value = contactEmail;
             if (document.getElementById('contactPhone')) document.getElementById('contactPhone').value = contactPhone;
-            if (document.getElementById('contactAlternatePhone')) document.getElementById('contactAlternatePhone').value = compSettings?.alternate_phone || '';
+            if (document.getElementById('contactAlternatePhone')) {
+                document.getElementById('contactAlternatePhone').value = compSettings?.alternate_contact_phone || compSettings?.alternate_phone || '';
+            }
 
             // Billing Contact
-            const isSameAsPrimary = compSettings?.same_as_primary_contact !== false;
+            const isSameAsPrimary = (compSettings?.billing_same_as_primary !== undefined)
+                ? compSettings.billing_same_as_primary
+                : (compSettings?.same_as_primary_contact !== false);
+
             if (sameAsPrimaryCheckbox) {
                 sameAsPrimaryCheckbox.checked = isSameAsPrimary;
                 toggleBillingContactMode();
@@ -667,21 +680,37 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('billingContactName').value = compSettings?.billing_contact_name || '';
             }
             if (document.getElementById('billingEmail')) {
-                document.getElementById('billingEmail').value = compSettings?.billing_email || '';
+                document.getElementById('billingEmail').value = compSettings?.billing_contact_email || compSettings?.billing_email || '';
             }
             if (document.getElementById('billingPhone')) {
-                document.getElementById('billingPhone').value = compSettings?.billing_phone || '';
+                document.getElementById('billingPhone').value = compSettings?.billing_contact_phone || compSettings?.billing_phone || '';
             }
 
             // Registered Business Address
-            if (document.getElementById('addressLine1')) document.getElementById('addressLine1').value = compSettings?.address_line_1 || '';
-            if (document.getElementById('addressLine2')) document.getElementById('addressLine2').value = compSettings?.address_line_2 || '';
-            if (document.getElementById('addressLocality')) document.getElementById('addressLocality').value = compSettings?.locality_area || '';
-            if (document.getElementById('addressLandmark')) document.getElementById('addressLandmark').value = compSettings?.landmark || '';
-            if (document.getElementById('addressCity')) document.getElementById('addressCity').value = compSettings?.city || '';
-            if (document.getElementById('addressState')) document.getElementById('addressState').value = compSettings?.state || '';
-            if (document.getElementById('addressPincode')) document.getElementById('addressPincode').value = compSettings?.pin_code || '';
-            if (document.getElementById('addressCountry')) document.getElementById('addressCountry').value = compSettings?.country || 'India';
+            if (document.getElementById('addressLine1')) {
+                document.getElementById('addressLine1').value = compSettings?.registered_address_line1 || compSettings?.address_line_1 || '';
+            }
+            if (document.getElementById('addressLine2')) {
+                document.getElementById('addressLine2').value = compSettings?.registered_address_line2 || compSettings?.address_line_2 || '';
+            }
+            if (document.getElementById('addressLocality')) {
+                document.getElementById('addressLocality').value = compSettings?.registered_locality || compSettings?.locality_area || '';
+            }
+            if (document.getElementById('addressLandmark')) {
+                document.getElementById('addressLandmark').value = compSettings?.registered_landmark || compSettings?.landmark || '';
+            }
+            if (document.getElementById('addressCity')) {
+                document.getElementById('addressCity').value = compSettings?.registered_city || compSettings?.city || '';
+            }
+            if (document.getElementById('addressState')) {
+                document.getElementById('addressState').value = compSettings?.registered_state || compSettings?.state || '';
+            }
+            if (document.getElementById('addressPincode')) {
+                document.getElementById('addressPincode').value = compSettings?.registered_pin_code || compSettings?.pin_code || '';
+            }
+            if (document.getElementById('addressCountry')) {
+                document.getElementById('addressCountry').value = compSettings?.registered_country || compSettings?.country || 'India';
+            }
 
             updateBillingInheritSummary();
 
@@ -689,9 +718,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             // C. Populate Tax Tab
             // -----------------------------------------------------------------
             syncLegalNameToTax();
-            if (document.getElementById('pan')) document.getElementById('pan').value = compSettings?.pan || '';
-            if (document.getElementById('regNumber')) document.getElementById('regNumber').value = compSettings?.business_registration_number || '';
-            if (document.getElementById('registrationType')) document.getElementById('registrationType').value = compSettings?.registration_type || '';
+            if (document.getElementById('pan')) {
+                document.getElementById('pan').value = compSettings?.pan_number || compSettings?.pan || '';
+            }
+            if (document.getElementById('regNumber')) {
+                document.getElementById('regNumber').value = compSettings?.business_registration_number || '';
+            }
+            if (document.getElementById('registrationType')) {
+                document.getElementById('registrationType').value = compSettings?.business_registration_type || compSettings?.registration_type || '';
+            }
 
             // Populate Multiple GST Registrations from JSONB array
             if (gstListContainer) {
