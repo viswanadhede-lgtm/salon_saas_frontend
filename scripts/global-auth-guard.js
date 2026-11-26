@@ -431,8 +431,9 @@ export async function runGlobalAuthGuard() {
                 localStorage.setItem('role_id', parsedCtx.user.role_id);
             }
 
-            // GATE 3 CHECK: Commercial Plan Tier
-            if (planProfile && !isFeatureUnlocked(featureKey, planProfile)) {
+            // GATE 3 CHECK: Commercial Plan Tier — owners bypass plan gating
+            const cachedIsOwner = (parsedCtx.user?.role_name || '').toLowerCase() === 'owner';
+            if (!cachedIsOwner && planProfile && !isFeatureUnlocked(featureKey, planProfile)) {
                 showPlanUpgradeModal(featureKey);
                 return;
             }
@@ -567,10 +568,33 @@ export async function runGlobalAuthGuard() {
         // 5-7. AUTHORITATIVE BACKEND GATE EVALUATION (Single get_session_context RPC)
         const { subProfile, planProfile, rbacProfile, sessionCtx } = await fetchAuthoritativeSessionContext(userRow, company);
 
-        if (!isFeatureUnlocked(featureKey, planProfile)) {
-            removeAuthSpinner();
-            showPlanUpgradeModal(featureKey);
-            return;
+        // ── Safety net: if get_session_context returned empty plan_features (e.g. RPC
+        //    fallback fired with anon token), force a token refresh and retry ONCE before
+        //    blocking the user. This prevents "Access Restricted" on valid sessions where
+        //    the token expired mid-cold-start.
+        const planFeaturesEmpty = !planProfile?.features || planProfile.features.length === 0;
+        const permissionsEmpty  = !rbacProfile?.permissions || rbacProfile.permissions.length === 0;
+        const isOwnerByName     = (userRow.role_name || '').toLowerCase() === 'owner';
+
+        if ((planFeaturesEmpty || permissionsEmpty) && !isOwnerByName) {
+            console.warn('[Auth Guard] Empty plan_features or permissions from RPC — forcing token refresh and retry...');
+            const retryOk = await silentTokenRefresh();
+            if (retryOk) {
+                // Re-fetch session context with fresh token
+                const retryCtx = await fetchAuthoritativeSessionContext(userRow, company);
+                Object.assign(planProfile,  retryCtx.planProfile  || {});
+                Object.assign(rbacProfile,  retryCtx.rbacProfile  || {});
+                Object.assign(subProfile,   retryCtx.subProfile   || {});
+            }
+        }
+
+        // Gate 3: Plan Feature check — owners bypass (plan gating is commercial, not security)
+        if (!isOwnerByName && !rbacProfile.isOwner && !rbacProfile.hasUniversalAccess) {
+            if (!isFeatureUnlocked(featureKey, planProfile)) {
+                removeAuthSpinner();
+                showPlanUpgradeModal(featureKey);
+                return;
+            }
         }
 
         if (!hasRolePermission(featureKey, rbacProfile)) {
