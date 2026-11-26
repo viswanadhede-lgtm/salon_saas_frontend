@@ -5,30 +5,26 @@
 The **Company & Settings** suite (`company.html`) acts as the central administrative hub configuring corporate identity, physical locations, compliance, financial infrastructure, communications, and operating parameters.
 
 ### Structural Topology
-1. **Settings Hub** (`company.html`): 8 high-level navigation cards providing direct access to configuration domains.
-2. **Business Details** (`settings-business.html`, `scripts/settings-business.js`): Legal business entity, brand display name, business category & structure, description, website, and social links.
-3. **Contact Details** (`settings-contact.html`, `scripts/settings-contact.js`): Communication channels (phone, WhatsApp, email), registered office address with geolocation coordinates, and designated primary contact person.
-4. **Tax & Legal Compliance** (`settings-tax.html`, `scripts/settings-tax.js`): GSTIN, PAN, business registration number, state of GST registration, default tax rate, price tax-inclusivity flag, and tax breakdown display toggle.
-5. **Invoice Designer & Templates** (`settings-invoice.html`, `settings-invoice-*.html`, `scripts/settings/settings-invoice-*-ui.js`): Customization of prefix, starting numbers, header blocks, customer blocks, line-item columns, totals breakdowns, payment instructions, and terms for Common, Booking, POS, and Membership invoices.
-6. **Business Operating Hours** (`settings-hours.html`, `scripts/settings-hours.js`): Weekly operating schedules, opening/closing times, break intervals, and special operating hours per branch.
-7. **Payment Methods & Gateway** (`settings-payments.html`, `scripts/settings-payments.js`): Cash, UPI, Cards, and Online payment toggles, static UPI ID, dynamic UPI QR code uploads, checkout notes, and default payment method selection.
-8. **Notification Preferences** (`settings-notifications.html`, `scripts/settings-notifications.js`): Matrix of system alerts, customer reminders, and marketing campaigns across In-App, WhatsApp, SMS, and Email channels.
-9. **Multi-Branch Operations** (`branches.html`, `branches.js`): Branch creation, physical location details, manager assignment, operating status, plan limits, and deactivation/deletion safeguards.
+1. **Settings Hub (`company.html`)**: Consolidated 2-card SaaS dashboard providing direct access to:
+   - **Company Settings Card**: Business Identity, Primary Contact, Tax & Compliance (`settings-company.html?tab=business|contact|tax`).
+   - **Branch Settings Card**: Physical Branches, Operating Hours, Invoice Designer, Payment Gateways, Notifications (`settings-branch.html?tab=branches|hours|invoice|payments|notifications`).
+2. **Consolidated Company Settings (`settings-company.html`, `scripts/settings-company.js`)**:
+   - **Single Unified Table**: All company-level identity, contacts, and tax configurations are consolidated into `shared.company_settings`.
+   - **Unified Stored Procedure**: All tab saves route through `shared.save_company_settings(p_company_id, p_section, p_data)` with `public.save_company_settings` wrapper.
+   - **Business Tab**: Legal business entity, brand display name, business category, description, website, social links, logo, and cover banner.
+   - **Contact Tab**: Primary administrative contact person, designation, phone, email, alternate phone, subscription/billing contact toggle, and registered business legal address.
+   - **Tax Tab**: PAN, business registration number, entity registration type, and multi-state GST registrations (`gst_registrations` JSONB array).
+3. **Branch Settings (`settings-branch.html`, `scripts/settings-branch.js`)**:
+   - Operating Hours, Invoicing, Payment Methods, Notifications, and Multi-Branch Management.
 
 ---
 
 ## 2. Interactive Navigation Hub (`company.html`)
 
-| Card Selector | Destination Page | Domain | Sub-Feature Gate / Feature Gate |
-| :--- | :--- | :--- | :--- |
-| `#card-business` | `settings-business.html` | Business branding & company profile | `data-sub-feature="settings_business"` |
-| `#card-contact` | `settings-contact.html` | Communication channels & address | `data-sub-feature="settings_contact"` |
-| `#card-tax` | `settings-tax.html` | GST, PAN & tax settings | `data-sub-feature="settings_tax"` |
-| `#card-invoice` | `settings-invoice.html` | Invoices & receipt templates | `data-sub-feature="settings_billing"` |
-| `#card-hours` | `settings-hours.html` | Operating hours & weekly schedule | `data-sub-feature="settings_hours"` |
-| `#card-payments` | `settings-payments.html` | Payment modes & UPI QR setup | `data-sub-feature="settings_payments"` |
-| `#card-notifications` | `settings-notifications.html` | System, customer & marketing alerts | `data-sub-feature="settings_notifications"` |
-| `#card-branches` | `branches.html` | Multi-branch locations & managers | `data-feature="branch_management"` |
+| Module Card | Target Tabs | Destination Page | Domain | Sub-Feature Gate / Feature Gate |
+| :--- | :--- | :--- | :--- | :--- |
+| **Company Settings** | Business, Contact, Tax | `settings-company.html?tab=...` | Corporate identity, primary contacts, compliance | `data-feature="company_settings"` |
+| **Branch Settings** | Branches, Hours, Invoice, Payments, Notifications | `settings-branch.html?tab=...` | Multi-branch locations, hours, receipts, payment gateways | `data-feature="branch_management"` |
 
 ---
 
@@ -111,53 +107,31 @@ The **Company & Settings** suite (`company.html`) acts as the central administra
 
 ## 4. Settings Sub-Modules & Stored Procedures
 
-### 4.1 Business Settings (`settings-business.html`, `scripts/settings-business.js`)
-- **Inputs**: Legal Business Name (`#companyName`), Brand Display Name (`#displayName`), Business Category (`#businessCategory`), Business Structure (`#businessType`), Description (`#businessDescription`), Website (`#companyWebsite`), Google Business URL (`#googleBusinessUrl`), Instagram (`#instagramUrl`), Facebook (`#facebookUrl`).
+### 4.1 Consolidated Company Settings (`settings-company.html`, `scripts/settings-company.js`)
+All company settings are consolidated into the single authoritative table `shared.company_settings` and written via the unified stored procedure:
+```typescript
+supabase.rpc('save_company_settings', {
+    p_company_id: companyId,
+    p_section:    'business' | 'contact' | 'tax',
+    p_data:       sectionPayload
+});
+```
+
+#### A. Business Settings (`p_section = 'business'`)
+- **Inputs**: Legal Business Name (`#companyName`), Brand Display Name (`#displayName`), Business Category (`#businessCategory`), Description (`#businessDescription`), Website (`#companyWebsite`), Instagram (`#instagramUrl`), Facebook (`#facebookUrl`).
 - **File Uploads**:
   - Logo (`#logoFileInput`) uploaded to Supabase Storage bucket `company-logos` with 2 MB limit (`${companyId}/logo_${Date.now()}.${ext}`).
-  - Cover Image (`#coverFileInput`) uploaded to `company-cover-images` with 5 MB limit.
-- **Backend Procedure**:
-  ```typescript
-  supabase.rpc('save_business_settings', {
-      p_company_id: companyId,
-      p_data: payload
-  });
-  ```
-- **Tables Synchronized**: Updates `shared.company_settings` and synchronizes legal name/brand name with `shared.companies`.
+  - Cover Banner (`#coverFileInput`) uploaded to `company-cover-images` with 5 MB limit.
+- **Tables Synchronized**: Updates `shared.company_settings` and synchronizes legal/brand name, category, logo, and cover with `shared.companies`.
 
----
+#### B. Contact Settings (`p_section = 'contact'`)
+- **Inputs**: Primary Contact Person Name (`#primaryContactName`), Designation (`#contactDesignation`), Email (`#contactEmail`), Phone (`#contactPhone`), Alternate Phone (`#contactAlternatePhone`), Billing Same-as-Primary Toggle (`#sameAsPrimaryContact`), Billing Contact Name (`#billingContactName`), Billing Email (`#billingEmail`), Billing Phone (`#billingPhone`), Registered Business Address Lines 1 & 2 (`#addressLine1`, `#addressLine2`), Locality (`#addressLocality`), Landmark (`#addressLandmark`), City (`#addressCity`), State (`#addressState`), PIN Code (`#addressPincode`), Country (`#addressCountry`).
+- **Tables Synchronized**: Updates `shared.company_settings` and synchronizes owner contact info with `shared.companies`.
 
-### 4.2 Contact Settings (`settings-contact.html`, `scripts/settings-contact.js`)
-- **Inputs**: Primary Phone (`#contactPhone`), WhatsApp (`#contactWhatsApp`), Email (`#contactEmail`), Alternate Phone (`#contactAlternatePhone`), Support Phone (`#contactSupportPhone`), Support Email (`#contactSupportEmail`), Address Lines 1 & 2, Locality, Landmark, City, District, State, Pincode, Country, Google Maps Link (`#mapLink`), Geolocation Latitude/Longitude, Contact Person Name, Phone, and Email.
-- **Backend Procedure**:
-  ```typescript
-  supabase.rpc('save_contact_settings', {
-      p_company_id: companyId,
-      p_data: payload
-  });
-  ```
-- **Tables Synchronized**: Updates `shared.company_contacts` and updates primary contact phone/email on `shared.companies`.
-
----
-
-### 4.3 Tax & Compliance Settings (`settings-tax.html`, `scripts/settings-tax.js`)
-- **Inputs**: Business Registration Number (`#regNumber`), GSTIN (`#gstin`), PAN (`#pan`), GST Registration State (`#taxState`), Default Tax Rate (`#defaultTaxRate`), Tax Label (`#taxLabel` default "GST"), Tax Inclusive Pricing switch (`#taxInclusive`), Tax Breakdown Toggle (`#showTaxBreakdown`).
-- **Backend Procedure**:
-  ```typescript
-  supabase.rpc('save_company_tax_settings_atomic', {
-      p_company_id:                   companyId,
-      p_business_registration_number: payload.business_registration_number,
-      p_gstin:                        payload.gstin,
-      p_pan:                          payload.pan,
-      p_gst_registration_state:       payload.gst_registration_state,
-      p_default_tax_rate:             payload.default_tax_rate,
-      p_tax_label:                    payload.tax_label,
-      p_prices_include_tax:           payload.prices_include_tax,
-      p_show_tax_breakdown:           payload.show_tax_breakdown
-  });
-  ```
-- **Validation**: Enforces non-negative tax rate.
-- **Table Modified**: `shared.company_tax_settings`.
+#### C. Tax & Compliance Settings (`p_section = 'tax'`)
+- **Inputs**: PAN (`#pan`), Business Registration Number (`#regNumber`), Registration Type (`#registrationType`), Multiple GST Registrations (`#gstListContainer`).
+- **GST Structure**: Dynamic array of `{ gstin: string, state: string }` persisted in the `gst_registrations` JSONB column.
+- **Table Modified**: `shared.company_settings`.
 
 ---
 

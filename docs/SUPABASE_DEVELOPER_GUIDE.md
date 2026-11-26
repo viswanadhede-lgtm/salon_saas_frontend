@@ -217,6 +217,7 @@ All database routines are organized with explicit `search_path = platform, share
 | `cancel_company_subscription` | `platform` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Logs and cancels tenant SaaS subscription. |
 | `activate_subscription_addon` | `platform` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Activates add-on entitlement for tenant. |
 | `deactivate_subscription_addon` | `platform` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Deactivates add-on entitlement. |
+| `save_company_settings` | `shared` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Consolidated company settings RPC for Business, Contact, and Tax (with multi-GST support). |
 | `save_business_settings` | `shared` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Updates company operational parameters. |
 | `save_billing_information` | `shared` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Updates company legal billing info. |
 | `save_contact_settings` | `shared` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Updates branch contact details. |

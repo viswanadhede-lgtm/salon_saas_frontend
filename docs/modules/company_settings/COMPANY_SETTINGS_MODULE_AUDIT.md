@@ -5,6 +5,7 @@
 **Migrations**: 
 - `20261103000016a_harden_branches.sql`
 - `20261103000016b_harden_settings.sql`
+- `20261126000001_create_save_company_settings_rpc.sql`
 
 **Integration Tests**: `scratch/run_test_company_settings.js` $\rightarrow$ **18/18 PASSED**  
 **Zero-Mutation Audit**: `scratch/audit_company_settings_mutations.js` $\rightarrow$ **0 violations across all 10 files**
@@ -24,6 +25,7 @@
 | 7 | `save_notification_settings_atomic` | `app`, `public` | Single atomic upsert for system, customer, and marketing alert preferences on composite key `(company_id, branch_id)`. |
 | 8 | `save_business_payment_settings_atomic` | `app`, `public` | Atomic upsert for payment methods and UPI QR URLs; enforces that at least one payment method remains enabled. |
 | 9 | `save_company_tax_settings_atomic` | `app`, `public` | Atomic upsert for GSTIN, PAN, and tax rates; asserts non-negative tax rate. |
+| 10 | `save_company_settings` | `shared`, `public` | Authoritative consolidated RPC for Business, Contact, and Tax tabs writing to `shared.company_settings` with section isolation and multi-GST JSONB validation. |
 
 ---
 

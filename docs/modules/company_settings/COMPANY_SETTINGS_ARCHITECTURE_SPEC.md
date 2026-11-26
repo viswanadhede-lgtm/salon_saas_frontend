@@ -163,22 +163,25 @@ All procedures:
 
 ---
 
-### 2.9 `app.save_company_tax_settings_atomic`
-- **Purpose**: Upserts GSTIN, PAN, tax rate, and tax breakdown options in `company_tax_settings`.
+### 2.9 `shared.save_company_settings` (Consolidated Company Settings RPC)
+- **Purpose**: Authoritatively saves tenant business identity, administrative contact, registered office address, and tax/multi-GST registrations into the consolidated `shared.company_settings` table.
 - **Parameters**:
   - `p_company_id` (uuid, required)
-  - `p_business_registration_number` (text, optional)
-  - `p_gstin` (text, optional)
-  - `p_pan` (text, optional)
-  - `p_gst_registration_state` (text, optional)
-  - `p_default_tax_rate` (numeric, optional)
-  - `p_tax_label` (text, optional, default `'GST'`)
-  - `p_prices_include_tax` (boolean, default false)
-  - `p_show_tax_breakdown` (boolean, default true)
+  - `p_section` (text, required: `'business'` | `'contact'` | `'tax'`)
+  - `p_data` (jsonb, required: tab-specific payload)
 - **Guards**:
   - `shared.verify_tenant_access(p_company_id, NULL)`
-  - `p_default_tax_rate` $\ge 0$ when provided.
-- **Returns**: `jsonb` `{ success: true }`
+  - `shared.check_permission(p_company_id, 'settings_edit')`
+  - Validates `p_section IN ('business', 'contact', 'tax')`
+  - Validates `jsonb_typeof(p_data) = 'object'`
+  - Section-specific assertions:
+    - `business`: `legal_business_name` and `display_name` non-empty.
+    - `contact`: `primary_contact_name`, `primary_contact_email`, `primary_contact_phone` non-empty.
+    - `tax`: `gst_registrations` array validation (every entry must have both non-empty `gstin` and `state`).
+- **Synchronizations**:
+  - `business`: Synchronizes `shared.companies` (`company_name`, `display_name`, `business_category`, `logo_url`, `cover_image_url`, `website`).
+  - `contact`: Synchronizes `shared.companies` (`owner_name`, `owner_email`, `owner_phone`).
+- **Returns**: `jsonb` `{ success: true, company_id: uuid, section: text, updated_at: timestamptz }`
 
 ---
 
@@ -187,5 +190,8 @@ All procedures:
 - **Part A**: `20261103000016a_harden_branches.sql`
   - Procedures: `create_branch_atomic`, `update_branch_atomic`, `toggle_branch_status_atomic`, `delete_branch_atomic`
 - **Part B**: `20261103000016b_harden_settings.sql`
-  - Procedures: `save_billing_information_atomic`, `save_invoice_settings_atomic`, `save_notification_settings_atomic`, `save_business_payment_settings_atomic`, `save_company_tax_settings_atomic`, `save_business_settings`, `save_contact_settings`
+  - Procedures: `save_billing_information_atomic`, `save_invoice_settings_atomic`, `save_notification_settings_atomic`, `save_business_payment_settings_atomic`
+- **Part C (Consolidation)**: `20261126000001_create_save_company_settings_rpc.sql`
+  - Consolidates company branding, contact person, registered office address, and multiple GST registrations into `shared.company_settings`.
+  - Authoritative procedure: `shared.save_company_settings` with public wrapper `public.save_company_settings`.
 
