@@ -90,8 +90,8 @@
             align-items: center;
             justify-content: space-between;
             gap: 16px;
-            padding: 24px 32px;
-            min-block-size: 86px;
+            padding: 22px 32px;
+            min-block-size: 76px;
             text-decoration: none;
             color: #0f172a;
             background: #ffffff;
@@ -124,6 +124,7 @@
             line-height: 1.15;
             letter-spacing: -0.015em;
             margin: 0;
+            flex-shrink: 0;
         }
 
         .branch-status-badge {
@@ -187,8 +188,8 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 38px;
-            height: 38px;
+            min-width: 36px;
+            height: 36px;
             border-radius: 10px;
             background: #f1f5f9;
             color: #475569;
@@ -198,20 +199,24 @@
             flex-shrink: 0;
         }
 
-        /* Name + address stacked */
+        /* Name + address inline so branch name sits dead-center vertically */
         .branch-text-group {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 2px;
+            flex-direction: row;
+            align-items: baseline;
+            gap: 12px;
             min-width: 0;
+            flex: 1;
         }
 
         .branch-row-address {
-            font-size: 0.84rem;
+            font-size: 0.88rem;
             color: #94a3b8;
             line-height: 1.15;
             margin: 0;
+            padding-left: 12px;
+            border-left: 1px solid #cbd5e1;
+            min-width: 0;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -376,6 +381,16 @@
             .branch-page-header,
             .branch-row-link {
                 padding-inline: 20px;
+            }
+            .branch-text-group {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 2px;
+            }
+            .branch-row-address {
+                border-left: none;
+                padding-left: 0;
+                max-width: 100%;
             }
         }
 
