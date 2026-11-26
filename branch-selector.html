@@ -17,28 +17,17 @@
     <link rel="stylesheet" href="settings-shared.css">
     <script src="https://unpkg.com/feather-icons"></script>
     <style>
-        /* Branch Selector Card */
-        .branch-selector-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-            max-width: 920px;
-            overflow: hidden;
-            margin-top: 12px;
-        }
-
-        .branch-selector-header {
+        /* Page-level title row (above card) */
+        .page-title-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 16px;
             flex-wrap: wrap;
-            padding: 24px 28px 20px;
-            border-bottom: 1px solid #f1f5f9;
+            margin-bottom: 16px;
         }
 
-        .branch-selector-title {
+        .page-title-row h1 {
             font-size: 1.35rem;
             font-weight: 700;
             color: #0f172a;
@@ -46,10 +35,19 @@
             letter-spacing: -0.015em;
         }
 
-        .branch-selector-subtitle {
+        .page-title-row p {
             font-size: 0.92rem;
             color: #64748b;
             margin: 0;
+        }
+
+        /* Branch Selector Card */
+        .branch-selector-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
         }
 
         .branch-list {
@@ -309,7 +307,7 @@
             .branch-info-grid .span-2 {
                 grid-column: span 1;
             }
-            .branch-selector-header,
+            .page-title-row,
             .branch-row-link {
                 padding-inline: 20px;
             }
@@ -379,19 +377,20 @@
                 <span class="sp-current">Branch Settings</span>
             </div>
 
-            <!-- Branch Selector Card -->
-            <section class="branch-selector-card" aria-labelledby="branchSelectorHeading">
-                <div class="branch-selector-header">
-                    <div>
-                        <h1 id="branchSelectorHeading" class="branch-selector-title">Select a Branch</h1>
-                        <p id="branchSelectorSubtitle" class="branch-selector-subtitle">Choose which branch you want to configure.</p>
-                    </div>
-                    <button type="button" class="qa-btn qa-primary" id="btnAddBranch" data-sub-feature="branch_create">
-                        <i data-feather="plus" class="qa-icon" aria-hidden="true"></i>
-                        <span>Add Branch</span>
-                    </button>
+            <!-- Page Title Row (outside card) -->
+            <div class="page-title-row">
+                <div>
+                    <h1 id="branchSelectorHeading">Select a Branch</h1>
+                    <p id="branchSelectorSubtitle">Choose which branch you want to configure.</p>
                 </div>
+                <button type="button" class="qa-btn qa-primary" id="btnAddBranch" data-sub-feature="branch_create">
+                    <i data-feather="plus" class="qa-icon" aria-hidden="true"></i>
+                    <span>Add Branch</span>
+                </button>
+            </div>
 
+            <!-- Branch Selector Card (full-width) -->
+            <section class="branch-selector-card" aria-labelledby="branchSelectorHeading">
                 <div id="branchListRegion">
                     <ul id="branchSelectorList" class="branch-list" role="list" aria-label="Company Branches">
                         <li class="branch-empty-state">Loading branches...</li>
