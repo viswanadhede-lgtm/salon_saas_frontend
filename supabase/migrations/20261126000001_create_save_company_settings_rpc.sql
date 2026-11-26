@@ -10,7 +10,7 @@
 --     - Group C: Tax & GST Registrations Settings
 -- =============================================================================
 
-CREATE OR REPLACE FUNCTION app.save_company_settings(
+CREATE OR REPLACE FUNCTION shared.save_company_settings(
     p_company_id uuid,
     p_section    text,
     p_data       jsonb
@@ -199,6 +199,6 @@ SECURITY DEFINER
 SET search_path = platform, shared, app, public, pg_temp
 AS $$
 BEGIN
-    RETURN app.save_company_settings(p_company_id, p_section, p_data);
+    RETURN shared.save_company_settings(p_company_id, p_section, p_data);
 END;
 $$;
