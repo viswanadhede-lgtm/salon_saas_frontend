@@ -17,7 +17,17 @@
     <link rel="stylesheet" href="settings-shared.css">
     <script src="https://unpkg.com/feather-icons"></script>
     <style>
-        /* Branch Selector Card */
+        /* Page header row — no card, plain text + button */
+        .branch-page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        /* Branch Selector Card (list only) */
         .branch-selector-card {
             background: #ffffff;
             border: 1px solid #e2e8f0;
@@ -347,7 +357,7 @@
             .branch-info-grid .span-2 {
                 grid-column: span 1;
             }
-            .branch-selector-header,
+            .branch-page-header,
             .branch-row-link {
                 padding-inline: 20px;
             }
@@ -417,8 +427,8 @@
                 <span class="sp-current">Branch Settings</span>
             </div>
 
-            <!-- Card 1: Title + Add Branch -->
-            <div class="branch-selector-card" style="padding: 24px 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 12px;">
+            <!-- Page Header (no card) -->
+            <div class="branch-page-header">
                 <div>
                     <h1 id="branchSelectorHeading" class="branch-selector-title">Select a Branch</h1>
                     <p id="branchSelectorSubtitle" class="branch-selector-subtitle">Click on the branch you want to update.</p>
@@ -429,7 +439,7 @@
                 </button>
             </div>
 
-            <!-- Card 2: Branch List -->
+            <!-- Branch List Card -->
             <section class="branch-selector-card" aria-labelledby="branchSelectorHeading">
                 <div id="branchListRegion">
                     <ul id="branchSelectorList" class="branch-list" role="list" aria-label="Company Branches">
