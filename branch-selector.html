@@ -43,12 +43,13 @@
             border-radius: 14px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
             overflow: hidden;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .branch-selector-card:has(.branch-row-link:hover) {
-            border-color: #fde68a;
-            box-shadow: 0 8px 22px -6px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(245, 158, 11, 0.14);
+            transform: translateY(-2px);
+            border-color: #cbd5e1;
+            box-shadow: 0 10px 24px -6px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
         }
 
         .branch-selector-header {
@@ -101,24 +102,18 @@
             text-decoration: none;
             color: #0f172a;
             background: #ffffff;
-            transition: background-color 0.18s ease, box-shadow 0.18s ease;
         }
 
         .branch-row-link:hover,
         .branch-row-link:focus,
         .branch-row-link:active {
             text-decoration: none;
-        }
-
-        .branch-row-link:hover {
-            background-color: #fffbeb;
-            box-shadow: inset 4px 0 0 #f59e0b;
+            color: #0f172a;
         }
 
         .branch-row-link:focus-visible {
-            outline: 2px solid #f59e0b;
+            outline: 2px solid #2563eb;
             outline-offset: -2px;
-            background-color: #fffbeb;
         }
 
         .branch-row-main {
@@ -138,11 +133,6 @@
             letter-spacing: -0.015em;
             margin: 0;
             flex-shrink: 0;
-            transition: color 0.18s ease;
-        }
-
-        .branch-row-link:hover .branch-row-name {
-            color: #78350f;
         }
 
         .branch-status-badge {
@@ -167,24 +157,22 @@
         .branch-row-chevron {
             width: 18px;
             height: 18px;
-            color: #64748b;
+            color: #475569;
             flex-shrink: 0;
-            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), color 0.18s ease;
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .branch-row-link:hover .branch-row-chevron {
             transform: translateX(4px);
-            color: #d97706;
         }
 
         @media (prefers-reduced-motion: reduce) {
             .branch-selector-card,
-            .branch-row-link,
-            .branch-row-name,
             .branch-num-badge,
             .branch-row-chevron {
                 transition: none;
             }
+            .branch-selector-card:has(.branch-row-link:hover),
             .branch-row-link:hover .branch-num-badge,
             .branch-row-link:hover .branch-row-chevron {
                 transform: none;
@@ -219,13 +207,11 @@
             font-weight: 700;
             letter-spacing: 0.01em;
             flex-shrink: 0;
-            transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+            transition: transform 0.18s ease;
         }
 
         .branch-row-link:hover .branch-num-badge {
-            background: #fef3c7;
-            color: #b45309;
-            transform: scale(1.06);
+            transform: scale(1.05);
         }
 
         /* Name + address inline so branch name sits dead-center vertically */
