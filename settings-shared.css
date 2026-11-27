@@ -973,6 +973,23 @@ html, body.dashboard-body {
     flex-shrink: 0;
 }
 
+.branch-modal-footer #btnSaveBranch {
+    background: #5adbb5;
+    color: #0f172a;
+    font-weight: 600;
+    border: 1px solid #3eb894;
+}
+
+.branch-modal-footer #btnSaveBranch:not(:disabled):hover {
+    background: #45c7a1;
+    color: #0f172a;
+}
+
+.branch-modal-footer #btnSaveBranch:focus-visible {
+    outline: 2px solid #0f172a;
+    outline-offset: 2px;
+}
+
 @media (max-width: 960px) {
     .branch-modal-wide {
         min-block-size: auto;
