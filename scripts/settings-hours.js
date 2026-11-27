@@ -252,7 +252,7 @@ window.saveHours = async function () {
 
         if (upsertErr) throw new Error(upsertErr.message || 'Failed to save business hours');
         if (data && data.success === false) {
-            throw new Error(data.error || 'Failed to save business hours');
+            throw new Error(data.message || data.error || 'Failed to save business hours');
         }
 
         showToast('Business hours saved successfully!', 'success');
