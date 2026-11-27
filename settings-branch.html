@@ -576,30 +576,30 @@
                         </div>
 
                         <!-- RIGHT: UPI ID + UPI Number + Payment Note -->
-                        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1.25rem;">
+                        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1.5rem;">
 
                             <!-- UPI ID -->
                             <div class="form-group" style="margin-bottom:0;">
-                                <label class="form-label" for="upiId">UPI ID <span class="optional">(Optional)</span></label>
+                                <label class="form-label" for="upiId" style="font-size:15px;margin-bottom:0.45rem;">UPI ID <span class="optional">(Optional)</span></label>
                                 <div class="input-prefix-wrap">
-                                    <span class="input-prefix"><i data-feather="smartphone" style="width:14px;height:14px;"></i></span>
-                                    <input type="text" id="upiId" class="form-input with-prefix">
+                                    <span class="input-prefix"><i data-feather="smartphone" style="width:16px;height:16px;"></i></span>
+                                    <input type="text" id="upiId" class="form-input with-prefix" style="font-size:15px;padding-top:0.6rem;padding-bottom:0.6rem;">
                                 </div>
                             </div>
 
                             <!-- UPI Number -->
                             <div class="form-group" style="margin-bottom:0;">
-                                <label class="form-label" for="upiNumber">UPI Number <span class="optional">(Optional)</span></label>
+                                <label class="form-label" for="upiNumber" style="font-size:15px;margin-bottom:0.45rem;">UPI Number <span class="optional">(Optional)</span></label>
                                 <div class="input-prefix-wrap">
-                                    <span class="input-prefix"><i data-feather="hash" style="width:14px;height:14px;"></i></span>
-                                    <input type="text" id="upiNumber" class="form-input with-prefix" inputmode="numeric" pattern="[0-9]*" maxlength="20" autocomplete="off">
+                                    <span class="input-prefix"><i data-feather="hash" style="width:16px;height:16px;"></i></span>
+                                    <input type="text" id="upiNumber" class="form-input with-prefix" inputmode="numeric" pattern="[0-9]*" maxlength="20" autocomplete="off" style="font-size:15px;padding-top:0.6rem;padding-bottom:0.6rem;">
                                 </div>
                             </div>
 
                             <!-- Payment Note -->
                             <div class="form-group" style="margin-bottom:0;">
-                                <label class="form-label" for="paymentNote">Payment Note <span class="optional">(Optional)</span></label>
-                                <textarea id="paymentNote" class="form-input form-textarea"></textarea>
+                                <label class="form-label" for="paymentNote" style="font-size:15px;margin-bottom:0.45rem;">Payment Note <span class="optional">(Optional)</span></label>
+                                <textarea id="paymentNote" class="form-input form-textarea" style="font-size:15px;min-height:120px;"></textarea>
                             </div>
 
                         </div>
