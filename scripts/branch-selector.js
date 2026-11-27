@@ -216,12 +216,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     function populateManagerDropdown() {
         const select = document.getElementById('branchManager');
         if (!select) return;
-        select.innerHTML = '<option value="">Unassigned / None</option>';
+        select.innerHTML = '<option value="">-- Select --</option>';
         companyUsers.forEach(u => {
             const uid = u.user_id || u.id;
             const opt = document.createElement('option');
             opt.value = uid;
-            opt.textContent = `${u.name || 'User'} (${u.role_name || 'Staff'})`;
+            opt.textContent = u.name || 'User';
             select.appendChild(opt);
         });
     }
