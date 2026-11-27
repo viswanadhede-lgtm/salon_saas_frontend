@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return localStorage.getItem('company_id') || null;
     }
 
-    // ── Helper to get branch ID (with fallback to context and branches table) ──
+    // ── Helper to get branch ID ───────────────────────────────────────────────
     async function getBranchId(companyId) {
         try {
             const urlBranchId = new URLSearchParams(window.location.search).get('branch_id');
@@ -66,19 +66,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.querySelectorAll('.nav-item.active').forEach(li => li.classList.add('open'));
 
-    // ── Top-level 3-card Single-Open Accordion ────────────────────────────────
+    // ── Top-level accordion (single card, kept for future extensibility) ─────
     const topPanels = document.querySelectorAll('.notif-top-panel');
     document.querySelectorAll('.notif-top-header').forEach(header => {
         header.addEventListener('click', () => {
             const currentPanel = header.closest('.notif-top-panel');
             if (!currentPanel) return;
-
             const isOpen = currentPanel.classList.contains('open');
-
-            // Single-open behavior: collapse all top panels first
             topPanels.forEach(p => p.classList.remove('open'));
-
-            // If the clicked card was previously closed, expand it
             if (!isOpen) {
                 currentPanel.querySelectorAll('.accordion-item').forEach(item => {
                     item.classList.remove('expanded');
@@ -115,77 +110,6 @@ document.addEventListener('DOMContentLoaded', () => {
         cb.addEventListener('change', () => showSaveBar());
     });
 
-    // ── Customer Notifications: Master toggles ───────────────────────────────
-    document.querySelectorAll('.cust-master-toggle input[type="checkbox"]').forEach(toggle => {
-        toggle.addEventListener('change', (e) => {
-            const isChecked = e.target.checked;
-            const table = e.target.closest('.accordion-item').querySelector('.cn-table');
-            if (table) {
-                table.classList.toggle('disabled-matrix', !isChecked);
-                table.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                    cb.disabled = !isChecked;
-                });
-            }
-            showSaveBar();
-        });
-    });
-
-    // ── Customer & Marketing Notifications: Row "Select All" Sync ────────────
-    function syncRowSelectAll(row) {
-        const channelCheckboxes = row.querySelectorAll('.whatsapp-chk, .sms-chk, .email-chk');
-        const selectAllChk = row.querySelector('.select-all-chk');
-        if (!selectAllChk || channelCheckboxes.length === 0) return;
-        const allChecked = Array.from(channelCheckboxes).every(cb => cb.checked);
-        selectAllChk.checked = allChecked;
-    }
-
-    function initCustomerMatrixEvents() {
-        document.querySelectorAll('.cn-table[data-section] tbody tr').forEach(row => {
-            syncRowSelectAll(row);
-
-            const selectAllChk = row.querySelector('.select-all-chk');
-            selectAllChk?.addEventListener('change', (e) => {
-                const isChecked = e.target.checked;
-                row.querySelectorAll('.whatsapp-chk, .sms-chk, .email-chk').forEach(cb => {
-                    cb.checked = isChecked;
-                });
-                showSaveBar();
-            });
-
-            row.querySelectorAll('.whatsapp-chk, .sms-chk, .email-chk').forEach(cb => {
-                cb.addEventListener('change', () => {
-                    syncRowSelectAll(row);
-                    showSaveBar();
-                });
-            });
-        });
-    }
-
-    function initMarketingMatrixEvents() {
-        document.querySelectorAll('.cn-table[data-mkt-section] tbody tr').forEach(row => {
-            syncRowSelectAll(row);
-
-            const selectAllChk = row.querySelector('.select-all-chk');
-            selectAllChk?.addEventListener('change', (e) => {
-                const isChecked = e.target.checked;
-                row.querySelectorAll('.whatsapp-chk, .sms-chk, .email-chk').forEach(cb => {
-                    cb.checked = isChecked;
-                });
-                showSaveBar();
-            });
-
-            row.querySelectorAll('.whatsapp-chk, .sms-chk, .email-chk').forEach(cb => {
-                cb.addEventListener('change', () => {
-                    syncRowSelectAll(row);
-                    showSaveBar();
-                });
-            });
-        });
-    }
-
-    initCustomerMatrixEvents();
-    initMarketingMatrixEvents();
-
     function showSaveBar() {
         window.isDirty = true;
         if (savebar) savebar.classList.add('visible');
@@ -195,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (savebar) savebar.classList.remove('visible');
     }
 
-    // ── Default Preferences (Clean Initial State) ────────────────────────────
+    // ── Default System Notification Preferences ───────────────────────────────
     const defaultPrefs = {
         bookings: {
             master: true,
@@ -251,58 +175,10 @@ document.addEventListener('DOMContentLoaded', () => {
             evt_marketing_membership: false,
             evt_marketing_membership_purchased: true,
             evt_marketing_membership_expired_renewed: true
-        },
-        customer_notifications: {
-            booking: {
-                master: true,
-                events: {
-                    booking_confirm:  { whatsapp: true,  sms: true,  email: true },
-                    booking_modify:   { whatsapp: true,  sms: true,  email: false },
-                    booking_cancel:   { whatsapp: true,  sms: true,  email: true },
-                    booking_reminder: { whatsapp: true,  sms: true,  email: false },
-                    booking_complete: { whatsapp: true,  sms: false, email: false },
-                    booking_noshow:   { whatsapp: false, sms: true,  email: false }
-                }
-            },
-            purchase: {
-                master: true,
-                events: {
-                    purchase_confirm: { whatsapp: true, sms: true,  email: false },
-                    payment_confirm:  { whatsapp: true, sms: true,  email: true },
-                    invoice_receipt:  { whatsapp: true, sms: false, email: true },
-                    refund_confirm:   { whatsapp: true, sms: true,  email: true }
-                }
-            },
-            membership: {
-                master: true,
-                events: {
-                    member_purchase:  { whatsapp: true, sms: true,  email: true },
-                    member_activate:  { whatsapp: true, sms: false, email: false },
-                    member_expiring:  { whatsapp: true, sms: true,  email: true },
-                    member_expired:   { whatsapp: true, sms: true,  email: true },
-                    member_renewed:   { whatsapp: true, sms: true,  email: true }
-                }
-            }
-        },
-        marketing_notifications: {
-            offers: {
-                master: true,
-                events: {
-                    new_offer:    { whatsapp: true, sms: true,  email: true },
-                    new_discount: { whatsapp: true, sms: true,  email: false }
-                }
-            },
-            business: {
-                master: true,
-                events: {
-                    new_service_added: { whatsapp: true, sms: false, email: true },
-                    new_product_added: { whatsapp: true, sms: true,  email: false }
-                }
-            }
         }
     };
 
-    // ── Collect UI Form State into Clean Objects ─────────────────────────────
+    // ── Collect System Prefs from UI ─────────────────────────────────────────
     function collectSystemPrefsFromUI() {
         const systemCategories = ['bookings', 'customers', 'staff', 'services', 'pos', 'payments', 'marketing'];
         const sys = {};
@@ -320,55 +196,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return sys;
     }
 
-    function collectCustomerPrefsFromUI() {
-        const cust = {};
-        ['booking', 'purchase', 'membership'].forEach(sec => {
-            const masterEl = document.getElementById(`cust_master_${sec}`);
-            cust[sec] = {
-                master: masterEl ? masterEl.checked : true,
-                events: {}
-            };
-
-            const table = document.querySelector(`.cn-table[data-section="${sec}"]`);
-            if (table) {
-                table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
-                    const evKey = row.getAttribute('data-event-key');
-                    const wa = row.querySelector('.whatsapp-chk')?.checked || false;
-                    const sms = row.querySelector('.sms-chk')?.checked || false;
-                    const em = row.querySelector('.email-chk')?.checked || false;
-                    cust[sec].events[evKey] = { whatsapp: wa, sms: sms, email: em };
-                });
-            }
-        });
-        return cust;
-    }
-
-    function collectMarketingPrefsFromUI() {
-        const mkt = {};
-        ['offers', 'business'].forEach(sec => {
-            const masterEl = document.getElementById(`mkt_master_${sec}`);
-            mkt[sec] = {
-                master: masterEl ? masterEl.checked : true,
-                events: {}
-            };
-
-            const table = document.querySelector(`.cn-table[data-mkt-section="${sec}"]`);
-            if (table) {
-                table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
-                    const evKey = row.getAttribute('data-event-key');
-                    const wa = row.querySelector('.whatsapp-chk')?.checked || false;
-                    const sms = row.querySelector('.sms-chk')?.checked || false;
-                    const em = row.querySelector('.email-chk')?.checked || false;
-                    mkt[sec].events[evKey] = { whatsapp: wa, sms: sms, email: em };
-                });
-            }
-        });
-        return mkt;
-    }
-
-    // ── Apply Preferences to the UI Form Elements ────────────────────────────
-    function applyPreferencesToUI(systemPrefs, customerPrefs, marketingPrefs) {
-        // 1. System Notifications
+    // ── Apply System Prefs to UI ─────────────────────────────────────────────
+    function applyPreferencesToUI(systemPrefs) {
         const systemCategories = ['bookings', 'customers', 'staff', 'services', 'pos', 'payments', 'marketing'];
         systemCategories.forEach(category => {
             const catData = systemPrefs[category] || defaultPrefs[category];
@@ -393,80 +222,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // 2. Customer Notifications
-        const cust = customerPrefs || defaultPrefs.customer_notifications;
-        ['booking', 'purchase', 'membership'].forEach(sec => {
-            const secData = cust[sec] || defaultPrefs.customer_notifications[sec];
-            if (!secData) return;
-
-            const masterEl = document.getElementById(`cust_master_${sec}`);
-            const table = document.querySelector(`.cn-table[data-section="${sec}"]`);
-            if (masterEl) {
-                masterEl.checked = !!secData.master;
-                if (table) {
-                    table.classList.toggle('disabled-matrix', !secData.master);
-                    table.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                        cb.disabled = !secData.master;
-                    });
-                }
-            }
-
-            if (table && secData.events) {
-                table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
-                    const evKey = row.getAttribute('data-event-key');
-                    const evData = secData.events[evKey];
-                    if (evData) {
-                        const wa = row.querySelector('.whatsapp-chk');
-                        const sms = row.querySelector('.sms-chk');
-                        const em = row.querySelector('.email-chk');
-                        if (wa && typeof evData.whatsapp !== 'undefined') wa.checked = !!evData.whatsapp;
-                        if (sms && typeof evData.sms !== 'undefined') sms.checked = !!evData.sms;
-                        if (em && typeof evData.email !== 'undefined') em.checked = !!evData.email;
-                    }
-                    syncRowSelectAll(row);
-                });
-            }
-        });
-
-        // 3. Marketing Notifications
-        const mkt = marketingPrefs || defaultPrefs.marketing_notifications;
-        ['offers', 'business'].forEach(sec => {
-            const secData = mkt[sec] || defaultPrefs.marketing_notifications[sec];
-            if (!secData) return;
-
-            const masterEl = document.getElementById(`mkt_master_${sec}`);
-            const table = document.querySelector(`.cn-table[data-mkt-section="${sec}"]`);
-            if (masterEl) {
-                masterEl.checked = !!secData.master;
-                if (table) {
-                    table.classList.toggle('disabled-matrix', !secData.master);
-                    table.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                        cb.disabled = !secData.master;
-                    });
-                }
-            }
-
-            if (table && secData.events) {
-                table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
-                    const evKey = row.getAttribute('data-event-key');
-                    const evData = secData.events[evKey];
-                    if (evData) {
-                        const wa = row.querySelector('.whatsapp-chk');
-                        const sms = row.querySelector('.sms-chk');
-                        const em = row.querySelector('.email-chk');
-                        if (wa && typeof evData.whatsapp !== 'undefined') wa.checked = !!evData.whatsapp;
-                        if (sms && typeof evData.sms !== 'undefined') sms.checked = !!evData.sms;
-                        if (em && typeof evData.email !== 'undefined') em.checked = !!evData.email;
-                    }
-                    syncRowSelectAll(row);
-                });
-            }
-        });
-
         if (typeof feather !== 'undefined') feather.replace();
     }
 
-    // ── Load Notification Preferences from DB ────────────────────────────────
+    // ── Load Preferences from DB ─────────────────────────────────────────────
     async function loadPreferences(branchIdOverride = null) {
         const companyId = getCompanyId();
         if (!companyId) return;
@@ -477,17 +236,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             currentBranchId = branchId;
 
-            // Sync header branch dropdown if present and matching option exists
             const branchSelect = document.getElementById('branchSelect');
             if (branchSelect && branchSelect.value !== branchId) {
                 const hasOption = Array.from(branchSelect.options).some(opt => opt.value === branchId);
                 if (hasOption) branchSelect.value = branchId;
             }
 
-            // Fetch single row for this company and branch
             const { data, error } = await supabase.schema('app')
                 .from('notification_settings')
-                .select('*')
+                .select('system_notifications')
                 .eq('company_id', companyId)
                 .eq('branch_id', branchId)
                 .maybeSingle();
@@ -496,36 +253,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn('[settings-notifications] Error loading settings:', error);
             }
 
-            let systemPrefs, customerPrefs, marketingPrefs;
-
-            if (data) {
-                systemPrefs = data.system_notifications || {};
-                customerPrefs = data.customer_notifications || {};
-                marketingPrefs = data.marketing_notifications || {};
-            } else {
-                systemPrefs = {
-                    bookings: defaultPrefs.bookings,
-                    customers: defaultPrefs.customers,
-                    staff: defaultPrefs.staff,
-                    services: defaultPrefs.services,
-                    pos: defaultPrefs.pos,
-                    payments: defaultPrefs.payments,
-                    marketing: defaultPrefs.marketing
-                };
-                customerPrefs = defaultPrefs.customer_notifications;
-                marketingPrefs = defaultPrefs.marketing_notifications;
-            }
-
-            applyPreferencesToUI(systemPrefs, customerPrefs, marketingPrefs);
-
-            // Update local cache for notification-manager (powers bell icon & toasts)
-            const cachePayload = {
-                ...systemPrefs,
-                customer_notifications: customerPrefs,
-                marketing_notifications: marketingPrefs
+            const systemPrefs = data?.system_notifications || {
+                bookings:   defaultPrefs.bookings,
+                customers:  defaultPrefs.customers,
+                staff:      defaultPrefs.staff,
+                services:   defaultPrefs.services,
+                pos:        defaultPrefs.pos,
+                payments:   defaultPrefs.payments,
+                marketing:  defaultPrefs.marketing
             };
-            localStorage.setItem(`notification_prefs_${companyId}`, JSON.stringify(cachePayload));
-            localStorage.setItem(`notification_prefs_${companyId}_${branchId}`, JSON.stringify(cachePayload));
+
+            applyPreferencesToUI(systemPrefs);
+
+            // Update local cache
+            localStorage.setItem(`notification_prefs_${companyId}`, JSON.stringify(systemPrefs));
+            localStorage.setItem(`notification_prefs_${companyId}_${branchId}`, JSON.stringify(systemPrefs));
 
             hideSaveBar();
 
@@ -534,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ── Save Preferences to DB (Atomic Upsert) ────────────────────────────────
+    // ── Save Preferences to DB ───────────────────────────────────────────────
     async function savePreferences() {
         const companyId = getCompanyId();
         if (!companyId) {
@@ -555,34 +297,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const systemPrefs = collectSystemPrefsFromUI();
-            const customerPrefs = collectCustomerPrefsFromUI();
-            const marketingPrefs = collectMarketingPrefsFromUI();
-            const now = new Date().toISOString();
 
-            // 1 single atomic upsert via stored procedure
             const { data: rpcRes, error: upsertErr } = await supabase.rpc('save_notification_settings_atomic', {
-                p_company_id:              companyId,
-                p_branch_id:               branchId,
-                p_system_notifications:    systemPrefs,
-                p_customer_notifications:  customerPrefs,
-                p_marketing_notifications: marketingPrefs
+                p_company_id:           companyId,
+                p_branch_id:            branchId,
+                p_system_notifications: systemPrefs
             });
+
             if (rpcRes && rpcRes.success === false) {
                 throw new Error(rpcRes.message || 'Failed to save notification settings');
             }
-
             if (upsertErr) {
                 throw new Error(upsertErr.message || 'Failed to save notification settings');
             }
 
-            // Update local cache for immediate feedback in bell & toasts
-            const cachePayload = {
-                ...systemPrefs,
-                customer_notifications: customerPrefs,
-                marketing_notifications: marketingPrefs
-            };
-            localStorage.setItem(`notification_prefs_${companyId}`, JSON.stringify(cachePayload));
-            localStorage.setItem(`notification_prefs_${companyId}_${branchId}`, JSON.stringify(cachePayload));
+            // Update local cache
+            localStorage.setItem(`notification_prefs_${companyId}`, JSON.stringify(systemPrefs));
+            localStorage.setItem(`notification_prefs_${companyId}_${branchId}`, JSON.stringify(systemPrefs));
 
             const toast = document.getElementById('toastNotification');
             if (toast) {
@@ -611,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Standalone settings-notifications.html binds btnSave directly; settings-branch.js handles tabbed #btnSave
+    // Standalone page binds btnSave directly; settings-branch.js handles tabbed #btnSave
     if (btnSave && !document.getElementById('pane-branches')) {
         btnSave.addEventListener('click', () => {
             const pane = document.getElementById('pane-notifications');
@@ -625,8 +356,8 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPreferences(currentBranchId);
     };
 
-    window.loadNotificationSettings = loadPreferences;
-    window.saveNotificationSettings = savePreferences;
+    window.loadNotificationSettings  = loadPreferences;
+    window.saveNotificationSettings  = savePreferences;
 
     // ── Branch Switcher Listener ─────────────────────────────────────────────
     function initBranchSwitcher() {
