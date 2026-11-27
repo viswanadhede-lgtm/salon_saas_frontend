@@ -294,29 +294,47 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.toggleStatus = async function (id) {
         const branch = branchesData.find(b => b.branch_id === id);
-        if (branch) {
-            const newStatus = branch.status === 'active' ? 'inactive' : 'active';
-            const now = new Date().toISOString();
+        if (!branch) return;
 
-            try {
-                const { data: rpcRes, error } = await supabase.rpc('toggle_branch_status_atomic', {
-                    p_company_id: getCompanyId(),
-                    p_branch_id:  id,
-                    p_new_status: newStatus
-                });
+        const newStatus = branch.status === 'active' ? 'inactive' : 'active';
+        const now = new Date().toISOString();
 
-                if (error) throw error;
-                if (rpcRes && rpcRes.success === false) throw new Error(rpcRes.message || 'Failed to update branch status');
+        try {
+            const { data: rpcRes, error } = await supabase.rpc('update_branch_atomic', {
+                p_company_id:     getCompanyId(),
+                p_branch_id:      id,
+                p_branch_name:    branch.branch_name,
+                p_branch_phone:   branch.branch_phone,
+                p_branch_email:   branch.branch_email   || null,
+                p_branch_code:    branch.branch_code    || null,
+                p_manager_user_id: branch.manager_id    || null,
+                p_address_line_1: branch.address_line_1 || null,
+                p_address_line_2: branch.address_line_2 || null,
+                p_locality_area:  branch.locality_area  || null,
+                p_landmark:       branch.landmark        || null,
+                p_city:           branch.city            || null,
+                p_district:       branch.district        || null,
+                p_state:          branch.state           || null,
+                p_pin_code:       branch.pin_code        || null,
+                p_country:        branch.country         || 'India',
+                p_branch_address: branch.branch_address  || null,
+                p_google_maps_url: branch.google_maps_url || null,
+                p_latitude:       branch.latitude        != null ? branch.latitude  : null,
+                p_longitude:      branch.longitude       != null ? branch.longitude : null,
+                p_status:         newStatus
+            });
 
-                branch.status = newStatus;
-                branch.updated_at = now;
-                renderTable();
-                updateGlobalContext();
-                showToast(`Branch "${branch.branch_name}" is now ${newStatus}.`, 'success');
-            } catch (err) {
-                console.error("Error toggling branch status:", err);
-                showToast("Failed to update status", 'error');
-            }
+            if (error) throw error;
+            if (rpcRes && rpcRes.success === false) throw new Error(rpcRes.message || 'Failed to update branch status');
+
+            branch.status = newStatus;
+            branch.updated_at = now;
+            renderTable();
+            updateGlobalContext();
+            showToast(`Branch "${branch.branch_name}" is now ${newStatus}.`, 'success');
+        } catch (err) {
+            console.error("Error toggling branch status:", err);
+            showToast("Failed to update status", 'error');
         }
     };
 

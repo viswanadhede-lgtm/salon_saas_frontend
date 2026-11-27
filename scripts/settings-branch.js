@@ -353,19 +353,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         try {
-            // Enforce single-active-branch invariant when status changes
-            if (loadedBranch && loadedBranch.status !== newStatus) {
-                const { data: toggleRes, error: toggleErr } = await supabase.rpc('toggle_branch_status_atomic', {
-                    p_company_id: companyId,
-                    p_branch_id: currentBranchId,
-                    p_new_status: newStatus
-                });
-                if (toggleErr) throw toggleErr;
-                if (toggleRes && toggleRes.success === false) {
-                    throw new Error(toggleRes.message || 'Failed to update branch status');
-                }
-            }
-
             const addressParts = [
                 addressLine1,
                 addressLine2,
