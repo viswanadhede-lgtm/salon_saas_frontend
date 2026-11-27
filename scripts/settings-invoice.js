@@ -252,9 +252,9 @@
                 .eq('branch_id', branchId)
                 .maybeSingle();
 
-            if (!error && data?.print_format?.layout) {
-                currentFormat = data.print_format.layout;
-                savedFormat   = data.print_format.layout;
+            if (!error && data?.print_format) {
+                currentFormat = data.print_format;
+                savedFormat   = data.print_format;
             }
         } catch { /* fall back to default */ }
         renderFormatCards();
@@ -279,7 +279,7 @@
             const { data: rpcRes, error } = await supabase.rpc('save_invoice_settings_atomic', {
                 p_company_id:   companyId,
                 p_branch_id:    branchId,
-                p_print_format: { layout: currentFormat }
+                p_print_format: currentFormat
             });
 
             if (error) throw new Error(error.message || 'Failed to save invoice settings');
