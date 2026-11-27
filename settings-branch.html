@@ -575,8 +575,8 @@
                             </div>
                         </div>
 
-                        <!-- RIGHT: UPI ID + Payment Note -->
-                        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2.5rem;">
+                        <!-- RIGHT: UPI ID + UPI Number + Payment Note -->
+                        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1.25rem;">
 
                             <!-- UPI ID -->
                             <div class="form-group" style="margin-bottom:0;">
@@ -586,6 +586,15 @@
                                     <input type="text" id="upiId" class="form-input with-prefix">
                                 </div>
                                 <p class="form-hint">Used for direct UPI payments and printed on customer receipts</p>
+                            </div>
+
+                            <!-- UPI Number -->
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" for="upiNumber">UPI Number <span class="optional">(Optional)</span></label>
+                                <div class="input-prefix-wrap">
+                                    <span class="input-prefix"><i data-feather="hash" style="width:14px;height:14px;"></i></span>
+                                    <input type="text" id="upiNumber" class="form-input with-prefix" inputmode="numeric" pattern="[0-9]*" maxlength="20" autocomplete="off">
+                                </div>
                             </div>
 
                             <!-- Payment Note -->

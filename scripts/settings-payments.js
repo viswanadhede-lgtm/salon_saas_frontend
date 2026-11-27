@@ -171,6 +171,7 @@ export async function loadPaymentSettings(branchIdOverride = null) {
             setChecked('pmOnline', data.online_payment_enabled ?? false);
 
             setVal('upiId', data.upi_id || '');
+            setVal('upiNumber', data.upi_number || '');
             setVal('paymentNote', data.payment_note || '');
             setVal('defaultPaymentMethod', data.default_payment_method || 'cash');
 
@@ -185,6 +186,7 @@ export async function loadPaymentSettings(branchIdOverride = null) {
             setChecked('pmCard', true);
             setChecked('pmOnline', false);
             setVal('upiId', '');
+            setVal('upiNumber', '');
             setVal('paymentNote', '');
             setVal('defaultPaymentMethod', 'cash');
             currentQrUrl = null;
@@ -202,6 +204,7 @@ export async function loadPaymentSettings(branchIdOverride = null) {
             cards_enabled: getChecked('pmCard', true),
             online_payment_enabled: getChecked('pmOnline', false),
             upi_id: getVal('upiId'),
+            upi_number: getVal('upiNumber'),
             upi_qr_code_url: currentQrUrl,
             payment_note: getVal('paymentNote'),
             default_payment_method: getVal('defaultPaymentMethod') || 'cash'
@@ -282,6 +285,12 @@ export async function savePaymentSettings() {
         }
 
         // 2. Single Atomic Upsert using composite unique constraint (company_id, branch_id)
+        const rawUpiNumber = getVal('upiNumber');
+        const cleanUpiNumber = rawUpiNumber.replace(/\D/g, '');
+        if (rawUpiNumber && rawUpiNumber !== cleanUpiNumber) {
+            throw new Error('UPI number must contain numbers only.');
+        }
+
         const now = new Date().toISOString();
         const payload = {
             company_id: companyId,
@@ -291,6 +300,7 @@ export async function savePaymentSettings() {
             cards_enabled: getChecked('pmCard', true),
             online_payment_enabled: getChecked('pmOnline', false),
             upi_id: getVal('upiId') || null,
+            upi_number: cleanUpiNumber || null,
             upi_qr_code_url: qrUrl || null,
             payment_note: getVal('paymentNote') || null,
             default_payment_method: getVal('defaultPaymentMethod') || 'cash',
@@ -307,7 +317,8 @@ export async function savePaymentSettings() {
             p_upi_id:                 payload.upi_id,
             p_upi_qr_code_url:        payload.upi_qr_code_url,
             p_payment_note:           payload.payment_note,
-            p_default_payment_method: payload.default_payment_method
+            p_default_payment_method: payload.default_payment_method,
+            p_upi_number:             payload.upi_number
         });
         if (upsertErr || (rpcRes && rpcRes.success === false)) {
             if (newlyUploadedPath) {
@@ -435,6 +446,17 @@ function setupEventListeners() {
             if (file) handleQrFileSelect(file);
         });
     }
+
+    const upiNumberInput = document.getElementById('upiNumber');
+    if (upiNumberInput) {
+        upiNumberInput.addEventListener('input', (e) => {
+            const digitsOnly = e.target.value.replace(/\D/g, '');
+            if (e.target.value !== digitsOnly) {
+                e.target.value = digitsOnly;
+            }
+        });
+    }
+
     initBranchSwitcher();
 }
 
