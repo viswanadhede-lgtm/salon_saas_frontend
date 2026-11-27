@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const uid = u.user_id || u.id;
             const opt = document.createElement('option');
             opt.value = uid;
-            opt.textContent = `${u.name || 'User'} (${u.role_name || 'Staff'})`;
+            opt.textContent = u.name || 'User';
             if (selectedManagerId && String(selectedManagerId) === String(uid)) {
                 opt.selected = true;
             }
