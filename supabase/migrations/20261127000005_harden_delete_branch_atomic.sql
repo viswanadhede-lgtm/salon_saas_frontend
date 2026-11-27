@@ -71,7 +71,7 @@ BEGIN
     FROM app.bookings
     WHERE branch_id  = p_branch_id
       AND company_id = p_company_id
-      AND status IN ('pending', 'confirmed', 'in_service');
+      AND booking_status IN ('pending', 'confirmed', 'in_service'); -- app.bookings uses booking_status (not status)
 
     IF v_booking_count > 0 THEN
         RETURN jsonb_build_object(
