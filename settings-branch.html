@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="submenu.css">
     <link rel="stylesheet" href="styles/global-layout.css">
     <link rel="stylesheet" href="settings-shared.css">
-    <link rel="stylesheet" href="invoice-designer.css">
+
     <script src="https://unpkg.com/feather-icons"></script>
     <style>
         .hover-lift { transition: transform 0.2s, box-shadow 0.2s; }
@@ -87,6 +87,28 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* Invoice print-format cards */
+        .inv-format-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.9rem 1rem;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            position: relative;
+            user-select: none;
+        }
+        .inv-format-card:hover { border-color: #93c5fd; background: #f8faff; }
+        .inv-format-card.selected { border-color: #3b82f6; background: #eff6ff; }
+        .inv-format-icon { color: #3b82f6; flex-shrink: 0; }
+        .inv-format-body { flex: 1; min-width: 0; }
+        .inv-format-label { font-size: 0.93rem; font-weight: 600; color: #0f172a; }
+        .inv-format-desc  { font-size: 0.8rem; color: #64748b; margin-top: 2px; }
+        .inv-format-check { color: #3b82f6; flex-shrink: 0; }
+
 
         /* Tab 1: Branch Details Form & Danger Zone */
         .branch-form-grid {
@@ -448,85 +470,28 @@
             <!-- ============================================================ -->
             <div class="settings-tab-pane" id="pane-invoice" role="tabpanel" aria-labelledby="tab-invoice" hidden>
                 
-            <div class="invoice-hub-container" style="max-width:100%;margin:0;padding:0;">
-                <a href="settings-invoice-common.html" class="common-invoice-hero-card">
-                    <div class="common-hero-icon">
-                        <i data-feather="file-text"></i>
-                    </div>
-                    <div class="common-hero-body">
-                        <div class="common-hero-title-row">
-                            <h2 class="common-hero-title">Common Invoice</h2>
-                            <span class="common-hero-badge">Base Template</span>
-                        </div>
-                        <p class="common-hero-desc">
-                            Shared invoice branding, numbering, tax, header and footer settings applied across all invoices.
-                        </p>
-                        <div class="common-hero-action">
-                            <span>Configure Common Template</span>
-                            <i data-feather="arrow-right" style="width:16px;height:16px;"></i>
-                        </div>
-                    </div>
-                </a>
-
-                <!-- Bottom 3-Card Row: Revenue Sources -->
-                <div class="invoice-sources-grid">
-                    <!-- Card 2: Booking Invoice -->
-                    <a href="settings-invoice-booking.html" class="source-card">
-                        <div class="source-card-header">
-                            <div class="source-card-icon icon-booking">
-                                <i data-feather="calendar"></i>
-                            </div>
-                            <div>
-                                <h3 class="source-card-title">Booking Invoice</h3>
-                            </div>
-                        </div>
-                        <p class="source-card-desc">
-                            Appointment invoices &bull; Service duration, stylist details, notes, and appointment schedule.
-                        </p>
-                        <div class="source-card-footer">
-                            <span class="source-card-inherit-tag">Inherits Common</span>
-                            <i data-feather="arrow-right" style="width:16px;height:16px;"></i>
-                        </div>
-                    </a>
-
-                    <!-- Card 3: POS Invoice -->
-                    <a href="settings-invoice-pos.html" class="source-card">
-                        <div class="source-card-header">
-                            <div class="source-card-icon icon-pos">
-                                <i data-feather="shopping-cart"></i>
-                            </div>
-                            <div>
-                                <h3 class="source-card-title">POS Invoice</h3>
-                            </div>
-                        </div>
-                        <p class="source-card-desc">
-                            Products &amp; sales invoices &bull; Product SKU, quantity, unit price, and cashier transaction ID.
-                        </p>
-                        <div class="source-card-footer">
-                            <span class="source-card-inherit-tag">Inherits Common</span>
-                            <i data-feather="arrow-right" style="width:16px;height:16px;"></i>
-                        </div>
-                    </a>
-
-                    <!-- Card 4: Membership Invoice -->
-                    <a href="settings-invoice-membership.html" class="source-card">
-                        <div class="source-card-header">
-                            <div class="source-card-icon icon-membership">
-                                <i data-feather="credit-card"></i>
-                            </div>
-                            <div>
-                                <h3 class="source-card-title">Membership Invoice</h3>
-                            </div>
-                        </div>
-                        <p class="source-card-desc">
-                            Membership invoices &bull; Subscription plan, validity, start date, expiry date, and benefits.
-                        </p>
-                        <div class="source-card-footer">
-                            <span class="source-card-inherit-tag">Inherits Common</span>
-                            <i data-feather="arrow-right" style="width:16px;height:16px;"></i>
-                        </div>
-                    </a>
+            <!-- Invoice Print Format Card -->
+            <div class="sp-card">
+                <div class="sp-card-header">
+                    <h2><i data-feather="printer" style="width:18px;height:18px;color:#3b82f6;"></i> Invoice Settings</h2>
+                    <p>Choose how invoices are printed across bookings, POS, and memberships</p>
                 </div>
+                <div class="sp-card-body">
+                    <p style="font-size:0.85rem;color:#64748b;margin:0 0 1.25rem;">
+                        Your invoice is auto-generated from your branch profile and transaction data.
+                        Just pick your preferred print format below.
+                    </p>
+                    <!-- Format picker cards -->
+                    <div id="invoiceFormatCards" style="display:flex;flex-direction:column;gap:0.75rem;"></div>
+                </div>
+            </div>
+
+            <!-- Invoice Save Bar -->
+            <div class="sp-savebar" id="invoiceSavebar">
+                <button type="button" class="btn btn-secondary" id="btnCancelInvoice">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnSaveInvoice">
+                    <i data-feather="save" style="width:15px;height:15px;"></i> Save
+                </button>
             </div>
 
             </div>
@@ -942,6 +907,7 @@
     <script type="module" src="scripts/settings-hours.js"></script>
     <script type="module" src="scripts/settings-payments.js"></script>
     <script type="module" src="scripts/settings-notifications.js"></script>
+    <script src="scripts/settings-invoice.js"></script>
     <script type="module" src="scripts/settings-branch.js"></script>
 
     <script>

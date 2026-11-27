@@ -99,17 +99,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         savebar?.classList.remove('visible');
     };
 
-    // ── Sync Breadcrumb, Title, Invoice Card Links & Header Switcher ────────
-    function syncInvoiceLinks(branchId) {
-        document.querySelectorAll('#pane-invoice a[href^="settings-invoice-"]').forEach(link => {
-            const baseHref = link.getAttribute('href').split('?')[0];
-            const params = new URLSearchParams();
-            params.set('branch_id', branchId);
-            params.set('from', 'settings-branch');
-            link.setAttribute('href', `${baseHref}?${params.toString()}`);
-        });
-    }
-
     function syncHeaderBranchSelect(branchId) {
         const select = document.getElementById('branchSelect');
         if (!select || !branchId) return;
@@ -229,7 +218,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             loadedBranch = data;
             populateBranchForm(data);
-            syncInvoiceLinks(branchId);
             syncHeaderBranchSelect(branchId);
             applyBranchEditPermission();
 
@@ -525,7 +513,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             pane.hidden = !isSelected;
         });
 
-        if (!window.isDirty || tabId === 'invoice') {
+        if (!window.isDirty) {
             savebar?.classList.remove('visible');
         }
 
@@ -660,7 +648,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ── Initialize Data & Active Tab ────────────────────────────────────────
-    syncInvoiceLinks(currentBranchId);
     await Promise.all([loadCompanyUsers(), loadBranchDetails(currentBranchId)]);
 
     const initialTab = initUrlParams.get('tab');
