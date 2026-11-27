@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const { data, error } = await supabase.schema('shared')
                 .from('users')
-                .select('user_id, id, name, role_name, email')
+                .select('user_id, name, role_name, email')
                 .eq('company_id', companyId)
                 .neq('status', 'deleted');
 
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!select) return;
         select.innerHTML = '<option value="">Unassigned / None</option>';
         companyUsers.forEach(u => {
-            const uid = u.user_id || u.id;
+            const uid = u.user_id;
             const opt = document.createElement('option');
             opt.value = uid;
             opt.textContent = `${u.name || 'User'} (${u.role_name || 'Staff'})`;
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Find assigned manager name
             let managerDisplay = 'Unassigned';
             if (branch.manager_user_id) {
-                const mgr = companyUsers.find(u => String(u.user_id || u.id) === String(branch.manager_user_id));
+                const mgr = companyUsers.find(u => String(u.user_id) === String(branch.manager_user_id));
                 if (mgr) {
                     managerDisplay = mgr.name || 'Assigned';
                 }
