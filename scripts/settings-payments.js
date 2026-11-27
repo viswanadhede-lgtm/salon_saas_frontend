@@ -238,6 +238,8 @@ export async function savePaymentSettings() {
 
     try {
         let qrUrl = currentQrUrl;
+        let pathToDeleteAfterSave = null;
+        let newlyUploadedPath = null;
 
         // 1. Upload new QR file to 'upi-qr-codes' bucket if selected
         if (selectedQrFile) {
@@ -264,26 +266,19 @@ export async function savePaymentSettings() {
                 throw new Error('Failed to get public URL for uploaded QR code.');
             }
 
+            newlyUploadedPath = filePath;
             qrUrl = urlData.publicUrl;
-            currentQrUrl = qrUrl;
 
-            // Delete old QR image from storage if replaced
+            // Mark old QR image for deletion after DB save succeeds
             if (initialQrUrl && initialQrUrl !== qrUrl) {
                 const oldPath = extractStoragePath(initialQrUrl, 'upi-qr-codes');
                 if (oldPath && oldPath !== filePath) {
-                    supabase.storage.from('upi-qr-codes').remove([oldPath]).catch(err => {
-                        console.warn('[settings-payments] Could not delete old QR code file:', err);
-                    });
+                    pathToDeleteAfterSave = oldPath;
                 }
             }
         } else if (initialQrUrl && !currentQrUrl) {
-            // QR was explicitly removed by the user
-            const oldPath = extractStoragePath(initialQrUrl, 'upi-qr-codes');
-            if (oldPath) {
-                supabase.storage.from('upi-qr-codes').remove([oldPath]).catch(err => {
-                    console.warn('[settings-payments] Could not delete removed QR code file:', err);
-                });
-            }
+            // QR was explicitly removed by the user — delete from storage after DB save succeeds
+            pathToDeleteAfterSave = extractStoragePath(initialQrUrl, 'upi-qr-codes');
         }
 
         // 2. Single Atomic Upsert using composite unique constraint (company_id, branch_id)
@@ -314,12 +309,19 @@ export async function savePaymentSettings() {
             p_payment_note:           payload.payment_note,
             p_default_payment_method: payload.default_payment_method
         });
-        if (rpcRes && rpcRes.success === false) {
-            throw new Error(rpcRes.message || 'Failed to save payment settings');
+        if (upsertErr || (rpcRes && rpcRes.success === false)) {
+            if (newlyUploadedPath) {
+                await supabase.storage.from('upi-qr-codes').remove([newlyUploadedPath]);
+            }
+            throw new Error(rpcRes?.message || upsertErr?.message || 'Failed to save payment settings');
         }
 
-        if (upsertErr) {
-            throw new Error(upsertErr.message || 'Failed to save payment settings');
+        // 2b. Clean up removed/replaced QR file from storage now that DB save succeeded
+        if (pathToDeleteAfterSave) {
+            const { error: remErr } = await supabase.storage.from('upi-qr-codes').remove([pathToDeleteAfterSave]);
+            if (remErr) {
+                console.warn('[settings-payments] Could not delete old QR code file:', remErr);
+            }
         }
 
         // 3. Update local caches for POS & billing checkout screens
@@ -331,6 +333,7 @@ export async function savePaymentSettings() {
             localStorage.removeItem(`salon_upi_qr_${companyId}_${branchId}`);
         }
 
+        currentQrUrl = qrUrl;
         selectedQrFile = null;
         initialQrUrl = currentQrUrl;
         showToast('Payment settings saved successfully!', 'success');
