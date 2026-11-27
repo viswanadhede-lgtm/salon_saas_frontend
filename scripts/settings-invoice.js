@@ -253,8 +253,11 @@
                 .maybeSingle();
 
             if (!error && data?.print_format) {
-                currentFormat = data.print_format;
-                savedFormat   = data.print_format;
+                // Sanitize: guard against stale jsonb-string values like '{"layout":"thermal_80"}'
+                const raw = data.print_format;
+                const valid = Object.keys(FORMATS); // ['a4', 'thermal_80', 'thermal_58']
+                currentFormat = valid.includes(raw) ? raw : 'a4';
+                savedFormat   = currentFormat;
             }
         } catch { /* fall back to default */ }
         renderFormatCards();
