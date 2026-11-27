@@ -62,7 +62,7 @@
             </tr>`).join('');
 
         return `
-        <div style="width:100%;max-width:520px;background:#fff;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,0.10);font-family:'Inter',sans-serif;font-size:12px;color:#1e293b;overflow:hidden;">
+        <div style="width:100%;background:#fff;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,0.10);font-family:'Inter',sans-serif;font-size:12px;color:#1e293b;overflow:hidden;">
             <!-- Header -->
             <div style="background:#1e3a8a;padding:20px 24px 16px;color:#fff;">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;">
