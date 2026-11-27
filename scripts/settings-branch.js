@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (!error && data) {
                 companyUsers = data;
-                populateManagerDropdown(loadedBranch?.manager_user_id || '');
+                populateManagerDropdown(loadedBranch?.manager_id || '');
             }
         } catch (err) {
             console.warn('[settings-branch] Error loading company users:', err);
@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         setVal('branchLatitude', branch.latitude != null ? branch.latitude : '');
         setVal('branchLongitude', branch.longitude != null ? branch.longitude : '');
 
-        populateManagerDropdown(branch.manager_user_id || '');
+        populateManagerDropdown(branch.manager_id || '');
 
         const statusToggle = document.getElementById('branchStatusToggle');
         if (statusToggle) {

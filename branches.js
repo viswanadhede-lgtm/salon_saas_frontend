@@ -136,8 +136,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Find assigned manager name
             let managerDisplay = 'Unassigned';
-            if (branch.manager_user_id) {
-                const mgr = companyUsers.find(u => String(u.user_id) === String(branch.manager_user_id));
+            if (branch.manager_id) {
+                const mgr = companyUsers.find(u => String(u.user_id) === String(branch.manager_id));
                 if (mgr) {
                     managerDisplay = mgr.name || 'Assigned';
                 }
@@ -277,7 +277,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             setVal('branchLatitude', branch.latitude != null ? branch.latitude : '');
             setVal('branchLongitude', branch.longitude != null ? branch.longitude : '');
 
-            populateManagerDropdown(branch.manager_user_id || '');
+            populateManagerDropdown(branch.manager_id || '');
             document.getElementById('branchStatusToggle').checked = (branch.status === 'active');
 
         } else {
