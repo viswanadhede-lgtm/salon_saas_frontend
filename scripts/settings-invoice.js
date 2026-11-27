@@ -168,14 +168,10 @@
 
     function renderPreview(format) {
         const container = document.getElementById('invoiceLivePreview');
-        const label     = document.getElementById('invPreviewLabel');
         if (!container) return;
 
-        const f = FORMATS[format] || FORMATS.a4;
-        if (label) label.textContent = f.previewLabel;
-
         let html = '';
-        if (format === 'a4')         html = renderA4(SAMPLE);
+        if (format === 'a4')              html = renderA4(SAMPLE);
         else if (format === 'thermal_80') html = renderThermal(SAMPLE, 80);
         else if (format === 'thermal_58') html = renderThermal(SAMPLE, 58);
 

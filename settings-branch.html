@@ -121,57 +121,7 @@
             .inv-preview-col { display: none; }
         }
         .inv-picker-col { min-width: 0; }
-        .inv-preview-col { min-width: 0; }
-
-        /* Preview panel */
-        .inv-preview-wrap {
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            overflow: hidden;
-            background: #f8fafc;
-            position: sticky;
-            top: 80px;
-        }
-        .inv-preview-topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.65rem 1rem;
-            background: #fff;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .inv-preview-badge {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #22c55e;
-            letter-spacing: 0.03em;
-        }
-        .inv-pulse-dot {
-            width: 7px; height: 7px;
-            border-radius: 50%;
-            background: #22c55e;
-            animation: pulse 1.8s ease-in-out infinite;
-        }
-        @keyframes pulse {
-            0%,100% { opacity:1; transform:scale(1); }
-            50%      { opacity:0.4; transform:scale(0.75); }
-        }
-        .inv-preview-type {
-            font-size: 0.75rem;
-            color: #64748b;
-            font-weight: 500;
-        }
-        .inv-preview-scroll {
-            max-height: 540px;
-            overflow-y: auto;
-            padding: 1.25rem;
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-        }
+        .inv-preview-col { min-width: 0; position: sticky; top: 80px; }
 
 
         /* Tab 1: Branch Details Form & Danger Zone */
@@ -565,15 +515,7 @@
 
                 <!-- RHS: Live Preview (60%) -->
                 <div class="inv-preview-col">
-                    <div class="inv-preview-wrap">
-                        <div class="inv-preview-topbar">
-                            <span class="inv-preview-badge"><span class="inv-pulse-dot"></span> Live Preview</span>
-                            <span id="invPreviewLabel" class="inv-preview-type">A4 Invoice Sample</span>
-                        </div>
-                        <div class="inv-preview-scroll">
-                            <div id="invoiceLivePreview"></div>
-                        </div>
-                    </div>
+                    <div id="invoiceLivePreview"></div>
                 </div>
 
             </div>
