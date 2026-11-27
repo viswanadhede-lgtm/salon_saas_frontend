@@ -598,37 +598,35 @@
                     <!-- Two-column layout: QR left (45%) | UPI ID + Payment Note right (55%) -->
                     <div style="display:flex;gap:2rem;align-items:flex-start;">
 
-                        <!-- LEFT: UPI QR Code -->
-                        <div style="flex:0 0 45%;">
-                            <label class="form-label">UPI QR Code <span class="optional">(Optional)</span></label>
-                            <div class="qr-upload-area">
-                                <div class="qr-preview-box" id="qrPreviewBox">
-                                    <svg id="qrPlaceholderSvg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="qr-placeholder-icon">
-                                        <rect x="3" y="3" width="7" height="7"></rect>
-                                        <rect x="14" y="3" width="7" height="7"></rect>
-                                        <rect x="14" y="14" width="7" height="7"></rect>
-                                        <rect x="3" y="14" width="7" height="7"></rect>
-                                        <path d="M7 7h.01"></path>
-                                        <path d="M17 7h.01"></path>
-                                        <path d="M7 17h.01"></path>
-                                        <path d="M17 17h.01"></path>
-                                    </svg>
-                                    <img id="qrPreviewImg" src="" alt="UPI QR Code" style="display:none;">
-                                </div>
-                                <div class="qr-upload-info">
-                                    <h4>UPI Scanner QR Code</h4>
-                                    <p>Upload your UPI QR code scanner image (GPay, PhonePe, Paytm, BHIM). Displayed on invoices and POS checkout screen.</p>
-                                    <div class="upload-btn-group">
-                                        <label for="qrFileInput" class="btn-upload-qr">
-                                            <i data-feather="upload" style="width:14px;height:14px;"></i>
-                                            Upload QR Code
-                                        </label>
-                                        <input type="file" id="qrFileInput" accept="image/*" style="display:none;">
-                                        <button type="button" class="btn-remove-qr" id="btnRemoveQr" style="display:none;" onclick="removeQrCode()">
-                                            <i data-feather="trash-2" style="width:13px;height:13px;"></i> Remove
-                                        </button>
-                                    </div>
-                                </div>
+                        <!-- LEFT: UPI QR Code — big image box + buttons below -->
+                        <div style="flex:0 0 45%;display:flex;flex-direction:column;align-items:center;">
+                            <label class="form-label" style="align-self:flex-start;">UPI QR Code <span class="optional">(Optional)</span></label>
+
+                            <!-- Big QR preview box -->
+                            <div id="qrPreviewBox" style="width:100%;aspect-ratio:1/1;border:2px dashed #cbd5e1;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;">
+                                <svg id="qrPlaceholderSvg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="7" height="7"></rect>
+                                    <rect x="14" y="3" width="7" height="7"></rect>
+                                    <rect x="14" y="14" width="7" height="7"></rect>
+                                    <rect x="3" y="14" width="7" height="7"></rect>
+                                    <path d="M7 7h.01"></path>
+                                    <path d="M17 7h.01"></path>
+                                    <path d="M7 17h.01"></path>
+                                    <path d="M17 17h.01"></path>
+                                </svg>
+                                <img id="qrPreviewImg" src="" alt="UPI QR Code" style="display:none;width:100%;height:100%;object-fit:contain;">
+                            </div>
+
+                            <!-- Buttons below the box -->
+                            <div style="display:flex;gap:0.75rem;margin-top:0.875rem;justify-content:center;">
+                                <label for="qrFileInput" class="btn-upload-qr">
+                                    <i data-feather="upload" style="width:14px;height:14px;"></i>
+                                    Upload QR Code
+                                </label>
+                                <input type="file" id="qrFileInput" accept="image/*" style="display:none;">
+                                <button type="button" class="btn-remove-qr" id="btnRemoveQr" style="display:none;" onclick="removeQrCode()">
+                                    <i data-feather="trash-2" style="width:13px;height:13px;"></i> Remove
+                                </button>
                             </div>
                         </div>
 
