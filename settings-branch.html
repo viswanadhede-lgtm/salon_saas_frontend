@@ -685,9 +685,8 @@
             <!-- TAB PANE 5: NOTIFICATION SETTINGS                            -->
             <!-- ============================================================ -->
             <div class="settings-tab-pane" id="pane-notifications" role="tabpanel" aria-labelledby="tab-notifications" hidden>
-                <!-- Header card -->
-                <div class="sp-card" id="notificationAccordionGroup" data-panel="system">
-                <div class="sp-card-header" style="border-bottom:none;">
+                <div class="sp-card notif-top-panel open" id="notificationAccordionGroup" data-panel="system">
+                <div class="sp-card-header notif-top-header" data-panel="system">
                     <div style="display:flex;align-items:center;gap:14px;">
                         <div class="ah-icon-wrap" style="background:#eff6ff;color:#3b82f6;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                             <i data-feather="bell"></i>
@@ -698,10 +697,6 @@
                         </div>
                     </div>
                 </div>
-                </div><!-- /header card -->
-
-                <!-- Body card -->
-                <div class="sp-card">
                 <div class="notif-panel-body">
 
                 <!-- Bookings -->
@@ -906,7 +901,7 @@
                     </div>
                 </div>
                 </div><!-- /notif-panel-body -->
-            </div><!-- /body card -->
+            </div><!-- /card system -->
             </div>
 
             <!-- Unified Floating Save Bar -->
