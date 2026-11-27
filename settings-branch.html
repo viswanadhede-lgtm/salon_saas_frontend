@@ -109,6 +109,70 @@
         .inv-format-desc  { font-size: 0.8rem; color: #64748b; margin-top: 2px; }
         .inv-format-check { color: #3b82f6; flex-shrink: 0; }
 
+        /* Invoice 2-column designer layout */
+        .inv-designer-layout {
+            display: grid;
+            grid-template-columns: 40% 60%;
+            gap: 1.5rem;
+            align-items: start;
+        }
+        @media (max-width: 860px) {
+            .inv-designer-layout { grid-template-columns: 1fr; }
+            .inv-preview-col { display: none; }
+        }
+        .inv-picker-col { min-width: 0; }
+        .inv-preview-col { min-width: 0; }
+
+        /* Preview panel */
+        .inv-preview-wrap {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #f8fafc;
+            position: sticky;
+            top: 80px;
+        }
+        .inv-preview-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.65rem 1rem;
+            background: #fff;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .inv-preview-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #22c55e;
+            letter-spacing: 0.03em;
+        }
+        .inv-pulse-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: #22c55e;
+            animation: pulse 1.8s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%,100% { opacity:1; transform:scale(1); }
+            50%      { opacity:0.4; transform:scale(0.75); }
+        }
+        .inv-preview-type {
+            font-size: 0.75rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .inv-preview-scroll {
+            max-height: 540px;
+            overflow-y: auto;
+            padding: 1.25rem;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
 
         /* Tab 1: Branch Details Form & Danger Zone */
         .branch-form-grid {
@@ -470,28 +534,48 @@
             <!-- ============================================================ -->
             <div class="settings-tab-pane" id="pane-invoice" role="tabpanel" aria-labelledby="tab-invoice" hidden>
                 
-            <!-- Invoice Print Format Card -->
-            <div class="sp-card">
-                <div class="sp-card-header">
-                    <h2><i data-feather="printer" style="width:18px;height:18px;color:#3b82f6;"></i> Invoice Settings</h2>
-                    <p>Choose how invoices are printed across bookings, POS, and memberships</p>
-                </div>
-                <div class="sp-card-body">
-                    <p style="font-size:0.85rem;color:#64748b;margin:0 0 1.25rem;">
-                        Your invoice is auto-generated from your branch profile and transaction data.
-                        Just pick your preferred print format below.
-                    </p>
-                    <!-- Format picker cards -->
-                    <div id="invoiceFormatCards" style="display:flex;flex-direction:column;gap:0.75rem;"></div>
-                </div>
-            </div>
+            <!-- Invoice Settings — 2-column: LHS picker (40%) | RHS live preview (60%) -->
+            <div class="inv-designer-layout">
 
-            <!-- Invoice Save Bar -->
-            <div class="sp-savebar" id="invoiceSavebar">
-                <button type="button" class="btn btn-secondary" id="btnCancelInvoice">Cancel</button>
-                <button type="button" class="btn btn-primary" id="btnSaveInvoice">
-                    <i data-feather="save" style="width:15px;height:15px;"></i> Save
-                </button>
+                <!-- LHS: Format Picker (40%) -->
+                <div class="inv-picker-col">
+                    <div class="sp-card" style="margin-bottom:0;">
+                        <div class="sp-card-header">
+                            <h2><i data-feather="printer" style="width:18px;height:18px;color:#3b82f6;"></i> Invoice Settings</h2>
+                            <p>Choose how invoices are printed across bookings, POS, and memberships</p>
+                        </div>
+                        <div class="sp-card-body">
+                            <p style="font-size:0.82rem;color:#64748b;margin:0 0 1.25rem;line-height:1.5;">
+                                Your invoice is auto-generated from your branch profile and transaction data.
+                                Pick your preferred print format — the preview updates live.
+                            </p>
+                            <!-- Format picker cards -->
+                            <div id="invoiceFormatCards" style="display:flex;flex-direction:column;gap:0.75rem;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Save Bar (inside LHS col so it doesn't span full width) -->
+                    <div class="sp-savebar" id="invoiceSavebar" style="position:static;margin-top:1rem;padding:0.75rem 0;border-top:1px solid #f1f5f9;border-radius:0;box-shadow:none;background:transparent;justify-content:flex-end;">
+                        <button type="button" class="btn btn-secondary" id="btnCancelInvoice">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="btnSaveInvoice">
+                            <i data-feather="save" style="width:15px;height:15px;"></i> Save
+                        </button>
+                    </div>
+                </div>
+
+                <!-- RHS: Live Preview (60%) -->
+                <div class="inv-preview-col">
+                    <div class="inv-preview-wrap">
+                        <div class="inv-preview-topbar">
+                            <span class="inv-preview-badge"><span class="inv-pulse-dot"></span> Live Preview</span>
+                            <span id="invPreviewLabel" class="inv-preview-type">A4 Invoice Sample</span>
+                        </div>
+                        <div class="inv-preview-scroll">
+                            <div id="invoiceLivePreview"></div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             </div>
