@@ -66,24 +66,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.querySelectorAll('.nav-item.active').forEach(li => li.classList.add('open'));
 
-    // ── Top-level accordion (single card, kept for future extensibility) ─────
-    const topPanels = document.querySelectorAll('.notif-top-panel');
-    document.querySelectorAll('.notif-top-header').forEach(header => {
-        header.addEventListener('click', () => {
-            const currentPanel = header.closest('.notif-top-panel');
-            if (!currentPanel) return;
-            const isOpen = currentPanel.classList.contains('open');
-            topPanels.forEach(p => p.classList.remove('open'));
-            if (!isOpen) {
-                currentPanel.querySelectorAll('.accordion-item').forEach(item => {
-                    item.classList.remove('expanded');
-                });
-                currentPanel.classList.add('open');
-                if (typeof feather !== 'undefined') feather.replace();
-            }
-        });
-    });
-
     // ── Sub-category accordion expand / collapse ─────────────────────────────
     document.querySelectorAll('.accordion-header').forEach(header => {
         header.addEventListener('click', () => {

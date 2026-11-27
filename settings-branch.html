@@ -685,22 +685,8 @@
             <!-- TAB PANE 5: NOTIFICATION SETTINGS                            -->
             <!-- ============================================================ -->
             <div class="settings-tab-pane" id="pane-notifications" role="tabpanel" aria-labelledby="tab-notifications" hidden>
-                <div class="sp-card notif-top-panel" id="notificationAccordionGroup" data-panel="system">
-                <div class="sp-card-header notif-top-header" data-panel="system">
-                    <div style="display:flex;align-items:center;gap:14px;">
-                        <div class="ah-icon-wrap" style="background:#eff6ff;color:#3b82f6;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                            <i data-feather="bell"></i>
-                        </div>
-                        <div>
-                            <h2 style="font-size:1rem;font-weight:650;color:#0f172a;margin:0 0 3px;">System Notifications</h2>
-                            <p style="font-size:0.83rem;color:#64748b;margin:0;">Internal alerts and business activity updates</p>
-                        </div>
-                    </div>
-                    <i data-feather="chevron-down" class="top-panel-chevron"></i>
-                </div>
-                <div class="notif-panel-body">
-
                 <!-- Bookings -->
+                <div class="sp-card" style="margin-bottom:0.75rem;">
                 <div class="accordion-item" data-category="bookings">
                     <div class="accordion-header">
                         <div class="ah-left">
@@ -728,9 +714,11 @@
                             <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_booking_noshow"></div><div class="se-text"><div class="se-title">No-Show</div></div></label>
                         </div>
                     </div>
-                </div>
+                </div><!-- /accordion-item bookings -->
+                </div><!-- /sp-card -->
 
                 <!-- Customers -->
+                <div class="sp-card" style="margin-bottom:0.75rem;">
                 <div class="accordion-item" data-category="customers">
                     <div class="accordion-header">
                         <div class="ah-left">
@@ -755,9 +743,11 @@
                             <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_customer_deleted"></div><div class="se-text"><div class="se-title">Customer Deleted</div></div></label>
                         </div>
                     </div>
-                </div>
+                </div><!-- /accordion-item customers -->
+                </div><!-- /sp-card -->
 
                 <!-- Staff -->
+                <div class="sp-card" style="margin-bottom:0.75rem;">
                 <div class="accordion-item" data-category="staff">
                     <div class="accordion-header">
                         <div class="ah-left">
@@ -783,9 +773,11 @@
                             <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_staff_booking_assigned" checked></div><div class="se-text"><div class="se-title">New Booking Assigned to Staff</div></div></label>
                         </div>
                     </div>
-                </div>
+                </div><!-- /accordion-item staff -->
+                </div><!-- /sp-card -->
 
                 <!-- Services -->
+                <div class="sp-card" style="margin-bottom:0.75rem;">
                 <div class="accordion-item" data-category="services">
                     <div class="accordion-header">
                         <div class="ah-left">
@@ -816,9 +808,11 @@
                             <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_service_category_deleted"></div><div class="se-text"><div class="se-title">Service Category Deleted</div></div></label>
                         </div>
                     </div>
-                </div>
+                </div><!-- /accordion-item services -->
+                </div><!-- /sp-card -->
 
                 <!-- Sales / POS -->
+                <div class="sp-card" style="margin-bottom:0.75rem;">
                 <div class="accordion-item" data-category="pos">
                     <div class="accordion-header">
                         <div class="ah-left">
@@ -843,9 +837,11 @@
                             <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_pos_customer_added"></div><div class="se-text"><div class="se-title">New Customer Added via POS</div></div></label>
                         </div>
                     </div>
-                </div>
+                </div><!-- /accordion-item pos -->
+                </div><!-- /sp-card -->
 
                 <!-- Payments -->
+                <div class="sp-card" style="margin-bottom:0.75rem;">
                 <div class="accordion-item" data-category="payments">
                     <div class="accordion-header">
                         <div class="ah-left">
@@ -871,9 +867,11 @@
                             <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_payment_overdue"></div><div class="se-text"><div class="se-title">Overdue Payment Alert</div></div></label>
                         </div>
                     </div>
-                </div>
+                </div><!-- /accordion-item payments -->
+                </div><!-- /sp-card -->
 
                 <!-- Marketing -->
+                <div class="sp-card" style="margin-bottom:0.75rem;">
                 <div class="accordion-item" data-category="marketing">
                     <div class="accordion-header">
                         <div class="ah-left">
@@ -900,10 +898,9 @@
                             <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_marketing_membership_expired_renewed"></div><div class="se-text"><div class="se-title">Membership Expired / Renewed</div></div></label>
                         </div>
                     </div>
-                </div>
-                </div><!-- /notif-panel-body -->
-            </div><!-- /card system -->
-            </div>
+                </div><!-- /accordion-item marketing -->
+                </div><!-- /sp-card -->
+            </div><!-- /pane-notifications -->
 
             <!-- Unified Floating Save Bar -->
             <div class="sp-savebar" id="savebar">
