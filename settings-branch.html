@@ -535,60 +535,7 @@
             <!-- TAB PANE 4: PAYMENTS SETTINGS                                -->
             <!-- ============================================================ -->
             <div class="settings-tab-pane" id="pane-payments" role="tabpanel" aria-labelledby="tab-payments" hidden>
-                <!-- Section 1: Accepted Payment Methods -->
-            <div class="sp-card">
-                <div class="sp-card-header">
-                    <h2><i data-feather="credit-card" style="width:18px;height:18px;color:#3b82f6;"></i> Accepted Payment Methods</h2>
-                    <p>Choose the payment methods your business accepts</p>
-                </div>
-                <div class="sp-card-body">
-                    <div class="toggle-row">
-                        <div>
-                            <div class="toggle-label">Cash</div>
-                            <div class="toggle-hint">Accept cash payments at the counter</div>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="pmCash" checked>
-                            <span class="toggle-track"></span>
-                        </label>
-                    </div>
-
-                    <div class="toggle-row">
-                        <div>
-                            <div class="toggle-label">UPI</div>
-                            <div class="toggle-hint">Accept payments via GPay, PhonePe, Paytm, QR, etc.</div>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="pmUpi" checked>
-                            <span class="toggle-track"></span>
-                        </label>
-                    </div>
-
-                    <div class="toggle-row">
-                        <div>
-                            <div class="toggle-label">Cards (Debit / Credit)</div>
-                            <div class="toggle-hint">Accept card payments via POS card terminal</div>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="pmCard" checked>
-                            <span class="toggle-track"></span>
-                        </label>
-                    </div>
-
-                    <div class="toggle-row">
-                        <div>
-                            <div class="toggle-label">Online Payment (Razorpay / Stripe)</div>
-                            <div class="toggle-hint">Accept payments via the online booking page</div>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="pmOnline">
-                            <span class="toggle-track"></span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Section 2: Payment Details -->
+                <!-- Section 1: Payment Details -->
             <div class="sp-card">
                 <div class="sp-card-header">
                     <h2><i data-feather="file-text" style="width:18px;height:18px;color:#3b82f6;"></i> Payment Details</h2>
@@ -648,6 +595,59 @@
                             </div>
 
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Accepted Payment Methods -->
+            <div class="sp-card">
+                <div class="sp-card-header">
+                    <h2><i data-feather="credit-card" style="width:18px;height:18px;color:#3b82f6;"></i> Accepted Payment Methods</h2>
+                    <p>Choose the payment methods your business accepts</p>
+                </div>
+                <div class="sp-card-body">
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">Cash</div>
+                            <div class="toggle-hint">Accept cash payments at the counter</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="pmCash" checked>
+                            <span class="toggle-track"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">UPI</div>
+                            <div class="toggle-hint">Accept payments via GPay, PhonePe, Paytm, QR, etc.</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="pmUpi" checked>
+                            <span class="toggle-track"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">Cards (Debit / Credit)</div>
+                            <div class="toggle-hint">Accept card payments via POS card terminal</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="pmCard" checked>
+                            <span class="toggle-track"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">Online Payment (Razorpay / Stripe)</div>
+                            <div class="toggle-hint">Accept payments via the online booking page</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="pmOnline">
+                            <span class="toggle-track"></span>
+                        </label>
                     </div>
                 </div>
             </div>
