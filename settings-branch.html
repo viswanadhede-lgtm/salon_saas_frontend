@@ -109,19 +109,130 @@
         .inv-format-desc  { font-size: 0.8rem; color: #64748b; margin-top: 2px; }
         .inv-format-check { color: #3b82f6; flex-shrink: 0; }
 
+        .inv-format-card:has(input:focus-visible) {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
+        }
+        .inv-visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip-path: inset(50%);
+            white-space: nowrap;
+            border: 0;
+        }
+
         /* Invoice 2-column designer layout */
         .inv-designer-layout {
             display: grid;
-            grid-template-columns: 40% 60%;
+            grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
             gap: 1.5rem;
             align-items: start;
         }
-        @media (max-width: 860px) {
-            .inv-designer-layout { grid-template-columns: 1fr; }
-            .inv-preview-col { display: none; }
+        .inv-picker-col { min-inline-size: 0; }
+        .inv-preview-col {
+            min-inline-size: 0;
+            position: sticky;
+            top: 20px;
         }
-        .inv-picker-col { min-width: 0; }
-        .inv-preview-col { min-width: 0; position: sticky; top: 80px; display: flex; justify-content: flex-end; overflow: hidden; }
+        @media (max-width: 920px) {
+            .inv-designer-layout { grid-template-columns: 1fr; }
+            .inv-preview-col { position: static; }
+        }
+
+        /* RHS Preview Box */
+        .inv-preview-box {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        }
+        .inv-preview-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.65rem 1.1rem 0;
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .inv-source-tabs {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            overflow-x: auto;
+            scrollbar-width: none;
+            min-inline-size: 0;
+        }
+        .inv-source-tabs::-webkit-scrollbar { display: none; }
+        .inv-source-tab {
+            position: relative;
+            flex: none;
+            background: transparent;
+            border: none;
+            padding: 0.55rem 0.85rem 0.72rem;
+            font-family: inherit;
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            border-radius: 6px 6px 0 0;
+            white-space: nowrap;
+            transition: color 0.15s, background-color 0.15s;
+        }
+        .inv-source-tab:hover {
+            color: #0f172a;
+            background: #f8fafc;
+        }
+        .inv-source-tab:focus-visible {
+            outline: 2px solid #2563eb;
+            outline-offset: -2px;
+        }
+        .inv-source-tab[aria-selected="true"] {
+            color: #2563eb;
+        }
+        .inv-source-tab[aria-selected="true"]::after {
+            content: "";
+            position: absolute;
+            inset-inline: 0.35rem;
+            inset-block-end: 0;
+            border-block-end: 2.5px solid #2563eb;
+        }
+        .inv-format-pill {
+            flex-shrink: 0;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #475569;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 0.22rem 0.6rem;
+            border-radius: 999px;
+            margin-bottom: 0.55rem;
+            white-space: nowrap;
+        }
+        .inv-preview-stage {
+            background: #f8fafc;
+            padding: 1rem 1.25rem;
+            display: flex;
+            justify-content: center;
+            justify-content: safe center;
+            align-items: flex-start;
+            max-block-size: min(620px, calc(100dvh - 210px));
+            overflow-y: auto;
+            overflow-x: auto;
+            scrollbar-gutter: stable;
+            overscroll-behavior: contain;
+        }
+        #invoiceLivePreview {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            justify-content: safe center;
+        }
 
 
         /* Tab 1: Branch Details Form & Danger Zone */
@@ -513,9 +624,21 @@
                     </div>
                 </div>
 
-                <!-- RHS: Live Preview (60%) -->
+                <!-- RHS: Live Preview Box (60%) -->
                 <div class="inv-preview-col">
-                    <div id="invoiceLivePreview"></div>
+                    <div class="inv-preview-box">
+                        <div class="inv-preview-topbar">
+                            <div class="inv-source-tabs" id="invSourceTabs" role="tablist" aria-label="Revenue source invoice previews">
+                                <button type="button" class="inv-source-tab" id="invSrcTab-bookings" role="tab" data-source="bookings" aria-selected="true">Bookings</button>
+                                <button type="button" class="inv-source-tab" id="invSrcTab-products" role="tab" data-source="products" aria-selected="false" tabindex="-1">Products Sale</button>
+                                <button type="button" class="inv-source-tab" id="invSrcTab-memberships" role="tab" data-source="memberships" aria-selected="false" tabindex="-1">Memberships Sale</button>
+                            </div>
+                            <span class="inv-format-pill" id="invPreviewFormatBadge">A4 Invoice</span>
+                        </div>
+                        <div class="inv-preview-stage">
+                            <div id="invoiceLivePreview" role="tabpanel" aria-labelledby="invSrcTab-bookings" tabindex="0"></div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
