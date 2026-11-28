@@ -172,7 +172,7 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
             const uBranch = document.getElementById('uBranch');
             if (uBranch && bData) {
                 availableBranches = bData;
-                uBranch.innerHTML = '<option value="" disabled selected>Select a branch</option><option value="all">All Branches / Remote</option>';
+                uBranch.innerHTML = '<option value="" disabled selected>Select a branch</option>';
                 bData.forEach(b => {
                     const opt = document.createElement('option');
                     opt.value = b.branch_id;
@@ -253,13 +253,11 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
             const roleDisplay = roleObj ? roleObj.role_name : (u.role_name || 'Staff');
             const roleStyle = ROLES[roleDisplay] || ROLES['Staff'];
 
-            // Find branch name
-            let branchDisplay = 'Unknown Branch';
-            if (!u.branch_id || String(u.branch_id) === 'all') {
-                branchDisplay = 'All Branches';
-            } else {
+            // Find branch name from loaded branches
+            let branchDisplay = '—';
+            if (u.branch_id) {
                 const branchObj = availableBranches.find(b => String(b.branch_id) === String(u.branch_id));
-                if (branchObj) branchDisplay = branchObj.branch_name;
+                branchDisplay = branchObj ? branchObj.branch_name : 'Unknown Branch';
             }
 
             const isActive  = u.status === 'active';
@@ -387,7 +385,7 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
                 const rObj = availableRoles.find(r => String(r.role_id) === String(user.role_id));
                 const roleName = rObj ? rObj.role_name : (user.role_name || null);
 
-                const branchId = (!user.branch_id || user.branch_id === 'all') ? null : user.branch_id;
+                const branchId = user.branch_id || null;
 
                 const { data: rpcData, error } = await supabase.rpc('update_user_atomic', {
                     p_company_id: getCompanyId(),
@@ -486,10 +484,11 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
             document.getElementById('uPassword').placeholder = '•••••••• (Leave blank to keep current)';
             
             if (user.role_id) document.getElementById('uRole').value = user.role_id;
-            if (user.branch_id === null || user.branch_id === 'all') {
-                document.getElementById('uBranch').value = 'all';
-            } else if (user.branch_id) {
+            // Set branch — if null/unset just leave the placeholder selected
+            if (user.branch_id && user.branch_id !== 'all') {
                 document.getElementById('uBranch').value = user.branch_id;
+            } else {
+                document.getElementById('uBranch').value = '';
             }
             
             document.getElementById('uStatus').checked = user.status === 'active';
@@ -570,7 +569,7 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
                 return;
             }
             
-            const branch_id = branch_v === 'all' ? null : branch_v;
+            const branch_id = branch_v || null;
             const status = active ? 'active' : 'inactive';
 
             const payload = {
