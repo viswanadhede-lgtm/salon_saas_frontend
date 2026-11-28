@@ -170,6 +170,7 @@ async function fetchData(companyId, branchId, startDate, endDate) {
                 service:        services[Math.floor(Math.random() * services.length)],
                 staff:          staffs[Math.floor(Math.random() * staffs.length)],
                 amount:         amt,
+                discount:       Math.random() > 0.6 ? Math.floor(amt * (Math.random() * 0.3)) : 0,
                 status:         st,
                 payment_status: pay,
                 raw_date:       new Date(d),
@@ -357,6 +358,8 @@ function renderTable(rows, page) {
             <td style="max-width:200px;">${chipCell(r.service)}</td>
             <td style="max-width:170px;">${chipCell(r.staff)}</td>
             <td style="font-weight:700;color:${amtColor};">${fmtINR(r.amount)}</td>
+            <td style="color:#ef4444;font-weight:600;">${r.discount > 0 ? '−' + fmtINR(r.discount) : '<span style="color:#94a3b8;">—</span>'}</td>
+            <td style="font-weight:700;color:${amtColor};">${fmtINR((r.amount || 0) - (r.discount || 0))}</td>
             <td>${payPill(r.payment_status)}</td>
             <td style="text-align:center;">${statusPill(r.status)}</td>
         </tr>`;
@@ -444,9 +447,11 @@ function applyClientFilters() {
 // ─── CSV Export ───────────────────────────────────────────────────────────────
 function exportCSV() {
     if (!filteredRows.length) { alert('No bookings to export.'); return; }
-    const headers = ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Amount', 'Payment Status', 'Booking Status'];
+    const headers = ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Amount', 'Discount', 'Final Amount', 'Payment Status', 'Booking Status'];
     const lines   = [headers.join(',')];
     filteredRows.forEach(r => {
+        const discount   = r.discount || 0;
+        const finalAmt   = (r.amount || 0) - discount;
         lines.push([
             `"${r.date || ''}"`,
             `"${r.time || ''}"`,
@@ -454,6 +459,8 @@ function exportCSV() {
             `"${(r.service || '').replace(/"/g,'""')}"`,
             `"${(r.staff || '').replace(/"/g,'""')}"`,
             `"${r.amount || 0}"`,
+            `"${discount}"`,
+            `"${finalAmt}"`,
             `"${r.payment_status || ''}"`,
             `"${r.status || ''}"`,
         ].join(','));
