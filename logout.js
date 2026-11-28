@@ -257,14 +257,14 @@
         })();
 
         const logoutTrackPromise = (userId && token)
-            ? fetch('https://qxmgyxjwpxkdbgldpdil.supabase.co/rest/v1/rpc/track_user_logout_atomic', {
+            ? fetch('https://qxmgyxjwpxkdbgldpdil.supabase.co/rest/v1/rpc/user_login_logout_metrics', {
                 method: 'POST',
                 headers: {
                     'apikey':        'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0',
                     'Authorization': `Bearer ${token}`,
                     'Content-Type':  'application/json'
                 },
-                body: JSON.stringify({ p_user_id: userId })
+                body: JSON.stringify({ p_event: 'logout', p_user_id: userId })
               }).catch(err => console.warn('[logout] Failed to track last_logout_at:', err))
             : Promise.resolve();
 

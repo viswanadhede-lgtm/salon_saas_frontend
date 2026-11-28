@@ -616,9 +616,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Step 3: Track last_login_at via session-tracking RPC
                 try {
                     if (userEmail) {
-                        await supabase.rpc('track_user_login_atomic', { p_email: userEmail });
+                        await supabase.rpc('user_login_logout_metrics', { p_event: 'login', p_email: userEmail });
                     } else if (user_id) {
-                        await supabase.rpc('track_user_login_atomic', { p_user_id: user_id });
+                        await supabase.rpc('user_login_logout_metrics', { p_event: 'login', p_user_id: user_id });
                     }
                 } catch (updateErr) {
                     console.warn('[signin] Failed to track last_login_at:', updateErr);
