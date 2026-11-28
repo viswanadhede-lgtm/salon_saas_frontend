@@ -84,9 +84,14 @@
         },
     };
 
+    const MIN_ZOOM = 0.7;
+    const MAX_ZOOM = 1.8;
+    const ZOOM_STEP = 0.1;
+
     let currentFormat = 'a4';
     let savedFormat   = 'a4';
     let currentSource = 'bookings';
+    let currentZoom   = 1;
     let companyId     = null;
     let branchId      = null;
 
@@ -215,9 +220,127 @@
         </div>`;
     }
 
+    function applyZoom() {
+        const frame  = document.getElementById('invZoomFrame');
+        const scaler = document.getElementById('invZoomScaler');
+        const paper  = scaler?.firstElementChild;
+
+        updateZoomToolbarUI();
+
+        if (!frame || !scaler || !paper) return;
+
+        // Reset to unscaled 1x so intrinsic paper dimensions can be measured cleanly
+        scaler.style.transform    = '';
+        scaler.style.width        = '';
+        frame.style.width         = '';
+        frame.style.height        = '';
+        frame.style.justifyContent = '';
+
+        if (currentZoom !== 1) {
+            const baseW = paper.offsetWidth;
+            const baseH = paper.offsetHeight;
+            if (baseW > 0 && baseH > 0) {
+                frame.style.justifyContent = 'flex-start';
+                scaler.style.width         = `${baseW}px`;
+                scaler.style.transform     = `scale(${currentZoom})`;
+                frame.style.width          = `${Math.round(baseW * currentZoom)}px`;
+                frame.style.height         = `${Math.round(baseH * currentZoom)}px`;
+            }
+        }
+    }
+
+    function updateZoomToolbarUI() {
+        const outBtn   = document.getElementById('invZoomOut');
+        const resetBtn = document.getElementById('invZoomReset');
+        const inBtn    = document.getElementById('invZoomIn');
+        const pct      = Math.round(currentZoom * 100);
+
+        if (resetBtn) {
+            resetBtn.textContent = `${pct}%`;
+            resetBtn.setAttribute('aria-label', pct === 100 ? 'Zoom level 100%' : `Zoom level ${pct}%, activate to reset to 100%`);
+        }
+        if (outBtn) {
+            outBtn.setAttribute('aria-disabled', currentZoom <= MIN_ZOOM ? 'true' : 'false');
+        }
+        if (inBtn) {
+            inBtn.setAttribute('aria-disabled', currentZoom >= MAX_ZOOM ? 'true' : 'false');
+        }
+    }
+
+    function setZoom(nextZoom) {
+        const clamped = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(nextZoom * 10) / 10));
+        if (clamped === currentZoom) return;
+        currentZoom = clamped;
+        applyZoom();
+    }
+
+    function initZoomToolbar() {
+        const toolbar = document.getElementById('invZoomToolbar');
+        if (!toolbar) return;
+
+        const outBtn   = document.getElementById('invZoomOut');
+        const resetBtn = document.getElementById('invZoomReset');
+        const inBtn    = document.getElementById('invZoomIn');
+
+        outBtn?.addEventListener('click', () => {
+            if (outBtn.getAttribute('aria-disabled') === 'true') return;
+            setZoom(currentZoom - ZOOM_STEP);
+        });
+        resetBtn?.addEventListener('click', () => setZoom(1));
+        inBtn?.addEventListener('click', () => {
+            if (inBtn.getAttribute('aria-disabled') === 'true') return;
+            setZoom(currentZoom + ZOOM_STEP);
+        });
+
+        // Roving tabindex fallback only when native focusgroup is unsupported
+        if (!('focusGroup' in HTMLElement.prototype)) {
+            const items = Array.from(toolbar.querySelectorAll('button'));
+            items.forEach((btn, idx) => { btn.tabIndex = idx === 0 ? 0 : -1; });
+
+            toolbar.addEventListener('focusin', ({ target }) => {
+                if (items.includes(target)) {
+                    items.forEach((btn) => { btn.tabIndex = btn === target ? 0 : -1; });
+                }
+            });
+
+            toolbar.addEventListener('keydown', (e) => {
+                const currentIdx = items.indexOf(document.activeElement);
+                if (currentIdx === -1) return;
+
+                const rtl = getComputedStyle(toolbar).direction === 'rtl';
+                const step = e.key === 'ArrowRight' ? (rtl ? -1 : 1)
+                           : e.key === 'ArrowLeft'  ? (rtl ? 1 : -1)
+                           : 0;
+
+                let nextIdx = null;
+                if (step !== 0) nextIdx = (currentIdx + step + items.length) % items.length;
+                else if (e.key === 'Home') nextIdx = 0;
+                else if (e.key === 'End')  nextIdx = items.length - 1;
+
+                if (nextIdx !== null) {
+                    e.preventDefault();
+                    items[nextIdx].focus();
+                }
+            });
+        }
+
+        document.getElementById('tab-invoice')?.addEventListener('click', () => {
+            requestAnimationFrame(applyZoom);
+        });
+
+        let resizeTimer = null;
+        window.addEventListener('resize', () => {
+            if (currentZoom === 1) return;
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(applyZoom, 120);
+        });
+
+        updateZoomToolbarUI();
+    }
+
     function renderPreview(format, source) {
-        const container = document.getElementById('invoiceLivePreview');
-        if (!container) return;
+        const scaler = document.getElementById('invZoomScaler') || document.getElementById('invoiceLivePreview');
+        if (!scaler) return;
 
         const fmt    = format || currentFormat;
         const srcKey = SAMPLES[source] ? source : currentSource;
@@ -228,7 +351,8 @@
         else if (fmt === 'thermal_80') html = renderThermal(sample, 80);
         else if (fmt === 'thermal_58') html = renderThermal(sample, 58);
 
-        container.innerHTML = html;
+        scaler.innerHTML = html;
+        applyZoom();
 
         const badge = document.getElementById('invPreviewFormatBadge');
         if (badge && FORMATS[fmt]) {
@@ -429,6 +553,7 @@
     async function initInvoiceSettings() {
         getContext();
         initSourceTabs();
+        initZoomToolbar();
         renderFormatCards();
         renderPreview(currentFormat, currentSource);
         await loadInvoiceFormat();
