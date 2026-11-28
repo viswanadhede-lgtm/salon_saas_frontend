@@ -35,13 +35,10 @@
         }
 
         .filter-bar-label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #64748b;
             white-space: nowrap;
-            margin-right: 4px;
         }
 
         .filter-pill {
@@ -117,22 +114,6 @@
         }
 
         .btn-apply-filter:hover { background: #4338ca; }
-
-        .btn-reset-filter {
-            padding: 0 14px;
-            height: 36px;
-            border: 1px solid #e2e8f0;
-            border-radius: 9px;
-            background: #fff;
-            color: #64748b;
-            font-size: 0.84rem;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: inherit;
-            transition: all 0.15s;
-        }
-
-        .btn-reset-filter:hover { border-color: #94a3b8; color: #0f172a; }
 
         /* ── KPI Row ─────────────────────────────────────────────────── */
         .kpi-row {
@@ -478,7 +459,7 @@
 
         @media print {
             .breadcrumb-nav, .filter-bar .btn-apply-filter,
-            .filter-bar .btn-reset-filter, .btn-toolbar, .pagination-bar { display: none !important; }
+            .btn-toolbar, .pagination-bar { display: none !important; }
         }
     </style>
 </head>
@@ -510,7 +491,7 @@
 
             <!-- ── Filter Bar ─────────────────────────────────────────── -->
             <div class="filter-bar">
-                <span class="filter-bar-label">Filters</span>
+                <span class="filter-bar-label">From</span>
 
                 <!-- Date From -->
                 <label class="filter-pill" title="Start Date">
@@ -518,7 +499,7 @@
                     <input type="date" id="filterStartDate" title="From date">
                 </label>
 
-                <span style="font-size:0.8rem;color:#94a3b8;font-weight:600;">to</span>
+                <span class="filter-bar-label">to</span>
 
                 <!-- Date To -->
                 <label class="filter-pill" title="End Date">
@@ -527,14 +508,6 @@
                 </label>
 
                 <div class="filter-divider"></div>
-
-                <!-- Branch -->
-                <label class="filter-pill" title="Branch">
-                    <i data-feather="map-pin"></i>
-                    <select id="filterBranch">
-                        <option value="all">All Branches</option>
-                    </select>
-                </label>
 
                 <!-- Status -->
                 <label class="filter-pill" title="Booking Status">
@@ -571,7 +544,6 @@
                 </label>
 
                 <button class="btn-apply-filter" id="btnApplyFilters">Apply</button>
-                <button class="btn-reset-filter" id="btnResetFilters">Reset</button>
             </div>
 
             <!-- ── KPI Row ─────────────────────────────────────────────── -->

@@ -43,8 +43,7 @@ function resolveCompanyId() {
     return (c && c !== 'null' && c !== 'undefined' && c !== 'all') ? c : null;
 }
 
-function resolveBranchId(filterBranch) {
-    if (filterBranch && filterBranch.value && filterBranch.value !== 'all') return filterBranch.value;
+function resolveBranchId() {
     const s = localStorage.getItem('active_branch_id') || localStorage.getItem('branch_id');
     return (s && s !== 'all' && s !== 'null' && s !== 'undefined') ? s : null;
 }
@@ -106,24 +105,6 @@ function chipCell(str) {
             style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;">+${count}</span>
         <div style="display:none;flex-wrap:wrap;gap:3px;width:100%;margin-top:3px;">${rest}</div>
     </div>`;
-}
-
-// ─── Branch Dropdown ──────────────────────────────────────────────────────────
-async function populateBranchDropdown(companyId) {
-    const sel = document.getElementById('filterBranch');
-    if (!sel) return;
-    try {
-        const { data } = await supabase.schema('shared')
-            .from('branches')
-            .select('branch_id, branch_name')
-            .eq('company_id', companyId);
-        if (data && data.length > 0) {
-            const existing = sel.value;
-            sel.innerHTML = '<option value="all">All Branches</option>' +
-                data.map(b => `<option value="${b.branch_id}">${b.branch_name}</option>`).join('');
-            sel.value = existing || 'all';
-        }
-    } catch (e) { console.warn('[bookings-report] branch dropdown:', e); }
 }
 
 // ─── Staff Dropdown (built from row data) ─────────────────────────────────────
@@ -485,7 +466,7 @@ async function loadData() {
     const companyId  = resolveCompanyId();
     const startDate  = document.getElementById('filterStartDate')?.value || '2000-01-01';
     const endDate    = document.getElementById('filterEndDate')?.value   || '2099-12-31';
-    const branchId   = resolveBranchId(document.getElementById('filterBranch'));
+    const branchId   = resolveBranchId();
 
     // Show loading state
     const tbody = document.getElementById('tableBody');
@@ -509,30 +490,16 @@ async function loadData() {
     }
 }
 
-// ─── Reset Filters ────────────────────────────────────────────────────────────
-function resetFilters() {
-    setDefaultDates();
-    ['filterBranch','filterStatus','filterPayment','filterStaff'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = el.options[0]?.value || 'all';
-    });
-    const search = document.getElementById('tableSearch');
-    if (search) search.value = '';
-    loadData();
-}
-
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
     setDefaultDates();
 
-    const companyId = resolveCompanyId();
-    if (companyId) await populateBranchDropdown(companyId);
-
-    // Wire Apply / Reset
+    // Wire Apply
     const btnApply = document.getElementById('btnApplyFilters');
-    const btnReset = document.getElementById('btnResetFilters');
     if (btnApply) btnApply.onclick = loadData;
-    if (btnReset) btnReset.onclick = resetFilters;
+
+    // Reload automatically when global header branch changes
+    window.addEventListener('branchChanged', loadData);
 
     // Wire search (live filter on client rows)
     const searchInput = document.getElementById('tableSearch');
