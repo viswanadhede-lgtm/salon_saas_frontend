@@ -248,19 +248,40 @@
 
         const token = localStorage.getItem('token');
 
+        // Track last_logout_at BEFORE clearing session — we still have the token
+        const userId = (() => {
+            try {
+                const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+                return ctx.user?.id || ctx.user_id || localStorage.getItem('user_id') || null;
+            } catch { return localStorage.getItem('user_id') || null; }
+        })();
+
+        const logoutTrackPromise = (userId && token)
+            ? fetch('https://qxmgyxjwpxkdbgldpdil.supabase.co/rest/v1/rpc/track_user_logout_atomic', {
+                method: 'POST',
+                headers: {
+                    'apikey':        'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type':  'application/json'
+                },
+                body: JSON.stringify({ p_user_id: userId })
+              }).catch(err => console.warn('[logout] Failed to track last_logout_at:', err))
+            : Promise.resolve();
+
         // Sign out from Supabase (invalidates the server-side session)
-        fetch('https://qxmgyxjwpxkdbgldpdil.supabase.co/auth/v1/logout', {
+        const supabaseLogoutPromise = fetch('https://qxmgyxjwpxkdbgldpdil.supabase.co/auth/v1/logout', {
             method: 'POST',
             headers: {
                 'apikey':        'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0',
                 'Authorization': `Bearer ${token}`,
                 'Content-Type':  'application/json'
             }
-        })
-        .catch(err => {
+        }).catch(err => {
             console.warn('[logout] Supabase signout request failed (clearing locally anyway):', err);
-        })
-        .finally(() => {
+        });
+
+        // Fire both in parallel, then clear and redirect
+        Promise.all([logoutTrackPromise, supabaseLogoutPromise]).finally(() => {
             // Always clear all local session data and redirect
             localStorage.removeItem('token');
             localStorage.removeItem('refresh_token');

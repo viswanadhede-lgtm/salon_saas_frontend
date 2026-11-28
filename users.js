@@ -210,16 +210,16 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
         const tbody = document.getElementById('usersTableBody');
         
         if (!cid) {
-            if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#ef4444;">Company Authentication missing. Please log out and back in.</td></tr>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:#ef4444;">Company Authentication missing. Please log out and back in.</td></tr>';
             return;
         }
         
-        if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#64748b;">Loading users...</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:#64748b;">Loading users...</td></tr>';
         
         try {
             const { data, error } = await supabase.schema('shared')
                 .from('users')
-                .select('user_id, name, email, phone, role_id, role_name, branch_id, status, last_login_at, created_at')
+                .select('user_id, name, email, phone, role_id, role_name, branch_id, status, last_login_at, last_logout_at, created_at')
                 .eq('company_id', cid)
                 .neq('status', 'deleted')
                 .order('created_at', { ascending: false });
@@ -230,7 +230,7 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
         } catch (err) {
             console.error('Error loading users:', err);
             showToast('Failed to load users from database', true);
-            if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#ef4444;">Database logic error: ${err.message || 'Check console'}</td></tr>`;
+            if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:#ef4444;">Database logic error: ${err.message || 'Check console'}</td></tr>`;
         }
     }
 
@@ -240,7 +240,7 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
         tbody.innerHTML = '';
 
         if (users.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#64748b;">No users found. Create one to get started!</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:#64748b;">No users found. Create one to get started!</td></tr>';
             return;
         }
 
@@ -267,9 +267,9 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
             const isOwner   = roleDisplay.toLowerCase() === 'owner' || (u.role_name && u.role_name.toLowerCase() === 'owner');
             
             // Safe fallback for UI missing timestamps
-            let lastLoginHtml = '<span style="color:#94a3b8;font-size:0.875rem;">Never</span>';
-            if (u.last_login_at) {
-                const d = new Date(u.last_login_at);
+            const formatTimestamp = (val) => {
+                if (!val) return '<span style="color:#94a3b8;font-size:0.875rem;">Never</span>';
+                const d = new Date(val);
                 const fullDays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
                 const dayName = fullDays[d.getDay()];
                 const dd = String(d.getDate()).padStart(2,'0');
@@ -277,13 +277,13 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
                 const yyyy = d.getFullYear();
                 const hh = String(d.getHours()).padStart(2,'0');
                 const min = String(d.getMinutes()).padStart(2,'0');
-                lastLoginHtml = `
-                    <div style="display:flex;flex-direction:column;gap:2px;line-height:1.3;">
-                        <span style="font-weight:600;color:#1e293b;font-size:0.8125rem;">${dayName}</span>
-                        <span style="color:#64748b;font-size:0.775rem;">${hh}:${min}, ${dd}-${mm}-${yyyy}</span>
-                    </div>
-                `;
-            }
+                return `<div style="display:flex;flex-direction:column;gap:2px;line-height:1.3;">
+                    <span style="font-weight:600;color:#1e293b;font-size:0.8125rem;">${dayName}</span>
+                    <span style="color:#64748b;font-size:0.775rem;">${hh}:${min}, ${dd}-${mm}-${yyyy}</span>
+                </div>`;
+            };
+            const lastLoginHtml  = formatTimestamp(u.last_login_at);
+            const lastLogoutHtml = formatTimestamp(u.last_logout_at);
 
             const tr = document.createElement('tr');
             tr.style.cssText = `background:${rowBg};border-bottom:1px solid #f1f5f9;transition:background .15s;`;
@@ -314,6 +314,7 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
                     </span>
                 </td>
                 <td style="padding:12px 16px;vertical-align:middle;">${lastLoginHtml}</td>
+                <td style="padding:12px 16px;vertical-align:middle;">${lastLogoutHtml}</td>
                 <td style="padding:13px 16px; text-align:center;">
                     <div style="display:flex; gap:8px; justify-content:center;">
                         ${isOwner ? `

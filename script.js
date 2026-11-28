@@ -613,15 +613,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (profile.role_id) localStorage.setItem('role_id', profile.role_id);
                 }
 
-                // Step 3: Update last_login_at via stored procedure
+                // Step 3: Track last_login_at via session-tracking RPC
                 try {
                     if (userEmail) {
-                        await supabase.rpc('update_user_last_login_atomic', { p_email: userEmail });
+                        await supabase.rpc('track_user_login_atomic', { p_email: userEmail });
                     } else if (user_id) {
-                        await supabase.rpc('update_user_last_login_atomic', { p_user_id: user_id });
+                        await supabase.rpc('track_user_login_atomic', { p_user_id: user_id });
                     }
                 } catch (updateErr) {
-                    console.warn('[signin] Failed to update last_login_at:', updateErr);
+                    console.warn('[signin] Failed to track last_login_at:', updateErr);
                 }
 
                 // Clear any stale feature caches to guarantee a fresh fetch on the dashboard loader
