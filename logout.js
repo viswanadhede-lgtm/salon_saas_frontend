@@ -248,15 +248,25 @@
 
         const token = localStorage.getItem('token');
 
-        // Track last_logout_at BEFORE clearing session — we still have the token
-        const userId = (() => {
-            try {
-                const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-                return ctx.user?.id || ctx.user_id || localStorage.getItem('user_id') || null;
-            } catch { return localStorage.getItem('user_id') || null; }
+        // Resolve user identifier BEFORE clearing session or invalidating token
+        const ctx = (() => {
+            try { return JSON.parse(localStorage.getItem('appContext') || '{}'); }
+            catch { return {}; }
         })();
+        const jwtPayload = (() => {
+            if (!token || !token.includes('.')) return null;
+            try { return JSON.parse(atob(token.split('.')[1])); }
+            catch { return null; }
+        })();
+        const userId = ctx.user?.user_id || ctx.user?.id || ctx.user_id || localStorage.getItem('user_id') || jwtPayload?.sub || null;
+        const userEmail = ctx.user?.email || jwtPayload?.email || null;
 
-        const logoutTrackPromise = (userId && token)
+        const metricsBody = userId
+            ? { p_event: 'logout', p_user_id: userId }
+            : (userEmail ? { p_event: 'logout', p_email: userEmail } : null);
+
+        // Record last_logout_at while session JWT is still active, then sign out from Auth
+        const trackLogout = (token && metricsBody)
             ? fetch('https://qxmgyxjwpxkdbgldpdil.supabase.co/rest/v1/rpc/user_login_logout_metrics', {
                 method: 'POST',
                 headers: {
@@ -264,39 +274,53 @@
                     'Authorization': `Bearer ${token}`,
                     'Content-Type':  'application/json'
                 },
-                body: JSON.stringify({ p_event: 'logout', p_user_id: userId })
-              }).catch(err => console.warn('[logout] Failed to track last_logout_at:', err))
+                body: JSON.stringify(metricsBody),
+                signal: typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined
+              })
+              .then(res => {
+                  if (!res.ok) console.warn('[logout] Metrics RPC returned HTTP', res.status);
+              })
+              .catch(err => console.warn('[logout] Failed to track last_logout_at:', err))
             : Promise.resolve();
 
-        // Sign out from Supabase (invalidates the server-side session)
-        const supabaseLogoutPromise = fetch('https://qxmgyxjwpxkdbgldpdil.supabase.co/auth/v1/logout', {
-            method: 'POST',
-            headers: {
-                'apikey':        'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0',
-                'Authorization': `Bearer ${token}`,
-                'Content-Type':  'application/json'
-            }
-        }).catch(err => {
-            console.warn('[logout] Supabase signout request failed (clearing locally anyway):', err);
-        });
-
-        // Fire both in parallel, then clear and redirect
-        Promise.all([logoutTrackPromise, supabaseLogoutPromise]).finally(() => {
-            // Always clear all local session data and redirect
-            localStorage.removeItem('token');
-            localStorage.removeItem('refresh_token');
-            localStorage.removeItem('company_id');
-            localStorage.removeItem('active_branch_id');
-            localStorage.removeItem('role_id');
-            localStorage.removeItem('signup_data');
-            localStorage.removeItem('selected_plan');
-            localStorage.removeItem('userFeatures');
-            localStorage.removeItem('userSubFeatures');
-            localStorage.removeItem('appContext');
-            console.log('[logout] Local session cleared. Redirecting to sign-in.');
-            document.body.style.cursor = '';
-            window.location.href = 'signin.html?loggedout=true';
-        });
+        trackLogout
+            .finally(() => {
+                // Sign out from Supabase (invalidates the server-side session)
+                if (!token) return Promise.resolve();
+                return fetch('https://qxmgyxjwpxkdbgldpdil.supabase.co/auth/v1/logout', {
+                    method: 'POST',
+                    headers: {
+                        'apikey':        'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0',
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type':  'application/json'
+                    },
+                    signal: typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined
+                }).catch(err => {
+                    console.warn('[logout] Supabase signout request failed (clearing locally anyway):', err);
+                });
+            })
+            .finally(() => {
+                // Always clear all local session data and redirect
+                localStorage.removeItem('token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeItem('user_id');
+                localStorage.removeItem('company_id');
+                localStorage.removeItem('active_branch_id');
+                localStorage.removeItem('branch_id');
+                localStorage.removeItem('role_id');
+                localStorage.removeItem('role_name');
+                localStorage.removeItem('signup_data');
+                localStorage.removeItem('selected_plan');
+                localStorage.removeItem('userFeatures');
+                localStorage.removeItem('userSubFeatures');
+                localStorage.removeItem('subscriptionState');
+                localStorage.removeItem('planFeatures');
+                localStorage.removeItem('authCacheTimestamp');
+                localStorage.removeItem('appContext');
+                console.log('[logout] Local session cleared. Redirecting to sign-in.');
+                document.body.style.cursor = '';
+                window.location.href = 'signin.html?loggedout=true';
+            });
     }
 
 })();

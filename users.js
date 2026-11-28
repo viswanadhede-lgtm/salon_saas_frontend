@@ -25,7 +25,12 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
     let availableBranches = [];
     let availableRoles = [];
     let editingId = null;
-    let currentUserId = localStorage.getItem('user_id') || null; // optional, to identify self
+    const currentUserId = (() => {
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+            return localStorage.getItem('user_id') || ctx.user?.user_id || ctx.user?.id || null;
+        } catch { return localStorage.getItem('user_id') || null; }
+    })();
 
     // ── Helpers ───────────────────────────────────────────────────
     function initials(name) {
@@ -377,8 +382,6 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
 
         if (action === 'edit') {
             openModal('edit', user);
-        } else if (action === 'reset') {
-            showToast(`Password reset link feature pending implementation for \${user.email}`);
         } else if (action === 'toggle') {
             const newStatus = user.status === 'active' ? 'inactive' : 'active';
             try {
@@ -435,7 +438,6 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
     const togglePwdBtn = document.getElementById('togglePasswordVisibility');
     const pwdInput   = document.getElementById('uPassword');
     const eyeIcon    = document.getElementById('eyeIcon');
-    let editingOriginalPasswordHash = null;
 
     function updateEyeIcon(visible) {
         if (!eyeIcon) return;
@@ -457,7 +459,6 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
 
     function openModal(mode, user = null) {
         editingId = null;
-        editingOriginalPasswordHash = null;
         const pwdLabel = document.getElementById('uPasswordLabel');
         if (pwdInput) pwdInput.type = 'password';
         updateEyeIcon(false);
@@ -472,7 +473,6 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
 
         if (mode === 'edit' && user) {
             editingId = user.user_id || user.id;
-            editingOriginalPasswordHash = user.password_hash || '';
             modalTitle.textContent = 'Edit User';
             modalSub.textContent   = "Update this user's account and access details";
             saveBtn.textContent    = 'Save Changes';

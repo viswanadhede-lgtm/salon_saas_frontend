@@ -65,9 +65,6 @@
                 </table>
             </div>
 
-            <!-- Actions Dropdown -->
-            <div id="userActionsDropdown" style="display:none;position:fixed;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:500;min-width:190px;padding:6px;"></div>
-
             <!-- Add / Edit User Modal -->
             <div class="modal-overlay" id="userModalOverlay">
                 <div class="modal-container" id="userModal" style="width:1040px;max-width:95vw;">
@@ -209,33 +206,11 @@
     <script>
         // Init Feather Icons
         feather.replace();
-
-        // -- Stat Card Double-Click ------------------------------------------
-        function onStatCardDblClick(card, label) {
-            if (label === "Today's Bookings") {
-                window.location.href = 'todays-bookings.html';
-            } else if (label === "Completed Appointments Today") {
-                window.location.href = 'completed-appointments.html';
-            } else if (label === "No-shows & Cancellations") {
-                window.location.href = 'no-shows-cancellations.html';
-            } else if (label === "Today's Revenue") {
-                window.location.href = 'todays-revenue.html';
-            } else {
-                console.log("Stat card double clicked: " + label);
-            }
-        }
-
-
-
     </script>
 
 
     <!-- Toast Notification -->
-    <div id="toastNotification" class="toast-notification">Booking created successfully (demo)</div>
-
-
-    <!-- Global Bookings Actions Dropdown -->
-    <div id="bkGlobalDropdown" class="bk-dropdown" style="position: fixed; display: none;"></div>
+    <div id="toastNotification" class="toast-notification"></div>
 
 
 <script src="logout.js"></script><script src="change-password.js"></script>

@@ -539,7 +539,7 @@ export async function runGlobalAuthGuard() {
         // 3. Load user record from public.users
         const cachedCompanyId = localStorage.getItem('company_id');
         const { data: userRows, error: userErr } = await supabase.schema('shared').from('users')
-            .select('company_id, branch_id, role_id, role_name, name, email, phone, status, last_login_at, created_at')
+            .select('company_id, branch_id, role_id, role_name, name, email, phone, status, last_login_at, last_logout_at, created_at')
             .eq('user_id', user_id);
 
         const userRow = userRows?.[0];
@@ -681,7 +681,11 @@ export async function runGlobalAuthGuard() {
 
         // 10. Construct unified App Context
         try {
-            await supabase.rpc('update_user_last_login_atomic', { p_user_id: user_id });
+            const { error: metricsErr } = await supabase.rpc('user_login_logout_metrics', {
+                p_event: 'login',
+                p_user_id: user_id
+            });
+            if (metricsErr) console.warn('[Auth Guard] Failed to track last_login_at:', metricsErr);
         } catch (_) {}
 
         const appContext = {
@@ -698,6 +702,7 @@ export async function runGlobalAuthGuard() {
                 last_name:          profile?.last_name  || '',
                 joined_on:          profile?.joined_on  || userRow.created_at || '',
                 last_login_at:      userRow.last_login_at || null,
+                last_logout_at:     userRow.last_logout_at || null,
                 profile_photo:      profile?.profile_photo || '',
                 emergency_name:     profile?.emergency_contact_name || '',
                 emergency_phone:    profile?.emergency_contact_number || ''

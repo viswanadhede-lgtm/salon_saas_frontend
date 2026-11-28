@@ -577,6 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const user_id = data.user.id;
 
                 localStorage.setItem('token', token);
+                if (user_id) localStorage.setItem('user_id', user_id);
                 if (data.session.refresh_token) {
                     localStorage.setItem('refresh_token', data.session.refresh_token);
                 }
@@ -616,9 +617,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Step 3: Track last_login_at via session-tracking RPC
                 try {
                     if (userEmail) {
-                        await supabase.rpc('user_login_logout_metrics', { p_event: 'login', p_email: userEmail });
+                        const { error: metricsErr } = await supabase.rpc('user_login_logout_metrics', { p_event: 'login', p_email: userEmail });
+                        if (metricsErr) console.warn('[signin] Failed to track last_login_at:', metricsErr);
                     } else if (user_id) {
-                        await supabase.rpc('user_login_logout_metrics', { p_event: 'login', p_user_id: user_id });
+                        const { error: metricsErr } = await supabase.rpc('user_login_logout_metrics', { p_event: 'login', p_user_id: user_id });
+                        if (metricsErr) console.warn('[signin] Failed to track last_login_at:', metricsErr);
                     }
                 } catch (updateErr) {
                     console.warn('[signin] Failed to track last_login_at:', updateErr);

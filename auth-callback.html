@@ -141,16 +141,19 @@
                     if (profile.company_id) localStorage.setItem('company_id', profile.company_id);
                     if (profile.branch_id)  localStorage.setItem('active_branch_id', profile.branch_id);
                     if (profile.role_id)    localStorage.setItem('role_id', profile.role_id);
+                    if (user.id)            localStorage.setItem('user_id', user.id);
 
-                    // Update last login timestamp via stored procedure
+                    // Track last_login_at via consolidated session-tracking RPC
                     try {
                         if (userEmail) {
-                            await supabase.rpc('update_user_last_login_atomic', { p_email: userEmail });
+                            const { error: metricsErr } = await supabase.rpc('user_login_logout_metrics', { p_event: 'login', p_email: userEmail });
+                            if (metricsErr) console.warn('[auth-callback] Failed to track last_login_at:', metricsErr);
                         } else if (user.id) {
-                            await supabase.rpc('update_user_last_login_atomic', { p_user_id: user.id });
+                            const { error: metricsErr } = await supabase.rpc('user_login_logout_metrics', { p_event: 'login', p_user_id: user.id });
+                            if (metricsErr) console.warn('[auth-callback] Failed to track last_login_at:', metricsErr);
                         }
                     } catch (updateErr) {
-                        console.warn('[auth-callback] Failed to update last_login_at:', updateErr);
+                        console.warn('[auth-callback] Failed to track last_login_at:', updateErr);
                     }
 
                     // Clear stale caches
