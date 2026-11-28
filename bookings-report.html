@@ -17,8 +17,7 @@
     <link rel="stylesheet" href="reports.css">
     <!-- Feather Icons -->
     <script src="https://unpkg.com/feather-icons"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 
     <style>
         /* ── Page Header ─────────────────────────────────────────────── */
@@ -265,136 +264,6 @@
             color: #94a3b8;
             font-weight: 500;
             margin-top: 4px;
-        }
-
-        /* ── Chart Row ───────────────────────────────────────────────── */
-        .charts-row {
-            display: grid;
-            grid-template-columns: 1.65fr 1fr;
-            gap: 1.25rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .chart-card {
-            background: #fff;
-            border-radius: 14px;
-            border: 1px solid #e2e8f0;
-            padding: 1.25rem 1.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .chart-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .chart-card-header h3 {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: #0f172a;
-            margin: 0;
-        }
-
-        .chart-card-header .chart-subtitle {
-            font-size: 0.775rem;
-            color: #94a3b8;
-            font-weight: 500;
-        }
-
-        .chart-canvas-wrap {
-            flex: 1;
-            position: relative;
-            min-height: 240px;
-        }
-
-        /* Donut */
-        .donut-wrap {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
-            flex: 1;
-        }
-
-        .donut-canvas-box {
-            position: relative;
-            width: 180px;
-            height: 180px;
-            flex-shrink: 0;
-        }
-
-        .donut-center {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            pointer-events: none;
-        }
-
-        .donut-center-val {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: #0f172a;
-            line-height: 1;
-            display: block;
-        }
-
-        .donut-center-lbl {
-            font-size: 0.65rem;
-            font-weight: 600;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-top: 3px;
-            display: block;
-        }
-
-        .donut-legend {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 7px;
-        }
-
-        .donut-legend-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            padding: 6px 10px;
-            background: #f8fafc;
-            border-radius: 8px;
-            font-size: 0.775rem;
-        }
-
-        .donut-legend-left {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            color: #475569;
-            font-weight: 500;
-        }
-
-        .donut-dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        .donut-legend-count {
-            font-weight: 700;
-            color: #0f172a;
-            font-size: 0.84rem;
-        }
-
-        .donut-legend-pct {
-            font-size: 0.72rem;
-            color: #94a3b8;
-            font-weight: 500;
         }
 
         /* ── Data Table ──────────────────────────────────────────────── */
@@ -793,44 +662,6 @@
                 </div>
             </div>
 
-            <!-- ── Charts Row ──────────────────────────────────────────── -->
-            <div class="charts-row">
-
-                <!-- Trend Chart -->
-                <div class="chart-card">
-                    <div class="chart-card-header">
-                        <div>
-                            <h3>Bookings Trend</h3>
-                            <span class="chart-subtitle">Daily booking volume over selected period</span>
-                        </div>
-                        <div id="trendChartLegend" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;"></div>
-                    </div>
-                    <div class="chart-canvas-wrap">
-                        <canvas id="trendChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Donut Chart -->
-                <div class="chart-card">
-                    <div class="chart-card-header">
-                        <div>
-                            <h3>Status Breakdown</h3>
-                            <span class="chart-subtitle">Booking distribution by outcome</span>
-                        </div>
-                    </div>
-                    <div class="donut-wrap">
-                        <div class="donut-canvas-box">
-                            <canvas id="donutChart"></canvas>
-                            <div class="donut-center">
-                                <span class="donut-center-val" id="donutCenterVal">—</span>
-                                <span class="donut-center-lbl" id="donutCenterLbl">Total</span>
-                            </div>
-                        </div>
-                        <div class="donut-legend" id="donutLegend"></div>
-                    </div>
-                </div>
-
-            </div>
 
             <!-- ── Data Table ──────────────────────────────────────────── -->
             <div class="data-table-container">

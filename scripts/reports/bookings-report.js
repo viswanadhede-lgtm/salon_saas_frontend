@@ -27,20 +27,11 @@ const PAY_STYLES = {
     refunded: { bg: '#fef3c7', color: '#b45309' },
 };
 
-const DONUT_COLORS = {
-    completed: '#10b981',
-    cancelled: '#ef4444',
-    'no-show': '#f59e0b',
-    refunded:  '#a855f7',
-    other:     '#6366f1',
-};
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let allRows = [];          // Raw rows from RPC (or mock)
 let filteredRows = [];     // After status/payment/search filters
 let currentPage = 1;
-let trendChartInstance = null;
-let donutChartInstance = null;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function getAppCtx() {
@@ -239,175 +230,6 @@ function updateKPIs(rows) {
     set('kpiRevenueSub',   `from ${k.completed.toLocaleString('en-IN')} completed bookings`);
 }
 
-// ─── Trend Chart ──────────────────────────────────────────────────────────────
-function renderTrendChart(rows) {
-    const ctx = document.getElementById('trendChart');
-    if (!ctx) return;
-    if (trendChartInstance) { trendChartInstance.destroy(); trendChartInstance = null; }
-
-    // Group by date × status
-    const dateMap = {};
-    rows.forEach(r => {
-        const d = r.date || 'Unknown';
-        if (!dateMap[d]) dateMap[d] = { completed: 0, cancelled: 0, noshow: 0, other: 0, raw: r.raw_date || new Date(d) };
-        const st = normalizeStatus(r.status);
-        if (st === 'completed')                              dateMap[d].completed++;
-        else if (st === 'cancelled')                         dateMap[d].cancelled++;
-        else if (['no-show','noshow','no_show'].includes(st)) dateMap[d].noshow++;
-        else                                                 dateMap[d].other++;
-    });
-
-    const sorted = Object.keys(dateMap).sort((a, b) => {
-        const da = dateMap[a].raw.getTime();
-        const db = dateMap[b].raw.getTime();
-        return (!isNaN(da) && !isNaN(db)) ? da - db : a.localeCompare(b);
-    });
-
-    const labels = sorted.map(d => {
-        const dt = dateMap[d].raw;
-        return !isNaN(dt.getTime()) ? dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : d;
-    });
-
-    trendChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels,
-            datasets: [
-                {
-                    label: 'Completed',
-                    data: sorted.map(d => dateMap[d].completed),
-                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
-                    borderRadius: 4,
-                    maxBarThickness: 24,
-                },
-                {
-                    label: 'Cancelled',
-                    data: sorted.map(d => dateMap[d].cancelled),
-                    backgroundColor: 'rgba(239, 68, 68, 0.75)',
-                    borderRadius: 4,
-                    maxBarThickness: 24,
-                },
-                {
-                    label: 'No-Show',
-                    data: sorted.map(d => dateMap[d].noshow),
-                    backgroundColor: 'rgba(245, 158, 11, 0.75)',
-                    borderRadius: 4,
-                    maxBarThickness: 24,
-                },
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                    align: 'end',
-                    labels: {
-                        boxWidth: 10, boxHeight: 10,
-                        usePointStyle: true,
-                        font: { size: 11, weight: '500' },
-                        color: '#64748b',
-                        padding: 14,
-                    }
-                },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    padding: 10,
-                    cornerRadius: 8,
-                    titleFont: { size: 12, weight: '600' },
-                    bodyFont: { size: 11 },
-                }
-            },
-            scales: {
-                x: {
-                    stacked: true,
-                    grid: { display: false },
-                    ticks: { color: '#94a3b8', font: { size: 11 }, maxRotation: 45 }
-                },
-                y: {
-                    stacked: true,
-                    beginAtZero: true,
-                    grid: { color: '#f1f5f9' },
-                    ticks: { precision: 0, color: '#94a3b8', font: { size: 11 } }
-                }
-            }
-        }
-    });
-}
-
-// ─── Donut Chart ──────────────────────────────────────────────────────────────
-function renderDonutChart(rows) {
-    const ctx = document.getElementById('donutChart');
-    if (!ctx) return;
-    if (donutChartInstance) { donutChartInstance.destroy(); donutChartInstance = null; }
-
-    const counts = { completed: 0, cancelled: 0, 'no-show': 0, refunded: 0, other: 0 };
-    rows.forEach(r => {
-        const st = normalizeStatus(r.status);
-        if (st === 'completed')                               counts.completed++;
-        else if (st === 'cancelled')                          counts.cancelled++;
-        else if (['no-show','noshow','no_show'].includes(st)) counts['no-show']++;
-        else if (st === 'refunded')                           counts.refunded++;
-        else                                                  counts.other++;
-    });
-
-    const total = rows.length;
-    const entries = Object.entries(counts).filter(([, v]) => v > 0);
-    const labels  = entries.map(([k]) => k.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-'));
-    const data    = entries.map(([, v]) => v);
-    const colors  = entries.map(([k]) => DONUT_COLORS[k] || DONUT_COLORS.other);
-
-    donutChartInstance = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels,
-            datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: '#fff', hoverOffset: 5 }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '70%',
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    padding: 10,
-                    cornerRadius: 8,
-                    callbacks: {
-                        label: ctx => ` ${ctx.label}: ${ctx.parsed} (${pct(ctx.parsed, total)})`
-                    }
-                }
-            }
-        }
-    });
-
-    const centerVal = document.getElementById('donutCenterVal');
-    const centerLbl = document.getElementById('donutCenterLbl');
-    if (centerVal) centerVal.textContent = total.toLocaleString('en-IN');
-    if (centerLbl) centerLbl.textContent = 'Bookings';
-
-    const legendEl = document.getElementById('donutLegend');
-    if (legendEl) {
-        legendEl.innerHTML = entries.map(([k, v]) => {
-            const color = DONUT_COLORS[k] || DONUT_COLORS.other;
-            const label = k.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-');
-            return `<div class="donut-legend-row">
-                <div class="donut-legend-left">
-                    <span class="donut-dot" style="background:${color};"></span>
-                    <span>${label}</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <span class="donut-legend-count">${v.toLocaleString('en-IN')}</span>
-                    <span class="donut-legend-pct">${pct(v, total)}</span>
-                </div>
-            </div>`;
-        }).join('');
-    }
-}
-
 // ─── Table ────────────────────────────────────────────────────────────────────
 function renderTable(rows, page) {
     const tbody = document.getElementById('tableBody');
@@ -536,8 +358,6 @@ function applyClientFilters() {
     });
 
     updateKPIs(filteredRows);
-    renderTrendChart(filteredRows);
-    renderDonutChart(filteredRows);
     renderTable(filteredRows, 1);
 }
 
