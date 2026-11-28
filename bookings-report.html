@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Bookings Report - BharathBots Salon SaaS.">
+    <title>Bookings Report - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <link rel="stylesheet" href="styles/global-layout.css">
+    <link rel="stylesheet" href="reports.css">
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* ── Page Header ─────────────────────────────────────────────── */
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-title h1 {
+            font-size: 1.65rem;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+            margin: 0 0 4px;
+        }
+
+        .header-title .subtitle {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-top-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.45rem 0.95rem;
+            height: 38px;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            background: #ffffff;
+            color: #0f172a;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn-top-action:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+
+        .btn-top-action svg, .btn-top-action i {
+            width: 15px; height: 15px; color: #6366f1;
+        }
+
+        .btn-top-action.btn-primary {
+            background: #4f46e5;
+            color: #fff;
+            border-color: #4f46e5;
+        }
+
+        .btn-top-action.btn-primary:hover { background: #4338ca; border-color: #4338ca; }
+        .btn-top-action.btn-primary svg, .btn-top-action.btn-primary i { color: #fff; }
+
+        /* ── Filter Bar ──────────────────────────────────────────────── */
+        .filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 1rem 1.25rem;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .filter-bar-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+            margin-right: 4px;
+        }
+
+        .filter-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 12px;
+            height: 36px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: #334155;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .filter-pill svg, .filter-pill i { width: 14px; height: 14px; color: #6366f1; flex-shrink: 0; }
+
+        .filter-pill select {
+            border: none;
+            background: transparent;
+            font-weight: 600;
+            font-size: 0.84rem;
+            font-family: inherit;
+            color: #334155;
+            outline: none;
+            cursor: pointer;
+            padding: 0;
+            max-width: 160px;
+        }
+
+        .filter-pill:focus-within {
+            border-color: #6366f1;
+            background: #eef2ff;
+        }
+
+        .filter-pill input[type="date"] {
+            border: none;
+            background: transparent;
+            font-weight: 600;
+            font-size: 0.84rem;
+            font-family: inherit;
+            color: #334155;
+            outline: none;
+            cursor: pointer;
+            width: 130px;
+        }
+
+        .filter-divider {
+            width: 1px;
+            height: 24px;
+            background: #e2e8f0;
+            flex-shrink: 0;
+        }
+
+        .btn-apply-filter {
+            padding: 0 18px;
+            height: 36px;
+            border: none;
+            border-radius: 9px;
+            background: #4f46e5;
+            color: #fff;
+            font-size: 0.84rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-apply-filter:hover { background: #4338ca; }
+
+        .btn-reset-filter {
+            padding: 0 14px;
+            height: 36px;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+            background: #fff;
+            color: #64748b;
+            font-size: 0.84rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+
+        .btn-reset-filter:hover { border-color: #94a3b8; color: #0f172a; }
+
+        /* ── KPI Row ─────────────────────────────────────────────────── */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .kpi-card {
+            background: #fff;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            padding: 1.1rem 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            position: relative;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+
+        .kpi-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 3px;
+            border-radius: 14px 0 0 14px;
+        }
+
+        .kpi-card.kpi-total::before    { background: #6366f1; }
+        .kpi-card.kpi-completed::before{ background: #10b981; }
+        .kpi-card.kpi-cancelled::before{ background: #ef4444; }
+        .kpi-card.kpi-noshow::before   { background: #f59e0b; }
+        .kpi-card.kpi-revenue::before  { background: #0ea5e9; }
+
+        .kpi-label {
+            font-size: 0.775rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .kpi-value {
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+
+        .kpi-card.kpi-revenue .kpi-value { font-size: 1.5rem; color: #0ea5e9; }
+        .kpi-card.kpi-completed .kpi-value { color: #059669; }
+        .kpi-card.kpi-cancelled .kpi-value { color: #dc2626; }
+        .kpi-card.kpi-noshow .kpi-value    { color: #d97706; }
+
+        .kpi-sub {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        /* ── Chart Row ───────────────────────────────────────────────── */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1.65fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-card {
+            background: #fff;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            padding: 1.25rem 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .chart-card-header h3 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+        }
+
+        .chart-card-header .chart-subtitle {
+            font-size: 0.775rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .chart-canvas-wrap {
+            flex: 1;
+            position: relative;
+            min-height: 240px;
+        }
+
+        /* Donut */
+        .donut-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .donut-canvas-box {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            flex-shrink: 0;
+        }
+
+        .donut-center {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .donut-center-val {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1;
+            display: block;
+        }
+
+        .donut-center-lbl {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 3px;
+            display: block;
+        }
+
+        .donut-legend {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .donut-legend-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 6px 10px;
+            background: #f8fafc;
+            border-radius: 8px;
+            font-size: 0.775rem;
+        }
+
+        .donut-legend-left {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: #475569;
+            font-weight: 500;
+        }
+
+        .donut-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .donut-legend-count {
+            font-weight: 700;
+            color: #0f172a;
+            font-size: 0.84rem;
+        }
+
+        .donut-legend-pct {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        /* ── Data Table ──────────────────────────────────────────────── */
+        .data-table-container {
+            background: #fff;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .table-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #f1f5f9;
+            flex-wrap: wrap;
+        }
+
+        .table-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .table-badge {
+            background: #e0e7ff;
+            color: #4338ca;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 180px;
+            max-width: 320px;
+        }
+
+        .search-box i, .search-box svg {
+            position: absolute;
+            left: 11px; top: 50%;
+            transform: translateY(-50%);
+            width: 15px; height: 15px;
+            color: #94a3b8;
+            pointer-events: none;
+        }
+
+        .search-box input {
+            width: 100%;
+            height: 36px;
+            padding: 0 12px 0 36px;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+            font-size: 0.84rem;
+            font-family: inherit;
+            color: #0f172a;
+            outline: none;
+            background: #f8fafc;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .search-box input:focus {
+            border-color: #6366f1;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+        }
+
+        .search-box input::placeholder { color: #94a3b8; }
+
+        .toolbar-spacer { flex: 1; }
+
+        .btn-toolbar {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 36px;
+            padding: 0 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+            background: #fff;
+            color: #334155;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-toolbar:hover { background: #f8fafc; border-color: #94a3b8; }
+        .btn-toolbar svg, .btn-toolbar i { width: 14px; height: 14px; color: #6366f1; }
+
+        .table-scroll-wrap { overflow-x: auto; }
+
+        table.report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .report-table thead th {
+            background: #f8fafc;
+            padding: 11px 12px 11px 16px;
+            text-align: left;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+
+        .report-table thead th:last-child { text-align: center; }
+
+        .report-table tbody td {
+            padding: 13px 12px 13px 16px;
+            border-bottom: 1px solid #f8fafc;
+            vertical-align: middle;
+            color: #334155;
+        }
+
+        .report-table tbody tr:last-child td { border-bottom: none; }
+        .report-table tbody tr:hover { background: #fafafa; }
+
+        .customer-link {
+            font-weight: 600;
+            color: #4f46e5;
+            cursor: pointer;
+            transition: color 0.15s;
+        }
+
+        .customer-link:hover { color: #4338ca; text-decoration: underline; }
+
+        .status-pill {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .pay-pill {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .chip-wrap { display: flex; flex-wrap: wrap; gap: 3px; }
+        .chip {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            background: #f1f5f9;
+            color: #334155;
+            white-space: nowrap;
+        }
+
+        /* ── Pagination ──────────────────────────────────────────────── */
+        .pagination-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 1.25rem;
+            border-top: 1px solid #f1f5f9;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .pagination-info {
+            font-size: 0.8rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .page-btn {
+            min-width: 34px;
+            height: 34px;
+            padding: 0 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #fff;
+            color: #334155;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+
+        .page-btn:hover:not(:disabled) { background: #f1f5f9; border-color: #94a3b8; }
+        .page-btn.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ── Empty / Loading States ──────────────────────────────────── */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .empty-state i, .empty-state svg { width: 40px; height: 40px; margin-bottom: 10px; opacity: 0.4; display: block; margin-inline: auto; }
+
+        /* ── Active filter pill highlight ────────────────────────────── */
+        .filter-pill.active-filter {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            color: #4338ca;
+        }
+
+        /* ── Back link ───────────────────────────────────────────────── */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 0.84rem;
+            font-weight: 500;
+            color: #64748b;
+            text-decoration: none;
+            margin-bottom: 1rem;
+            transition: color 0.15s;
+        }
+
+        .back-link:hover { color: #6366f1; }
+        .back-link svg, .back-link i { width: 14px; height: 14px; }
+
+        /* ── Responsive ──────────────────────────────────────────────── */
+        @media (max-width: 1100px) {
+            .kpi-row { grid-template-columns: repeat(3, 1fr); }
+            .charts-row { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .kpi-row { grid-template-columns: repeat(2, 1fr); }
+            .filter-bar { gap: 8px; }
+        }
+
+        @media (max-width: 540px) {
+            .kpi-row { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media print {
+            .back-link, .header-actions, .filter-bar .btn-apply-filter,
+            .filter-bar .btn-reset-filter, .btn-toolbar, .pagination-bar { display: none !important; }
+        }
+    </style>
+</head>
+
+<body class="dashboard-body">
+
+    <!-- Global Sidebar Shell Placeholder -->
+    <div id="global-sidebar"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper" id="mainWrapper">
+
+        <!-- Global Header Shell Placeholder -->
+        <div id="global-header"></div>
+
+        <main class="content-area">
+
+            <!-- Back Link -->
+            <a href="reports.html" class="back-link">
+                <i data-feather="arrow-left"></i> Back to Report Library
+            </a>
+
+            <!-- Page Header -->
+            <div class="content-header">
+                <div class="header-title">
+                    <h1>Bookings Report</h1>
+                    <p class="subtitle">Filter by date, branch, status, staff or service — then export or print</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-top-action" id="btnExportCSV">
+                        <i data-feather="download"></i> Export CSV
+                    </button>
+                    <button class="btn-top-action" id="btnPrint">
+                        <i data-feather="printer"></i> Print
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── Filter Bar ─────────────────────────────────────────── -->
+            <div class="filter-bar">
+                <span class="filter-bar-label">Filters</span>
+
+                <!-- Date From -->
+                <label class="filter-pill" title="Start Date">
+                    <i data-feather="calendar"></i>
+                    <input type="date" id="filterStartDate" title="From date">
+                </label>
+
+                <span style="font-size:0.8rem;color:#94a3b8;font-weight:600;">to</span>
+
+                <!-- Date To -->
+                <label class="filter-pill" title="End Date">
+                    <i data-feather="calendar"></i>
+                    <input type="date" id="filterEndDate" title="To date">
+                </label>
+
+                <div class="filter-divider"></div>
+
+                <!-- Branch -->
+                <label class="filter-pill" title="Branch">
+                    <i data-feather="map-pin"></i>
+                    <select id="filterBranch">
+                        <option value="all">All Branches</option>
+                    </select>
+                </label>
+
+                <!-- Status -->
+                <label class="filter-pill" title="Booking Status">
+                    <i data-feather="tag"></i>
+                    <select id="filterStatus">
+                        <option value="all">All Statuses</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="no-show">No-Show</option>
+                        <option value="refunded">Refunded</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                </label>
+
+                <!-- Payment -->
+                <label class="filter-pill" title="Payment Status">
+                    <i data-feather="credit-card"></i>
+                    <select id="filterPayment">
+                        <option value="all">All Payments</option>
+                        <option value="paid">Paid</option>
+                        <option value="unpaid">Unpaid</option>
+                        <option value="pending">Pending</option>
+                        <option value="refunded">Refunded</option>
+                    </select>
+                </label>
+
+                <!-- Staff -->
+                <label class="filter-pill" title="Staff">
+                    <i data-feather="user"></i>
+                    <select id="filterStaff">
+                        <option value="all">All Staff</option>
+                    </select>
+                </label>
+
+                <button class="btn-apply-filter" id="btnApplyFilters">Apply</button>
+                <button class="btn-reset-filter" id="btnResetFilters">Reset</button>
+            </div>
+
+            <!-- ── KPI Row ─────────────────────────────────────────────── -->
+            <div class="kpi-row">
+                <div class="kpi-card kpi-total">
+                    <div class="kpi-label">Total Bookings</div>
+                    <div class="kpi-value" id="kpiTotal">—</div>
+                    <div class="kpi-sub" id="kpiTotalSub">in selected period</div>
+                </div>
+                <div class="kpi-card kpi-completed">
+                    <div class="kpi-label">Completed</div>
+                    <div class="kpi-value" id="kpiCompleted">—</div>
+                    <div class="kpi-sub" id="kpiCompletedSub">completion rate</div>
+                </div>
+                <div class="kpi-card kpi-cancelled">
+                    <div class="kpi-label">Cancelled</div>
+                    <div class="kpi-value" id="kpiCancelled">—</div>
+                    <div class="kpi-sub" id="kpiCancelledSub">cancellation rate</div>
+                </div>
+                <div class="kpi-card kpi-noshow">
+                    <div class="kpi-label">No-Shows</div>
+                    <div class="kpi-value" id="kpiNoShow">—</div>
+                    <div class="kpi-sub" id="kpiNoShowSub">no-show rate</div>
+                </div>
+                <div class="kpi-card kpi-revenue">
+                    <div class="kpi-label">Revenue (Realised)</div>
+                    <div class="kpi-value" id="kpiRevenue">—</div>
+                    <div class="kpi-sub" id="kpiRevenueSub">from completed bookings</div>
+                </div>
+            </div>
+
+            <!-- ── Charts Row ──────────────────────────────────────────── -->
+            <div class="charts-row">
+
+                <!-- Trend Chart -->
+                <div class="chart-card">
+                    <div class="chart-card-header">
+                        <div>
+                            <h3>Bookings Trend</h3>
+                            <span class="chart-subtitle">Daily booking volume over selected period</span>
+                        </div>
+                        <div id="trendChartLegend" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;"></div>
+                    </div>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Donut Chart -->
+                <div class="chart-card">
+                    <div class="chart-card-header">
+                        <div>
+                            <h3>Status Breakdown</h3>
+                            <span class="chart-subtitle">Booking distribution by outcome</span>
+                        </div>
+                    </div>
+                    <div class="donut-wrap">
+                        <div class="donut-canvas-box">
+                            <canvas id="donutChart"></canvas>
+                            <div class="donut-center">
+                                <span class="donut-center-val" id="donutCenterVal">—</span>
+                                <span class="donut-center-lbl" id="donutCenterLbl">Total</span>
+                            </div>
+                        </div>
+                        <div class="donut-legend" id="donutLegend"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ── Data Table ──────────────────────────────────────────── -->
+            <div class="data-table-container">
+
+                <div class="table-toolbar">
+                    <h2 class="table-title">Booking Records</h2>
+                    <span class="table-badge" id="tableCountBadge">0 bookings</span>
+
+                    <div class="search-box">
+                        <i data-feather="search"></i>
+                        <input type="text" id="tableSearch" placeholder="Search customer, service, staff…">
+                    </div>
+
+                    <div class="toolbar-spacer"></div>
+
+                    <button class="btn-toolbar" id="btnExportCSV2">
+                        <i data-feather="download"></i> CSV
+                    </button>
+                    <button class="btn-toolbar" id="btnPrint2">
+                        <i data-feather="printer"></i> Print
+                    </button>
+                </div>
+
+                <div class="table-scroll-wrap">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Customer</th>
+                                <th>Service(s)</th>
+                                <th>Staff</th>
+                                <th>Amount</th>
+                                <th>Payment</th>
+                                <th style="text-align:center;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr>
+                                <td colspan="8" class="empty-state">
+                                    <i data-feather="calendar"></i>
+                                    Set your filters above and click <strong>Apply</strong> to load bookings.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination-bar">
+                    <span class="pagination-info" id="paginationInfo">Showing 0 bookings</span>
+                    <div class="pagination-controls" id="paginationControls"></div>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Toast -->
+    <div id="toastNotification" class="toast-notification"></div>
+
+    <script type="module" src="scripts/app-shell.js"></script>
+    <script>feather.replace();</script>
+    <script src="logout.js"></script>
+    <script src="change-password.js"></script>
+    <script type="module" src="scripts/global-auth-guard.js"></script>
+    <script type="module" src="scripts/reports/bookings-report.js"></script>
+
+</body>
+</html>
