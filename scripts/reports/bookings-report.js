@@ -358,7 +358,7 @@ function renderTable(rows, page) {
             <td style="max-width:200px;">${chipCell(r.service)}</td>
             <td style="max-width:170px;">${chipCell(r.staff)}</td>
             <td style="font-weight:700;color:${amtColor};">${fmtINR(r.amount)}</td>
-            <td style="color:#ef4444;font-weight:600;">${r.discount > 0 ? '−' + fmtINR(r.discount) : '<span style="color:#94a3b8;">—</span>'}</td>
+            <td style="color:#ef4444;font-weight:600;">${r.discount > 0 ? '−' + fmtINR(r.discount) : '<span style="color:#94a3b8;font-size:0.8rem;">N/A</span>'}</td>
             <td style="font-weight:700;color:${amtColor};">${fmtINR((r.amount || 0) - (r.discount || 0))}</td>
             <td>${payPill(r.payment_status)}</td>
             <td style="text-align:center;">${statusPill(r.status)}</td>
