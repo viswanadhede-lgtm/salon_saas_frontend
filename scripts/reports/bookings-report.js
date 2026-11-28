@@ -9,14 +9,12 @@ import { supabase } from '../../lib/supabase.js';
 const PAGE_SIZE = 25;
 
 const STATUS_STYLES = {
+    booked:    { bg: '#dbeafe', color: '#1e40af' },
     completed: { bg: '#dcfce7', color: '#166534' },
-    confirmed: { bg: '#dbeafe', color: '#1e40af' },
-    pending:   { bg: '#fef9c3', color: '#854d0e' },
     cancelled: { bg: '#fee2e2', color: '#991b1b' },
     'no-show': { bg: '#fef3c7', color: '#92400e' },
     noshow:    { bg: '#fef3c7', color: '#92400e' },
     no_show:   { bg: '#fef3c7', color: '#92400e' },
-    refunded:  { bg: '#f3e8ff', color: '#6b21a8' },
 };
 
 const PAY_STYLES = {
@@ -139,7 +137,7 @@ async function fetchData(companyId, branchId, startDate, endDate) {
     //
     // ─────────────────────────────────────────────────────────────────────────
 
-    const statuses = ['completed', 'completed', 'completed', 'cancelled', 'no-show', 'refunded', 'confirmed'];
+    const statuses = ['completed', 'completed', 'booked', 'booked', 'cancelled', 'no-show'];
     const payments = ['paid', 'paid', 'unpaid', 'pending', 'paid', 'refunded'];
     const services = ['Hair Cut', 'Head Massage', 'Facial, Cleanup', 'Manicure, Pedicure', 'Hair Colour, Hair Cut', 'Waxing'];
     const staffs   = ['Priya S', 'Ravi K', 'Meena D', 'Ravi K, Priya S', 'Meena D'];
@@ -156,7 +154,7 @@ async function fetchData(companyId, branchId, startDate, endDate) {
         for (let i = 0; i < count; i++) {
             const st  = statuses[Math.floor(Math.random() * statuses.length)];
             const pay = st === 'completed' ? 'paid'
-                      : st === 'refunded'  ? 'refunded'
+                      : st === 'booked'    ? (Math.random() > 0.5 ? 'unpaid' : 'pending')
                       : st === 'cancelled' ? (Math.random() > 0.5 ? 'unpaid' : 'pending')
                       : payments[Math.floor(Math.random() * payments.length)];
             const amt = st === 'completed' ? (200 + Math.floor(Math.random() * 2300))
@@ -284,6 +282,18 @@ function updateKPIs(rows) {
         setCard(4, { label: 'Refund Rate',       value: refundRate,          sub: 'vs all bookings in period',       color: ACCENT.red    });
         setCard(5, { label: 'Revenue Impact',    value: '−' + fmtR(refundAmt), sub: 'deducted from collected revenue', color: ACCENT.red  });
 
+    } else if (statusFilter === 'booked') {
+        // ── Booked ──────────────────────────────────────────────────────────
+        const totalAmt  = sum(rows);
+        const avgAmt    = avg(totalAmt, totalFiltered);
+        const bookedRate = ratePct(totalFiltered, totalAll);
+
+        setCard(1, { label: 'Booked Appointments', value: fmtN(totalFiltered), sub: 'in selected period',          color: ACCENT.sky    });
+        setCard(2, { label: 'Est. Total Value',     value: fmtR(totalAmt),     sub: 'expected booking revenue',    color: ACCENT.sky    });
+        setCard(3, { label: 'Avg Booking Value',    value: fmtR(avgAmt),       sub: 'average per booking',         color: ACCENT.indigo });
+        setCard(4, { label: 'Booking Rate',         value: bookedRate,         sub: 'vs all bookings in period',   color: ACCENT.sky    });
+        setCard(5, { label: 'Action Needed',        value: fmtN(totalFiltered),sub: 'confirm or complete bookings',color: ACCENT.amber  });
+
     } else {
         // ── Confirmed / Pending / Other ─────────────────────────────────────
         const totalAmt = sum(rows);
@@ -335,6 +345,7 @@ function renderTable(rows, page) {
 
         const amtColor = {
             'completed': '#059669',
+            'booked':    '#1d4ed8',
             'cancelled': '#dc2626',
             'no-show':   '#d97706',
         }[normalizeStatus(r.status)] || '#0f172a';
