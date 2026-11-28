@@ -39,11 +39,50 @@
             max-width: 100%;
         }
 
-        .date-range-group {
+        .date-range-card {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             flex-wrap: wrap;
+            min-height: 38px;
+            padding: 0 11px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            transition: all 0.15s ease;
+        }
+
+        .date-range-card:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+
+        .date-range-card:focus-within {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+        }
+
+        .date-input-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        .date-input-item svg, .date-input-item i { width: 14px; height: 14px; color: #6366f1; flex-shrink: 0; }
+
+        .date-input-item input[type="date"] {
+            border: none;
+            background: transparent;
+            font-weight: 600;
+            font-size: 0.83rem;
+            font-family: inherit;
+            color: #0f172a;
+            outline: none;
+            cursor: pointer;
+            width: 114px;
+            padding: 6px 0;
         }
 
         .filter-bar-label {
@@ -95,18 +134,6 @@
         .filter-pill:focus-within {
             border-color: #6366f1;
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
-        }
-
-        .filter-pill input[type="date"] {
-            border: none;
-            background: transparent;
-            font-weight: 600;
-            font-size: 0.83rem;
-            font-family: inherit;
-            color: #0f172a;
-            outline: none;
-            cursor: pointer;
-            width: 116px;
         }
 
         .btn-apply-filter {
@@ -522,16 +549,16 @@
 
                 <!-- ── Filter Pills + Apply ───────────────────────────────── -->
                 <div class="filters-group">
-                    <!-- Date Range -->
-                    <div class="date-range-group">
-                        <label class="filter-pill" title="Start Date">
+                    <!-- Date Range Card -->
+                    <div class="date-range-card">
+                        <label class="date-input-item" title="Start Date">
                             <i data-feather="calendar"></i>
                             <input type="date" id="filterStartDate" title="From date">
                         </label>
 
                         <span class="filter-bar-label">to</span>
 
-                        <label class="filter-pill" title="End Date">
+                        <label class="date-input-item" title="End Date">
                             <i data-feather="calendar"></i>
                             <input type="date" id="filterEndDate" title="To date">
                         </label>
