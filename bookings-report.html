@@ -224,19 +224,8 @@
 
         .kpi-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
 
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            left: 0; top: 0; bottom: 0;
-            width: 3px;
-            border-radius: 14px 0 0 14px;
-        }
-
-        .kpi-card.kpi-total::before    { background: #6366f1; }
-        .kpi-card.kpi-completed::before{ background: #10b981; }
-        .kpi-card.kpi-cancelled::before{ background: #ef4444; }
-        .kpi-card.kpi-noshow::before   { background: #f59e0b; }
-        .kpi-card.kpi-revenue::before  { background: #0ea5e9; }
+        /* Left accent border set dynamically by JS via borderLeft */
+        .kpi-card { border-left: 3px solid #6366f1; }
 
         .kpi-label {
             font-size: 0.775rem;
@@ -254,10 +243,7 @@
             letter-spacing: -0.02em;
         }
 
-        .kpi-card.kpi-revenue .kpi-value { font-size: 1.5rem; color: #0ea5e9; }
-        .kpi-card.kpi-completed .kpi-value { color: #059669; }
-        .kpi-card.kpi-cancelled .kpi-value { color: #dc2626; }
-        .kpi-card.kpi-noshow .kpi-value    { color: #d97706; }
+
 
         .kpi-sub {
             font-size: 0.75rem;
@@ -634,31 +620,31 @@
             </div>
 
             <!-- ── KPI Row ─────────────────────────────────────────────── -->
-            <div class="kpi-row">
-                <div class="kpi-card kpi-total">
-                    <div class="kpi-label">Total Bookings</div>
-                    <div class="kpi-value" id="kpiTotal">—</div>
-                    <div class="kpi-sub" id="kpiTotalSub">in selected period</div>
+            <div class="kpi-row" id="kpiRow">
+                <div class="kpi-card" id="kpiCard1">
+                    <div class="kpi-label" id="kpiLabel1">Total Bookings</div>
+                    <div class="kpi-value" id="kpiVal1">—</div>
+                    <div class="kpi-sub"   id="kpiSub1">in selected period</div>
                 </div>
-                <div class="kpi-card kpi-completed">
-                    <div class="kpi-label">Completed</div>
-                    <div class="kpi-value" id="kpiCompleted">—</div>
-                    <div class="kpi-sub" id="kpiCompletedSub">completion rate</div>
+                <div class="kpi-card" id="kpiCard2">
+                    <div class="kpi-label" id="kpiLabel2">Completed</div>
+                    <div class="kpi-value" id="kpiVal2">—</div>
+                    <div class="kpi-sub"   id="kpiSub2">completion rate</div>
                 </div>
-                <div class="kpi-card kpi-cancelled">
-                    <div class="kpi-label">Cancelled</div>
-                    <div class="kpi-value" id="kpiCancelled">—</div>
-                    <div class="kpi-sub" id="kpiCancelledSub">cancellation rate</div>
+                <div class="kpi-card" id="kpiCard3">
+                    <div class="kpi-label" id="kpiLabel3">Cancelled</div>
+                    <div class="kpi-value" id="kpiVal3">—</div>
+                    <div class="kpi-sub"   id="kpiSub3">cancellation rate</div>
                 </div>
-                <div class="kpi-card kpi-noshow">
-                    <div class="kpi-label">No-Shows</div>
-                    <div class="kpi-value" id="kpiNoShow">—</div>
-                    <div class="kpi-sub" id="kpiNoShowSub">no-show rate</div>
+                <div class="kpi-card" id="kpiCard4">
+                    <div class="kpi-label" id="kpiLabel4">No-Shows</div>
+                    <div class="kpi-value" id="kpiVal4">—</div>
+                    <div class="kpi-sub"   id="kpiSub4">no-show rate</div>
                 </div>
-                <div class="kpi-card kpi-revenue">
-                    <div class="kpi-label">Revenue (Realised)</div>
-                    <div class="kpi-value" id="kpiRevenue">—</div>
-                    <div class="kpi-sub" id="kpiRevenueSub">from completed bookings</div>
+                <div class="kpi-card" id="kpiCard5">
+                    <div class="kpi-label" id="kpiLabel5">Revenue Collected</div>
+                    <div class="kpi-value" id="kpiVal5">—</div>
+                    <div class="kpi-sub"   id="kpiSub5">from completed bookings</div>
                 </div>
             </div>
 

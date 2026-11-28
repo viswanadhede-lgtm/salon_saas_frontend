@@ -202,32 +202,147 @@ async function fetchData(companyId, branchId, startDate, endDate) {
 }
 
 // ─── KPI Computation ──────────────────────────────────────────────────────────
-function computeKPIs(rows) {
-    const total     = rows.length;
-    const completed = rows.filter(r => normalizeStatus(r.status) === 'completed').length;
-    const cancelled = rows.filter(r => normalizeStatus(r.status) === 'cancelled').length;
-    const noshow    = rows.filter(r => ['no-show','noshow','no_show'].includes(normalizeStatus(r.status))).length;
-    const revenue   = rows
-        .filter(r => normalizeStatus(r.status) === 'completed' && (r.payment_status || '').toLowerCase() === 'paid')
-        .reduce((s, r) => s + Number(r.amount || 0), 0);
-    return { total, completed, cancelled, noshow, revenue };
+// ─── Adaptive KPI Cards ───────────────────────────────────────────────────────
+// Cards change their label, value, sub-text and accent colour based on the
+// active status filter — so they're always meaningful, never show 0 / N/A.
+
+const ACCENT = {
+    indigo: '#6366f1',
+    green:  '#10b981',
+    red:    '#ef4444',
+    amber:  '#f59e0b',
+    sky:    '#0ea5e9',
+    purple: '#a855f7',
+};
+
+function setCard(n, { label, value, sub, color }) {
+    const lbl = document.getElementById('kpiLabel' + n);
+    const val = document.getElementById('kpiVal'   + n);
+    const sub_ = document.getElementById('kpiSub'  + n);
+    if (lbl)  lbl.textContent  = label;
+    if (val)  { val.textContent = value; val.style.color = color || '#0f172a'; }
+    if (sub_) sub_.textContent = sub;
+    // update left-border accent
+    const card = val?.closest('.kpi-card');
+    if (card) card.style.setProperty('--kpi-accent', color || ACCENT.indigo);
+    // update ::before via inline style trick
+    if (card) {
+        // remove old accent classes, inject accent via style tag trick using data attr
+        card.dataset.accent = color || ACCENT.indigo;
+    }
+}
+
+// Inject a tiny <style> block so ::before picks up the per-card accent from data-accent
+(function injectAccentStyle() {
+    const s = document.createElement('style');
+    s.textContent = `
+        .kpi-card[data-accent]::before { background: attr(data-accent color, #6366f1); }
+    `;
+    // attr() in ::before not supported everywhere — use CSS custom property instead
+    document.head.appendChild(s);
+})();
+
+function applyCardAccent(n, color) {
+    const card = document.getElementById('kpiVal' + n)?.closest('.kpi-card');
+    if (!card) return;
+    card.style.setProperty('--accent-color', color);
+    // We'll use a CSS var on each card and apply it via inline style on the pseudo-element
+    // by using a workaround: set a box-shadow on the left side instead of ::before
+    // Actually — simplest cross-browser approach: just set borderLeft directly
+    card.style.borderLeft = `3px solid ${color}`;
+    card.style.borderRadius = '14px';
 }
 
 function updateKPIs(rows) {
-    const k = computeKPIs(rows);
+    const statusFilter = (document.getElementById('filterStatus')?.value || 'all').toLowerCase();
 
-    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    set('kpiTotal',     k.total.toLocaleString('en-IN'));
-    set('kpiCompleted', k.completed.toLocaleString('en-IN'));
-    set('kpiCancelled', k.cancelled.toLocaleString('en-IN'));
-    set('kpiNoShow',    k.noshow.toLocaleString('en-IN'));
-    set('kpiRevenue',   fmtINR(k.revenue));
+    // Always compute from full allRows for rates; from filteredRows for counts/amounts
+    const totalAll   = allRows.length;
+    const totalFiltered = rows.length;
 
-    set('kpiTotalSub',     `in selected period`);
-    set('kpiCompletedSub', pct(k.completed, k.total) + ' completion rate');
-    set('kpiCancelledSub', pct(k.cancelled, k.total) + ' cancellation rate');
-    set('kpiNoShowSub',    pct(k.noshow, k.total) + ' no-show rate');
-    set('kpiRevenueSub',   `from ${k.completed.toLocaleString('en-IN')} completed bookings`);
+    const sum = arr => arr.reduce((s, r) => s + Number(r.amount || 0), 0);
+    const avg = (total, count) => count > 0 ? total / count : 0;
+    const ratePct = (num, den) => den > 0 ? ((num / den) * 100).toFixed(1) + '%' : '0%';
+    const fmtN = n => Number(n || 0).toLocaleString('en-IN');
+    const fmtR = n => '₹' + Math.round(Number(n || 0)).toLocaleString('en-IN');
+
+    if (statusFilter === 'all') {
+        // ── All statuses ────────────────────────────────────────────────────
+        const completed = rows.filter(r => normalizeStatus(r.status) === 'completed');
+        const cancelled = rows.filter(r => normalizeStatus(r.status) === 'cancelled');
+        const noshow    = rows.filter(r => ['no-show','noshow','no_show'].includes(normalizeStatus(r.status)));
+        const revenue   = sum(completed.filter(r => (r.payment_status || '').toLowerCase() === 'paid'));
+
+        setCard(1, { label: 'Total Bookings',    value: fmtN(totalFiltered),  sub: 'in selected period',                   color: ACCENT.indigo });
+        setCard(2, { label: 'Completed',         value: fmtN(completed.length), sub: ratePct(completed.length, totalFiltered) + ' completion rate', color: ACCENT.green  });
+        setCard(3, { label: 'Cancelled',         value: fmtN(cancelled.length), sub: ratePct(cancelled.length, totalFiltered) + ' cancellation rate', color: ACCENT.red  });
+        setCard(4, { label: 'No-Shows',          value: fmtN(noshow.length),   sub: ratePct(noshow.length, totalFiltered) + ' no-show rate',      color: ACCENT.amber  });
+        setCard(5, { label: 'Revenue Collected', value: fmtR(revenue),         sub: 'from ' + fmtN(completed.length) + ' completed bookings',     color: ACCENT.sky    });
+
+    } else if (statusFilter === 'completed') {
+        // ── Completed ───────────────────────────────────────────────────────
+        const paidRows  = rows.filter(r => (r.payment_status || '').toLowerCase() === 'paid');
+        const unpaid    = rows.filter(r => ['unpaid','pending'].includes((r.payment_status || '').toLowerCase()));
+        const revenue   = sum(paidRows);
+        const avgVal    = avg(revenue, paidRows.length);
+        const compRate  = ratePct(totalFiltered, totalAll);
+
+        setCard(1, { label: 'Completed Bookings', value: fmtN(totalFiltered),  sub: 'in selected period',                     color: ACCENT.green  });
+        setCard(2, { label: 'Revenue Collected',  value: fmtR(revenue),        sub: 'from ' + fmtN(paidRows.length) + ' paid bookings',         color: ACCENT.sky    });
+        setCard(3, { label: 'Avg per Booking',    value: fmtR(avgVal),         sub: 'average booking value',                   color: ACCENT.indigo });
+        setCard(4, { label: 'Completion Rate',    value: compRate,             sub: 'vs all bookings in period',               color: ACCENT.green  });
+        setCard(5, { label: 'Pending Payments',   value: fmtN(unpaid.length),  sub: fmtR(sum(unpaid)) + ' yet to collect',    color: ACCENT.amber  });
+
+    } else if (statusFilter === 'cancelled') {
+        // ── Cancelled ───────────────────────────────────────────────────────
+        const lostAmt  = sum(rows);
+        const avgLost  = avg(lostAmt, totalFiltered);
+        const cancelRate = ratePct(totalFiltered, totalAll);
+
+        setCard(1, { label: 'Cancelled Bookings', value: fmtN(totalFiltered), sub: 'in selected period',              color: ACCENT.red    });
+        setCard(2, { label: 'Est. Value Lost',     value: fmtR(lostAmt),      sub: 'potential revenue missed',        color: ACCENT.red    });
+        setCard(3, { label: 'Avg Lost per Booking',value: fmtR(avgLost),      sub: 'average booking value',           color: ACCENT.amber  });
+        setCard(4, { label: 'Cancellation Rate',   value: cancelRate,         sub: 'vs all bookings in period',       color: ACCENT.red    });
+        setCard(5, { label: 'Recoverable',         value: fmtN(totalFiltered),sub: 'consider follow-up / rescheduling', color: ACCENT.indigo });
+
+    } else if (statusFilter === 'no-show') {
+        // ── No-Show ─────────────────────────────────────────────────────────
+        const missedAmt  = sum(rows);
+        const avgMissed  = avg(missedAmt, totalFiltered);
+        const noShowRate = ratePct(totalFiltered, totalAll);
+
+        setCard(1, { label: 'No-Show Bookings',   value: fmtN(totalFiltered), sub: 'in selected period',              color: ACCENT.amber  });
+        setCard(2, { label: 'Est. Missed Revenue', value: fmtR(missedAmt),    sub: 'potential revenue not realised',  color: ACCENT.amber  });
+        setCard(3, { label: 'Avg Missed Value',    value: fmtR(avgMissed),    sub: 'per no-show appointment',         color: ACCENT.amber  });
+        setCard(4, { label: 'No-Show Rate',        value: noShowRate,         sub: 'vs all bookings in period',       color: ACCENT.red    });
+        setCard(5, { label: 'Follow-up Needed',    value: fmtN(totalFiltered),sub: 'consider reminder policy',        color: ACCENT.indigo });
+
+    } else if (statusFilter === 'refunded') {
+        // ── Refunded ────────────────────────────────────────────────────────
+        const refundAmt  = sum(rows);
+        const avgRefund  = avg(refundAmt, totalFiltered);
+        const refundRate = ratePct(totalFiltered, totalAll);
+
+        setCard(1, { label: 'Refunded Bookings', value: fmtN(totalFiltered), sub: 'in selected period',              color: ACCENT.purple });
+        setCard(2, { label: 'Amount Refunded',   value: fmtR(refundAmt),     sub: 'total refunded to customers',     color: ACCENT.purple });
+        setCard(3, { label: 'Avg Refund',        value: fmtR(avgRefund),     sub: 'per refunded booking',            color: ACCENT.purple });
+        setCard(4, { label: 'Refund Rate',       value: refundRate,          sub: 'vs all bookings in period',       color: ACCENT.red    });
+        setCard(5, { label: 'Revenue Impact',    value: '−' + fmtR(refundAmt), sub: 'deducted from collected revenue', color: ACCENT.red  });
+
+    } else {
+        // ── Confirmed / Pending / Other ─────────────────────────────────────
+        const totalAmt = sum(rows);
+        const avgAmt   = avg(totalAmt, totalFiltered);
+
+        setCard(1, { label: 'Total Bookings',   value: fmtN(totalFiltered), sub: 'in selected period',          color: ACCENT.indigo });
+        setCard(2, { label: 'Est. Total Value', value: fmtR(totalAmt),      sub: 'expected booking revenue',    color: ACCENT.sky    });
+        setCard(3, { label: 'Avg Booking Value',value: fmtR(avgAmt),        sub: 'average per booking',         color: ACCENT.indigo });
+        setCard(4, { label: 'Action Needed',    value: fmtN(totalFiltered), sub: 'confirm or update status',    color: ACCENT.amber  });
+        setCard(5, { label: 'Conversion Target',value: fmtN(totalFiltered), sub: 'aim to complete all',         color: ACCENT.green  });
+    }
+
+    // Apply left-border accent colour to each card
+    for (let i = 1; i <= 5; i++) applyCardAccent(i, '');
 }
 
 // ─── Table ────────────────────────────────────────────────────────────────────
