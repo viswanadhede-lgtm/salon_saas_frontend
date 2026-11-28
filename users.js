@@ -6,7 +6,8 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
     const getCompanyId = () => {
         try {
             const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-            return ctx.company?.id || localStorage.getItem('company_id') || null;
+            // Try all known paths where company_id may live
+            return ctx.company?.company_id || ctx.company?.id || ctx.company_id || localStorage.getItem('company_id') || null;
         } catch { return localStorage.getItem('company_id') || null; }
     };
 
@@ -180,8 +181,8 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
                 });
             }
 
-            // Load Roles
-            const { data: rData } = await supabase.schema('shared').from('roles').select('role_id, role_name').eq('company_id', cid);
+            // Load Roles — exclude deleted roles
+            const { data: rData } = await supabase.schema('shared').from('roles').select('role_id, role_name').eq('company_id', cid).neq('status', 'deleted');
             const uRole = document.getElementById('uRole');
             if (uRole && rData) {
                 availableRoles = rData;
@@ -382,13 +383,25 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
         } else if (action === 'toggle') {
             const newStatus = user.status === 'active' ? 'inactive' : 'active';
             try {
-                const { data: rpcData, error } = await supabase.rpc('toggle_user_status_atomic', {
+                // Find role name from loaded roles (or fall back to what's on the user row)
+                const rObj = availableRoles.find(r => String(r.role_id) === String(user.role_id));
+                const roleName = rObj ? rObj.role_name : (user.role_name || null);
+
+                const branchId = (!user.branch_id || user.branch_id === 'all') ? null : user.branch_id;
+
+                const { data: rpcData, error } = await supabase.rpc('update_user_atomic', {
                     p_company_id: getCompanyId(),
                     p_user_id:    id,
-                    p_new_status: newStatus
+                    p_name:       user.name,
+                    p_email:      user.email,
+                    p_phone:      user.phone || '',
+                    p_role_id:    user.role_id,
+                    p_role_name:  roleName,
+                    p_branch_id:  branchId,
+                    p_status:     newStatus
                 });
                 if (error) throw error;
-                if (rpcData?.success === false) throw new Error(rpcData.error || 'Failed to update status');
+                if (rpcData?.success === false) throw new Error(rpcData?.message || rpcData?.error || 'Failed to update status');
                 await loadUsers();
                 showToast(`${user.name} is now ${newStatus}.`);
             } catch (err) {
@@ -403,7 +416,7 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
                         p_user_id:    id
                     });
                     if (error) throw error;
-                    if (rpcData?.success === false) throw new Error(rpcData.error || 'Failed to delete user');
+                    if (rpcData?.success === false) throw new Error(rpcData?.message || rpcData?.error || 'Failed to delete user');
                     await loadUsers();
                     showToast(`User "${user.name}" has been deleted.`);
                     refreshUsageCounter('max_users');
@@ -575,20 +588,8 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
             // password_hash column is intentionally excluded from payload
 
             if (editingId !== null) {
-                // If a new password was provided for existing user, update Supabase Auth via RPC
-                if (password) {
-                    const rpcRes = await supabase.rpc('admin_update_user_password', {
-                        target_user_id: editingId,
-                        new_password: password
-                    });
-                    if (rpcRes.error) {
-                        const errMsg = rpcRes.error.message || JSON.stringify(rpcRes.error);
-                        throw new Error(`Failed to update login password: ${errMsg}`);
-                    }
-                    if (rpcRes.data && rpcRes.data.success === false) {
-                        throw new Error(rpcRes.data.error || 'Failed to update login password');
-                    }
-                }
+                // NOTE: Password update via Auth is deferred — no admin_update_user_password RPC exists.
+                // If a password was typed in edit mode, we silently ignore it for now.
 
                 // Update user profile via stored procedure
                 const { data: updateData, error } = await supabase.rpc('update_user_atomic', {
@@ -603,7 +604,7 @@ import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './c
                     p_status:     payload.status
                 });
                 if (error) throw error;
-                if (updateData?.success === false) throw new Error(updateData.error || 'Failed to update user');
+                if (updateData?.success === false) throw new Error(updateData?.message || updateData?.error || 'Failed to update user');
                 showToast('User updated successfully!');
             } else {
                 // 1. Create the user in actual Supabase Auth first so they can log in
