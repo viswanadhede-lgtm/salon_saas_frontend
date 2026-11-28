@@ -216,41 +216,15 @@ const ACCENT = {
 };
 
 function setCard(n, { label, value, sub, color }) {
-    const lbl = document.getElementById('kpiLabel' + n);
-    const val = document.getElementById('kpiVal'   + n);
-    const sub_ = document.getElementById('kpiSub'  + n);
+    const lbl  = document.getElementById('kpiLabel' + n);
+    const val  = document.getElementById('kpiVal'   + n);
+    const sub_ = document.getElementById('kpiSub'   + n);
     if (lbl)  lbl.textContent  = label;
     if (val)  { val.textContent = value; val.style.color = color || '#0f172a'; }
     if (sub_) sub_.textContent = sub;
-    // update left-border accent
+
     const card = val?.closest('.kpi-card');
-    if (card) card.style.setProperty('--kpi-accent', color || ACCENT.indigo);
-    // update ::before via inline style trick
-    if (card) {
-        // remove old accent classes, inject accent via style tag trick using data attr
-        card.dataset.accent = color || ACCENT.indigo;
-    }
-}
-
-// Inject a tiny <style> block so ::before picks up the per-card accent from data-accent
-(function injectAccentStyle() {
-    const s = document.createElement('style');
-    s.textContent = `
-        .kpi-card[data-accent]::before { background: attr(data-accent color, #6366f1); }
-    `;
-    // attr() in ::before not supported everywhere — use CSS custom property instead
-    document.head.appendChild(s);
-})();
-
-function applyCardAccent(n, color) {
-    const card = document.getElementById('kpiVal' + n)?.closest('.kpi-card');
-    if (!card) return;
-    card.style.setProperty('--accent-color', color);
-    // We'll use a CSS var on each card and apply it via inline style on the pseudo-element
-    // by using a workaround: set a box-shadow on the left side instead of ::before
-    // Actually — simplest cross-browser approach: just set borderLeft directly
-    card.style.borderLeft = `3px solid ${color}`;
-    card.style.borderRadius = '14px';
+    if (card) card.style.borderLeft = `3px solid ${color || ACCENT.indigo}`;
 }
 
 function updateKPIs(rows) {
@@ -340,9 +314,6 @@ function updateKPIs(rows) {
         setCard(4, { label: 'Action Needed',    value: fmtN(totalFiltered), sub: 'confirm or update status',    color: ACCENT.amber  });
         setCard(5, { label: 'Conversion Target',value: fmtN(totalFiltered), sub: 'aim to complete all',         color: ACCENT.green  });
     }
-
-    // Apply left-border accent colour to each card
-    for (let i = 1; i <= 5; i++) applyCardAccent(i, '');
 }
 
 // ─── Table ────────────────────────────────────────────────────────────────────
@@ -368,6 +339,8 @@ function renderTable(rows, page) {
             No bookings match your filter criteria.
         </td></tr>`;
         if (typeof feather !== 'undefined') feather.replace();
+        const info = document.getElementById('paginationInfo');
+        if (info) info.textContent = 'Showing 0 bookings';
         renderPagination(0, 1, 1);
         return;
     }
@@ -520,7 +493,7 @@ async function loadData() {
         Loading bookings…
     </td></tr>`;
 
-    ['kpiTotal','kpiCompleted','kpiCancelled','kpiNoShow','kpiRevenue'].forEach(id => {
+    ['kpiVal1','kpiVal2','kpiVal3','kpiVal4','kpiVal5'].forEach(id => {
         const el = document.getElementById(id); if (el) el.textContent = '…';
     });
 
@@ -571,16 +544,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (el) el.onchange = applyClientFilters;
     });
 
-    // Wire export & print (both header buttons + toolbar buttons)
-    ['btnExportCSV','btnExportCSV2'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.onclick = exportCSV;
-    });
+    // Wire toolbar export & print
+    const btnExport = document.getElementById('btnExportCSV2');
+    if (btnExport) btnExport.onclick = exportCSV;
 
-    ['btnPrint','btnPrint2'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.onclick = () => window.print();
-    });
+    const btnPrint = document.getElementById('btnPrint2');
+    if (btnPrint) btnPrint.onclick = () => window.print();
 
     // Initial load
     await loadData();
