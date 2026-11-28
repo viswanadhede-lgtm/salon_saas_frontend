@@ -30,17 +30,25 @@
             margin-bottom: 2rem;
         }
 
-        /* ── Filter Bar ──────────────────────────────────────────────── */
+        /* ── Filter Cards + Standalone Apply ─────────────────────────── */
+        .filters-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            max-width: 100%;
+        }
+
         .filter-bar {
             display: inline-flex;
             align-items: center;
             gap: 6px;
             flex-wrap: wrap;
             max-width: 100%;
-            padding: 0.5rem 0.75rem;
+            padding: 0.4rem 0.65rem;
             background: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 12px;
+            border-radius: 11px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.02);
         }
 
@@ -56,7 +64,7 @@
             align-items: center;
             gap: 5px;
             padding: 0 8px;
-            height: 34px;
+            height: 32px;
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
@@ -101,26 +109,20 @@
             width: 112px;
         }
 
-        .filter-divider {
-            width: 1px;
-            height: 20px;
-            background: #e2e8f0;
-            flex-shrink: 0;
-        }
-
         .btn-apply-filter {
-            padding: 0 14px;
-            height: 34px;
+            padding: 0 18px;
+            height: 46px;
             border: none;
-            border-radius: 8px;
+            border-radius: 11px;
             background: #4f46e5;
             color: #fff;
-            font-size: 0.8rem;
+            font-size: 0.84rem;
             font-weight: 600;
             cursor: pointer;
             font-family: inherit;
             transition: background 0.15s;
             white-space: nowrap;
+            box-shadow: 0 1px 3px rgba(79,70,229,0.22);
         }
 
         .btn-apply-filter:hover { background: #4338ca; }
@@ -483,7 +485,7 @@
         }
 
         @media print {
-            .breadcrumb-nav, .filter-bar .btn-apply-filter,
+            .breadcrumb-nav, .btn-apply-filter,
             .btn-toolbar, .pagination-bar { display: none !important; }
         }
     </style>
@@ -518,60 +520,65 @@
                     <p class="report-page-subtitle">View detailed bookings report</p>
                 </div>
 
-                <!-- ── Filter Bar ─────────────────────────────────────────── -->
-                <div class="filter-bar">
-                    <span class="filter-bar-label">From</span>
+                <!-- ── Filter Cards + Apply ───────────────────────────────── -->
+                <div class="filters-group">
+                    <!-- Card 1: Date Range -->
+                    <div class="filter-bar">
+                        <span class="filter-bar-label">From</span>
 
-                    <!-- Date From -->
-                    <label class="filter-pill" title="Start Date">
-                        <i data-feather="calendar"></i>
-                        <input type="date" id="filterStartDate" title="From date">
-                    </label>
+                        <!-- Date From -->
+                        <label class="filter-pill" title="Start Date">
+                            <i data-feather="calendar"></i>
+                            <input type="date" id="filterStartDate" title="From date">
+                        </label>
 
-                    <span class="filter-bar-label">to</span>
+                        <span class="filter-bar-label">to</span>
 
-                    <!-- Date To -->
-                    <label class="filter-pill" title="End Date">
-                        <i data-feather="calendar"></i>
-                        <input type="date" id="filterEndDate" title="To date">
-                    </label>
+                        <!-- Date To -->
+                        <label class="filter-pill" title="End Date">
+                            <i data-feather="calendar"></i>
+                            <input type="date" id="filterEndDate" title="To date">
+                        </label>
+                    </div>
 
-                    <div class="filter-divider"></div>
+                    <!-- Card 2: Dropdown Filters -->
+                    <div class="filter-bar">
+                        <!-- Status -->
+                        <label class="filter-pill" title="Booking Status">
+                            <i data-feather="tag"></i>
+                            <select id="filterStatus">
+                                <option value="all">All Statuses</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                                <option value="no-show">No-Show</option>
+                                <option value="refunded">Refunded</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="pending">Pending</option>
+                            </select>
+                        </label>
 
-                    <!-- Status -->
-                    <label class="filter-pill" title="Booking Status">
-                        <i data-feather="tag"></i>
-                        <select id="filterStatus">
-                            <option value="all">All Statuses</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                            <option value="no-show">No-Show</option>
-                            <option value="refunded">Refunded</option>
-                            <option value="confirmed">Confirmed</option>
-                            <option value="pending">Pending</option>
-                        </select>
-                    </label>
+                        <!-- Payment -->
+                        <label class="filter-pill" title="Payment Status">
+                            <i data-feather="credit-card"></i>
+                            <select id="filterPayment">
+                                <option value="all">All Payments</option>
+                                <option value="paid">Paid</option>
+                                <option value="unpaid">Unpaid</option>
+                                <option value="pending">Pending</option>
+                                <option value="refunded">Refunded</option>
+                            </select>
+                        </label>
 
-                    <!-- Payment -->
-                    <label class="filter-pill" title="Payment Status">
-                        <i data-feather="credit-card"></i>
-                        <select id="filterPayment">
-                            <option value="all">All Payments</option>
-                            <option value="paid">Paid</option>
-                            <option value="unpaid">Unpaid</option>
-                            <option value="pending">Pending</option>
-                            <option value="refunded">Refunded</option>
-                        </select>
-                    </label>
+                        <!-- Staff -->
+                        <label class="filter-pill" title="Staff">
+                            <i data-feather="user"></i>
+                            <select id="filterStaff">
+                                <option value="all">All Staff</option>
+                            </select>
+                        </label>
+                    </div>
 
-                    <!-- Staff -->
-                    <label class="filter-pill" title="Staff">
-                        <i data-feather="user"></i>
-                        <select id="filterStaff">
-                            <option value="all">All Staff</option>
-                        </select>
-                    </label>
-
+                    <!-- Standalone Apply -->
                     <button class="btn-apply-filter" id="btnApplyFilters">Apply</button>
                 </div>
             </div>
