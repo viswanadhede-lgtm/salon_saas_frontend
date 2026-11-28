@@ -416,6 +416,12 @@
             font-size: 0.85rem;
         }
 
+        .report-title-group {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
         .report-page-title {
             font-size: 1.65rem;
             font-weight: 800;
@@ -424,6 +430,14 @@
             line-height: 1.2;
             margin: 0;
             white-space: nowrap;
+        }
+
+        .report-page-subtitle {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #64748b;
+            margin: 0;
+            line-height: 1.35;
         }
 
         .breadcrumb-link {
@@ -499,7 +513,10 @@
 
             <!-- Title + Filters Single Row -->
             <div class="report-header-row">
-                <h1 class="report-page-title">Bookings Report</h1>
+                <div class="report-title-group">
+                    <h1 class="report-page-title">Bookings Report</h1>
+                    <p class="report-page-subtitle">View detailed bookings report</p>
+                </div>
 
                 <!-- ── Filter Bar ─────────────────────────────────────────── -->
                 <div class="filter-bar">
