@@ -30,7 +30,7 @@
             margin-bottom: 2rem;
         }
 
-        /* ── Filter Cards + Standalone Apply ─────────────────────────── */
+        /* ── Filter Pills + Apply ────────────────────────────────────── */
         .filters-group {
             display: flex;
             align-items: center;
@@ -39,21 +39,15 @@
             max-width: 100%;
         }
 
-        .filter-bar {
+        .date-range-group {
             display: inline-flex;
             align-items: center;
             gap: 6px;
             flex-wrap: wrap;
-            max-width: 100%;
-            padding: 0.4rem 0.65rem;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 11px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
         }
 
         .filter-bar-label {
-            font-size: 0.78rem;
+            font-size: 0.8rem;
             font-weight: 600;
             color: #64748b;
             white-space: nowrap;
@@ -62,61 +56,67 @@
         .filter-pill {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            padding: 0 8px;
-            height: 32px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 0.8rem;
+            gap: 6px;
+            padding: 0 11px;
+            height: 38px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            font-size: 0.83rem;
             font-weight: 600;
-            color: #334155;
+            color: #0f172a;
             cursor: pointer;
             font-family: inherit;
-            transition: all 0.15s;
+            transition: all 0.15s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
             white-space: nowrap;
         }
 
-        .filter-pill svg, .filter-pill i { width: 13px; height: 13px; color: #6366f1; flex-shrink: 0; }
+        .filter-pill:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+
+        .filter-pill svg, .filter-pill i { width: 14px; height: 14px; color: #6366f1; flex-shrink: 0; }
 
         .filter-pill select {
             border: none;
             background: transparent;
             font-weight: 600;
-            font-size: 0.8rem;
+            font-size: 0.83rem;
             font-family: inherit;
-            color: #334155;
+            color: #0f172a;
             outline: none;
             cursor: pointer;
             padding: 0;
-            max-width: 130px;
+            max-width: 135px;
         }
 
         .filter-pill:focus-within {
             border-color: #6366f1;
-            background: #eef2ff;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
         }
 
         .filter-pill input[type="date"] {
             border: none;
             background: transparent;
             font-weight: 600;
-            font-size: 0.8rem;
+            font-size: 0.83rem;
             font-family: inherit;
-            color: #334155;
+            color: #0f172a;
             outline: none;
             cursor: pointer;
-            width: 112px;
+            width: 116px;
         }
 
         .btn-apply-filter {
             padding: 0 18px;
-            height: 46px;
+            height: 38px;
             border: none;
-            border-radius: 11px;
+            border-radius: 9px;
             background: #4f46e5;
             color: #fff;
-            font-size: 0.84rem;
+            font-size: 0.83rem;
             font-weight: 600;
             cursor: pointer;
             font-family: inherit;
@@ -477,7 +477,7 @@
 
         @media (max-width: 768px) {
             .kpi-row { grid-template-columns: repeat(2, 1fr); }
-            .filter-bar { gap: 8px; }
+            .filters-group { gap: 6px; }
         }
 
         @media (max-width: 540px) {
@@ -520,11 +520,10 @@
                     <p class="report-page-subtitle">View detailed bookings report</p>
                 </div>
 
-                <!-- ── Filter Cards + Apply ───────────────────────────────── -->
+                <!-- ── Filter Pills + Apply ───────────────────────────────── -->
                 <div class="filters-group">
-                    <!-- Card 1: Date Range -->
-                    <div class="filter-bar">
-                        <!-- Date From -->
+                    <!-- Date Range -->
+                    <div class="date-range-group">
                         <label class="filter-pill" title="Start Date">
                             <i data-feather="calendar"></i>
                             <input type="date" id="filterStartDate" title="From date">
@@ -532,51 +531,47 @@
 
                         <span class="filter-bar-label">to</span>
 
-                        <!-- Date To -->
                         <label class="filter-pill" title="End Date">
                             <i data-feather="calendar"></i>
                             <input type="date" id="filterEndDate" title="To date">
                         </label>
                     </div>
 
-                    <!-- Card 2: Dropdown Filters -->
-                    <div class="filter-bar">
-                        <!-- Status -->
-                        <label class="filter-pill" title="Booking Status">
-                            <i data-feather="tag"></i>
-                            <select id="filterStatus">
-                                <option value="all">All Statuses</option>
-                                <option value="completed">Completed</option>
-                                <option value="cancelled">Cancelled</option>
-                                <option value="no-show">No-Show</option>
-                                <option value="refunded">Refunded</option>
-                                <option value="confirmed">Confirmed</option>
-                                <option value="pending">Pending</option>
-                            </select>
-                        </label>
+                    <!-- Status -->
+                    <label class="filter-pill" title="Booking Status">
+                        <i data-feather="tag"></i>
+                        <select id="filterStatus">
+                            <option value="all">All Statuses</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="no-show">No-Show</option>
+                            <option value="refunded">Refunded</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </label>
 
-                        <!-- Payment -->
-                        <label class="filter-pill" title="Payment Status">
-                            <i data-feather="credit-card"></i>
-                            <select id="filterPayment">
-                                <option value="all">All Payments</option>
-                                <option value="paid">Paid</option>
-                                <option value="unpaid">Unpaid</option>
-                                <option value="pending">Pending</option>
-                                <option value="refunded">Refunded</option>
-                            </select>
-                        </label>
+                    <!-- Payment -->
+                    <label class="filter-pill" title="Payment Status">
+                        <i data-feather="credit-card"></i>
+                        <select id="filterPayment">
+                            <option value="all">All Payments</option>
+                            <option value="paid">Paid</option>
+                            <option value="unpaid">Unpaid</option>
+                            <option value="pending">Pending</option>
+                            <option value="refunded">Refunded</option>
+                        </select>
+                    </label>
 
-                        <!-- Staff -->
-                        <label class="filter-pill" title="Staff">
-                            <i data-feather="user"></i>
-                            <select id="filterStaff">
-                                <option value="all">All Staff</option>
-                            </select>
-                        </label>
-                    </div>
+                    <!-- Staff -->
+                    <label class="filter-pill" title="Staff">
+                        <i data-feather="user"></i>
+                        <select id="filterStaff">
+                            <option value="all">All Staff</option>
+                        </select>
+                    </label>
 
-                    <!-- Standalone Apply -->
+                    <!-- Apply -->
                     <button class="btn-apply-filter" id="btnApplyFilters">Apply</button>
                 </div>
             </div>
