@@ -39,18 +39,19 @@
             max-width: 100%;
         }
 
+        /* ── Date Range Card ──────────────────────────────────────────── */
         .date-range-card {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            min-height: 38px;
-            padding: 0 11px;
+            gap: 6px;
+            height: 38px;
+            padding: 0 12px;
             background: #ffffff;
             border: 1px solid #cbd5e1;
             border-radius: 9px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.03);
             transition: all 0.15s ease;
+            white-space: nowrap;
         }
 
         .date-range-card:hover {
@@ -63,16 +64,14 @@
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
         }
 
-        .date-input-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            cursor: pointer;
+        .date-range-icon {
+            width: 14px;
+            height: 14px;
+            color: #6366f1;
+            flex-shrink: 0;
         }
 
-        .date-input-item svg, .date-input-item i { width: 14px; height: 14px; color: #6366f1; flex-shrink: 0; }
-
-        .date-input-item input[type="date"] {
+        .date-range-input {
             border: none;
             background: transparent;
             font-weight: 600;
@@ -81,8 +80,22 @@
             color: #0f172a;
             outline: none;
             cursor: pointer;
-            width: 114px;
-            padding: 6px 0;
+            padding: 0;
+            width: 108px;
+        }
+
+        .date-range-input::-webkit-calendar-picker-indicator {
+            opacity: 0.35;
+            cursor: pointer;
+            margin-left: 2px;
+        }
+
+        .date-range-sep {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #94a3b8;
+            padding: 0 1px;
+            user-select: none;
         }
 
         .filter-bar-label {
@@ -551,17 +564,10 @@
                 <div class="filters-group">
                     <!-- Date Range Card -->
                     <div class="date-range-card">
-                        <label class="date-input-item" title="Start Date">
-                            <i data-feather="calendar"></i>
-                            <input type="date" id="filterStartDate" title="From date">
-                        </label>
-
-                        <span class="filter-bar-label">to</span>
-
-                        <label class="date-input-item" title="End Date">
-                            <i data-feather="calendar"></i>
-                            <input type="date" id="filterEndDate" title="To date">
-                        </label>
+                        <i data-feather="calendar" class="date-range-icon"></i>
+                        <input type="date" id="filterStartDate" class="date-range-input" title="From date">
+                        <span class="date-range-sep">→</span>
+                        <input type="date" id="filterEndDate" class="date-range-input" title="To date">
                     </div>
 
                     <!-- Status -->
